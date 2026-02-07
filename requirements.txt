@@ -1,11 +1,25 @@
-scikit-learn-intelex>=2023.0.1
-scikit-learn>=1.2.0
-scikit-image>=0.19.3
-opencv-python>=4.7.0.68
-matplotlib>=3.6.3
-pandas>=1.5.3
+# Core dependencies
 numpy>=1.24.1
+opencv-python>=4.7.0.68
+pandas>=1.5.3
 scipy>=1.10.0
+
+# Image processing
+scikit-image>=0.19.3
+scikit-learn>=1.2.0
+
+# Optional Intel acceleration (comment out if issues)
+# scikit-learn-intelex>=2023.0.1
+
+# Barcode reading
 pyzbar>=0.1.9
-tqdm>=0.1.1
+
+# Configuration
 PyYAML>=6.0
+parse>=1.19.0
+
+# Progress bars and utilities
+tqdm>=0.1.1
+
+# Optional: for faster matplotlib plots
+# matplotlib>=3.6.3

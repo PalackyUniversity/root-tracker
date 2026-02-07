@@ -1,0 +1,38 @@
+# Root Tracker Configuration - In Vitro setup
+#
+# This YAML file is used to load the Python Config dataclass.
+# You can also construct Config programmatically for type-safe access.
+
+data:
+  filename_template: "{group}.{date}"
+  date_format: "%d-%m-%y"
+  input: "data_in_vitro/"
+  output: "result/"
+  statistics: "statistics_in_vitro.csv"
+
+margin: 0.03
+rotation: 180
+n_clusters: 6
+
+# Green area segmentation (for plant stem detection)
+green:
+  min_count: 5
+  min_area: 100
+  # HSV color range - commented out, using Python defaults
+  # hsv_lower: [28, 166, 50]
+  # hsv_upper: [42, 255, 200]
+
+# Root thresholding
+threshold:
+  low: 20
+  high: 30
+  min_contour_area: 100
+  min_contour_length: 15
+
+# Image cropping
+crop:
+  # Blue background HSV range - commented out, using Python defaults
+  # blue_hsv_lower: [70, 0, 0]
+  # blue_hsv_upper: [140, 255, 255]
+  top_ratio: 0.1
+  bottom_ratio: 0.85
