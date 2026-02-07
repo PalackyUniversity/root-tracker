@@ -2,14 +2,14 @@
 Image tree widget for group/image navigation.
 
 Displays groups as parent nodes with images as children.
+Shows an empty state with load button when no images are loaded.
 """
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem,
-    QLabel, QHeaderView
+    QLabel, QPushButton, QStackedWidget
 )
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtGui import QIcon
 
 from ..models import ImageSeries, ImageData
 
@@ -22,13 +22,17 @@ class ImageTree(QWidget):
     - Groups (image series) as parent nodes
     - Individual images as child nodes
     
+    When empty, shows a placeholder with load button.
+    
     Signals:
         image_selected: Emitted when an image is selected (ImageData).
         group_selected: Emitted when a group is selected (ImageSeries).
+        load_requested: Emitted when user clicks load button in empty state.
     """
     
     image_selected = Signal(object)  # ImageData
     group_selected = Signal(object)  # ImageSeries
+    load_requested = Signal()  # Emitted from empty state button
     
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -55,14 +59,38 @@ class ImageTree(QWidget):
         """)
         layout.addWidget(header)
         
+        # Stacked widget for empty state vs tree
+        self._stack = QStackedWidget()
+        
+        # Empty state widget
+        empty_widget = QWidget()
+        empty_layout = QVBoxLayout(empty_widget)
+        empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        empty_label = QLabel("No images loaded")
+        empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_label.setStyleSheet("color: #888; font-size: 12px; margin-bottom: 10px;")
+        empty_layout.addWidget(empty_label)
+        
+        load_btn = QPushButton("📁 Open Folder...")
+        load_btn.clicked.connect(self.load_requested.emit)
+        empty_layout.addWidget(load_btn)
+        
+        self._stack.addWidget(empty_widget)  # Index 0: empty state
+        
         # Tree widget - single column
         self._tree = QTreeWidget()
-        self._tree.setHeaderHidden(True)  # Hide header for cleaner look
+        self._tree.setHeaderHidden(True)
         self._tree.setColumnCount(1)
         self._tree.itemSelectionChanged.connect(self._on_selection_changed)
         self._tree.setIndentation(20)
         
-        layout.addWidget(self._tree)
+        self._stack.addWidget(self._tree)  # Index 1: tree
+        
+        layout.addWidget(self._stack)
+        
+        # Show empty state by default
+        self._stack.setCurrentIndex(0)
     
     def set_series(self, series_dict: dict[str, ImageSeries]) -> None:
         """
@@ -74,6 +102,10 @@ class ImageTree(QWidget):
         self._series_dict = series_dict
         self._item_to_data.clear()
         self._tree.clear()
+        
+        if not series_dict:
+            self._stack.setCurrentIndex(0)  # Show empty state
+            return
         
         for group_name, series in sorted(series_dict.items()):
             # Create group item with count
@@ -92,6 +124,9 @@ class ImageTree(QWidget):
         
         # Expand all groups
         self._tree.expandAll()
+        
+        # Show tree
+        self._stack.setCurrentIndex(1)
     
     def _on_selection_changed(self) -> None:
         """Handle tree selection change."""
@@ -169,3 +204,7 @@ class ImageTree(QWidget):
                             self._tree.setCurrentItem(child)
                             self._tree.blockSignals(False)
                             return
+    
+    def is_empty(self) -> bool:
+        """Check if no images are loaded."""
+        return len(self._series_dict) == 0

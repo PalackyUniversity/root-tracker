@@ -57,6 +57,9 @@ class MainWindow(QMainWindow):
         self._setup_ui()
         self._setup_menu()
         self._connect_signals()
+        
+        # Start on Load step with settings panel hidden
+        self._settings_panel.hide()
     
     def _setup_ui(self) -> None:
         """Set up the main UI layout."""
@@ -227,6 +230,7 @@ class MainWindow(QMainWindow):
         # Image tree
         self._image_tree.image_selected.connect(self._on_image_selected)
         self._image_tree.group_selected.connect(self._on_group_selected)
+        self._image_tree.load_requested.connect(self._on_load_images)  # Empty state button
         
         # Settings panel
         self._settings_panel.apply_requested.connect(self._on_apply_settings)
@@ -240,8 +244,13 @@ class MainWindow(QMainWindow):
         self._image_viewer.zoom_changed.connect(self._on_zoom_changed)
     
     def _on_load_images(self) -> None:
-        """Handle load images action."""
-        dialog = LoadDialog(self, self._config.data.input)
+        """Handle load images action (Ctrl+O)."""
+        dialog = LoadDialog(
+            self, 
+            self._config.data.input,
+            self._config.data.filename_template,
+            self._config.data.date_format
+        )
         
         if dialog.exec() == LoadDialog.DialogCode.Accepted:
             # Update config
@@ -257,19 +266,27 @@ class MainWindow(QMainWindow):
             
             try:
                 self._series_dict = self._pipeline.load_images()
+                
+                if not self._series_dict:
+                    QMessageBox.warning(
+                        self, "No Images Found",
+                        f"No images found in '{self._config.data.input}' matching template '{self._config.data.filename_template}'.\n\n"
+                        "Check that the folder path and filename template are correct."
+                    )
+                    self._status_bar.showMessage("No images found.")
+                    return
+                
                 self._image_tree.set_series(self._series_dict)
                 
                 # Select first image
                 self._image_tree.select_first_image()
                 
-                # Mark step as complete
+                # Mark step as complete but DON'T auto-advance
                 self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
-                self._workflow_bar.set_current_step(WorkflowStep.PREPROCESS)
-                self._settings_panel.set_step(WorkflowStep.PREPROCESS)
                 
                 total_images = sum(len(s.images) for s in self._series_dict.values())
                 self._status_bar.showMessage(
-                    f"Loaded {len(self._series_dict)} groups, {total_images} images."
+                    f"Loaded {len(self._series_dict)} groups, {total_images} images. Click Next to continue."
                 )
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load images:\n{e}")
@@ -377,7 +394,12 @@ class MainWindow(QMainWindow):
             self._workflow_bar.set_current_step(WorkflowStep.LOAD)
             return
         
-        self._settings_panel.set_step(step)
+        # Hide settings panel on Load step (use Ctrl+O instead)
+        if step == WorkflowStep.LOAD:
+            self._settings_panel.hide()
+        else:
+            self._settings_panel.show()
+            self._settings_panel.set_step(step)
         
         # Refresh image display for new step
         if self._current_image:

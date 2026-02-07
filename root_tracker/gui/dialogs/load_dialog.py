@@ -19,12 +19,18 @@ class LoadDialog(QDialog):
         date_format: Date format string.
     """
     
-    def __init__(self, parent=None, initial_path: str = "") -> None:
+    def __init__(
+        self, 
+        parent=None, 
+        initial_path: str = "",
+        initial_template: str = "{group}.{date}",
+        initial_date_format: str = "%d-%m-%y"
+    ) -> None:
         super().__init__(parent)
         
         self.input_path = initial_path
-        self.filename_template = "{group}.{date}"
-        self.date_format = "%d-%m-%Y"
+        self.filename_template = initial_template
+        self.date_format = initial_date_format
         
         self.setWindowTitle("Load Images")
         self.setMinimumWidth(500)
