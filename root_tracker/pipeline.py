@@ -12,7 +12,7 @@ from multiprocessing import freeze_support
 from tqdm.contrib.concurrent import process_map
 
 from .config import Config
-from .models import ImageData, ImageSeries
+from .models import ImageData, ImageSeries, PlantStatistics
 from .preprocessing import ImageCropper, GreenAreaDetector, BackgroundRemover
 from .registration import ImageRegistrator
 from .tracking import RootThresholder, RootSkeletonizer, CornerDetector, RootLinker
@@ -82,7 +82,7 @@ class RootTrackingPipeline:
         
         # State
         self._series: dict[str, ImageSeries] = {}
-        self._all_statistics: list[dict] = []
+        self._all_statistics: list[PlantStatistics] = []
     
     def load_images(self) -> dict[str, ImageSeries]:
         """
@@ -169,7 +169,7 @@ class RootTrackingPipeline:
         """
         self.registrator.register_series(series.images)
     
-    def track_and_analyze_series(self, series: ImageSeries) -> list[dict]:
+    def track_and_analyze_series(self, series: ImageSeries) -> list[PlantStatistics]:
         """
         Step 3: Run tracking algorithm and compute statistics.
         
@@ -342,42 +342,46 @@ class RootTrackingPipeline:
                 previous_image = series.images[value_n - 1] if value_n > 0 else None
                 time_delta = (image_data.date - previous_image.date).days if previous_image else 1
                 
-                stats = {
-                    "image_date": image_data.date,
-                    "image_barcode": image_data.barcode,
-                    "image_barcode_read": image_data.barcode_read,
-                    "image_path": image_data.path,
-                    "image_total_area": image_data.total_area,
-                    "image_total_length": image_data.total_length,
-                    "image_new_area": image_data.new_area,
-                    "image_new_parts": image_data.new_parts,
-                    "image_area_change": None,
-                    "plant_id": k + 1,
-                    "plant_center_x": pos_x_median[k],
-                    "plant_center_y": pos_y_median[k],
-                    "plant_green_area": image_data.green_areas[k] if k < len(image_data.green_areas) else 0,
-                    "plant_root_count": root_count,
-                    "plant_total_length": plant_length,
-                    "plant_total_length_RGR": None,
-                    "plant_main_root_depth": main_root_depth,
-                    "plant_main_root_length": longest_length,
-                    "plant_main_root_length_RGR": None,
-                }
+                # Calculate RGR values
+                plant_length_rgr = None
+                main_root_length_rgr = None
+                area_change = None
                 
-                # Calculate RGR if we have previous data
                 if value_n > 0 and previous_image:
                     prev_length = previous_image.plant_length[k] if k < len(previous_image.plant_length) else None
                     prev_longest = previous_image.longest[k] if k < len(previous_image.longest) else None
                     
                     if prev_length and prev_length > 0:
-                        stats["plant_total_length_RGR"] = (np.log(plant_length) - np.log(prev_length)) / time_delta
+                        plant_length_rgr = (np.log(plant_length) - np.log(prev_length)) / time_delta
                     
                     if prev_longest and prev_longest > 0:
-                        stats["plant_main_root_length_RGR"] = (np.log(longest_length) - np.log(prev_longest)) / time_delta
+                        main_root_length_rgr = (np.log(longest_length) - np.log(prev_longest)) / time_delta
                     
                     if previous_image.total_area and image_data.total_area and image_data.new_area is not None:
                         current_adjusted = abs((image_data.total_area - image_data.new_area) - previous_image.total_area)
-                        stats["image_area_change"] = current_adjusted / previous_image.total_area * 100
+                        area_change = current_adjusted / previous_image.total_area * 100
+                
+                stats = PlantStatistics(
+                    image_date=image_data.date,
+                    image_barcode=image_data.barcode,
+                    image_barcode_read=image_data.barcode_read,
+                    image_path=image_data.path,
+                    image_total_area=image_data.total_area or 0,
+                    image_total_length=image_data.total_length or 0,
+                    image_new_area=image_data.new_area,
+                    image_new_parts=image_data.new_parts,
+                    image_area_change=area_change,
+                    plant_id=k + 1,
+                    plant_center_x=pos_x_median[k],
+                    plant_center_y=pos_y_median[k],
+                    plant_green_area=image_data.green_areas[k] if k < len(image_data.green_areas) else 0,
+                    plant_root_count=root_count,
+                    plant_total_length=plant_length,
+                    plant_total_length_rgr=plant_length_rgr,
+                    plant_main_root_depth=main_root_depth,
+                    plant_main_root_length=longest_length,
+                    plant_main_root_length_rgr=main_root_length_rgr,
+                )
                 
                 statistics.append(stats)
             
@@ -393,7 +397,7 @@ class RootTrackingPipeline:
         
         return statistics
     
-    def export_results(self, statistics: list[dict]) -> str:
+    def export_results(self, statistics: list[PlantStatistics]) -> str:
         """
         Step 4: Export results to CSV.
         
@@ -406,7 +410,7 @@ class RootTrackingPipeline:
         self._all_statistics = statistics
         return self.exporter.export_statistics(statistics)
     
-    def process_series_wrapper(self, series: ImageSeries) -> list[dict]:
+    def process_series_wrapper(self, series: ImageSeries) -> list[PlantStatistics]:
         """
         Process a single series (for multiprocessing).
         
@@ -464,14 +468,14 @@ class RootTrackingPipeline:
         # Export
         return self.export_results(flat_stats)
     
-    def _process_series_for_parallel(self, series: ImageSeries) -> list[dict]:
+    def _process_series_for_parallel(self, series: ImageSeries) -> list[PlantStatistics]:
         """Process series for parallel execution (creates new pipeline instance)."""
         # Create a new pipeline instance for this process
         pipeline = RootTrackingPipeline(self.config)
         return pipeline.process_series_wrapper(series)
 
 
-def _process_series_standalone(args: tuple) -> list[dict]:
+def _process_series_standalone(args: tuple) -> list[PlantStatistics]:
     """Standalone function for multiprocessing (pickle-friendly)."""
     config, series = args
     pipeline = RootTrackingPipeline(config)
