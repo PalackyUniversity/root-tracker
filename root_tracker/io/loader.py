@@ -39,7 +39,9 @@ class ImageLoader:
         Returns:
             Tuple of (group, date) or None if parsing fails.
         """
-        basename = os.path.splitext(filepath)[0]
+        # Extract just the filename without path and extension
+        filename = os.path.basename(filepath)
+        basename = os.path.splitext(filename)[0]
         
         try:
             parsed = parse.parse(
