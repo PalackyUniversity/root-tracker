@@ -150,3 +150,24 @@ class ImageTree(QWidget):
         """Refresh the tree display."""
         if self._series_dict:
             self.set_series(self._series_dict)
+    
+    def select_image(self, image_data: ImageData) -> None:
+        """
+        Select a specific image in the tree.
+        
+        Args:
+            image_data: The image to select.
+        """
+        # Find the tree item for this image
+        for item_id, data in self._item_to_data.items():
+            if data is image_data:
+                # Find the item with this id
+                for i in range(self._tree.topLevelItemCount()):
+                    group = self._tree.topLevelItem(i)
+                    for j in range(group.childCount()):
+                        child = group.child(j)
+                        if id(child) == item_id:
+                            self._tree.blockSignals(True)
+                            self._tree.setCurrentItem(child)
+                            self._tree.blockSignals(False)
+                            return

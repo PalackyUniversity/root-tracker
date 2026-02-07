@@ -47,6 +47,7 @@ class SettingsPanel(QWidget):
         
         self._config = config
         self._current_step = WorkflowStep.LOAD
+        self._settings_applied = True  # Track if current settings are applied
         
         self._setup_ui()
         self._update_for_step(WorkflowStep.LOAD)
@@ -56,17 +57,28 @@ class SettingsPanel(QWidget):
         self._main_layout = QVBoxLayout(self)
         self._main_layout.setContentsMargins(5, 5, 5, 5)
         
-        # Header
-        header = QLabel("Settings")
-        header.setStyleSheet("""
-            QLabel {
-                font-weight: bold;
-                padding: 5px;
+        # Header with status indicator
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(5, 5, 5, 5)
+        
+        header_label = QLabel("Settings")
+        header_label.setStyleSheet("font-weight: bold;")
+        header_layout.addWidget(header_label)
+        
+        header_layout.addStretch()
+        
+        self._status_indicator = QLabel("✓ Applied")
+        self._status_indicator.setStyleSheet("color: #5cb85c; font-size: 11px;")
+        header_layout.addWidget(self._status_indicator)
+        
+        header_widget.setStyleSheet("""
+            QWidget {
                 background-color: #f0f0f0;
                 border-bottom: 1px solid #ccc;
             }
         """)
-        self._main_layout.addWidget(header)
+        self._main_layout.addWidget(header_widget)
         
         # Settings container (will be replaced per step)
         self._settings_container = QWidget()
@@ -223,17 +235,17 @@ class SettingsPanel(QWidget):
         group = QGroupBox("Tracking Settings")
         layout = QFormLayout(group)
         
-        self._contour_filter_spin = QSpinBox()
-        self._contour_filter_spin.setRange(1, 1000)
-        self._contour_filter_spin.setValue(self._config.contour_filter)
-        self._contour_filter_spin.valueChanged.connect(self.settings_changed.emit)
-        layout.addRow("Min contour size:", self._contour_filter_spin)
+        self._min_contour_area_spin = QSpinBox()
+        self._min_contour_area_spin.setRange(1, 1000)
+        self._min_contour_area_spin.setValue(self._config.threshold.min_contour_area)
+        self._min_contour_area_spin.valueChanged.connect(self.settings_changed.emit)
+        layout.addRow("Min contour area:", self._min_contour_area_spin)
         
-        self._distance_filter_spin = QSpinBox()
-        self._distance_filter_spin.setRange(1, 500)
-        self._distance_filter_spin.setValue(self._config.distance_filter)
-        self._distance_filter_spin.valueChanged.connect(self.settings_changed.emit)
-        layout.addRow("Max link distance:", self._distance_filter_spin)
+        self._min_contour_length_spin = QSpinBox()
+        self._min_contour_length_spin.setRange(1, 500)
+        self._min_contour_length_spin.setValue(self._config.threshold.min_contour_length)
+        self._min_contour_length_spin.valueChanged.connect(self.settings_changed.emit)
+        layout.addRow("Min contour length:", self._min_contour_length_spin)
         
         self._settings_layout.addWidget(group)
         
@@ -310,8 +322,8 @@ class SettingsPanel(QWidget):
             values["margin"] = self._margin_spin.value()
         
         elif self._current_step == WorkflowStep.TRACK:
-            values["contour_filter"] = self._contour_filter_spin.value()
-            values["distance_filter"] = self._distance_filter_spin.value()
+            values["min_contour_area"] = self._min_contour_area_spin.value()
+            values["min_contour_length"] = self._min_contour_length_spin.value()
         
         elif self._current_step == WorkflowStep.EXPORT:
             values["output"] = self._output_path.text()
@@ -324,3 +336,19 @@ class SettingsPanel(QWidget):
             self._rotation_spin.blockSignals(True)
             self._rotation_spin.setValue(value)
             self._rotation_spin.blockSignals(False)
+    
+    def mark_modified(self) -> None:
+        """Mark settings as modified (not yet applied to current image)."""
+        self._settings_applied = False
+        self._status_indicator.setText("● Modified")
+        self._status_indicator.setStyleSheet("color: #f0ad4e; font-size: 11px;")
+    
+    def mark_applied(self) -> None:
+        """Mark settings as applied to current image."""
+        self._settings_applied = True
+        self._status_indicator.setText("✓ Applied")
+        self._status_indicator.setStyleSheet("color: #5cb85c; font-size: 11px;")
+    
+    def is_applied(self) -> bool:
+        """Check if current settings are applied."""
+        return self._settings_applied

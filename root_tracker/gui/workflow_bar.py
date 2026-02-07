@@ -1,12 +1,12 @@
 """
 Workflow step indicator bar.
 
-Shows the 4 pipeline steps and highlights the current one.
+Shows the 4 pipeline steps with minimal Lightroom-style buttons.
 """
 
 from enum import IntEnum
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QPushButton, QFrame, QLabel
+    QWidget, QHBoxLayout, QPushButton, QLabel
 )
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont
@@ -20,11 +20,12 @@ class WorkflowStep(IntEnum):
     EXPORT = 3
 
 
+# Step names without numbers
 STEP_NAMES = {
-    WorkflowStep.LOAD: "1. Load Images",
-    WorkflowStep.PREPROCESS: "2. Preprocess",
-    WorkflowStep.TRACK: "3. Track Roots",
-    WorkflowStep.EXPORT: "4. Export",
+    WorkflowStep.LOAD: "Load",
+    WorkflowStep.PREPROCESS: "Preprocess",
+    WorkflowStep.TRACK: "Track",
+    WorkflowStep.EXPORT: "Export",
 }
 
 
@@ -32,7 +33,7 @@ class WorkflowBar(QWidget):
     """
     Horizontal bar showing workflow steps.
     
-    Each step is a clickable button. The current step is highlighted.
+    Each step is a minimal clickable button (Lightroom-style).
     Steps can be enabled/disabled based on progress.
     
     Signals:
@@ -52,29 +53,28 @@ class WorkflowBar(QWidget):
     
     def _setup_ui(self) -> None:
         """Set up the UI components."""
+        # Minimal fixed height
+        self.setFixedHeight(36)
+        
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 5, 10, 5)
-        layout.setSpacing(5)
+        layout.setContentsMargins(5, 2, 5, 2)
+        layout.setSpacing(2)
         
         for step in WorkflowStep:
             btn = QPushButton(STEP_NAMES[step])
             btn.setCheckable(True)
-            btn.setMinimumWidth(120)
+            btn.setMinimumWidth(80)
             btn.clicked.connect(lambda checked, s=step: self._on_step_clicked(s))
             
             self._step_buttons[step] = btn
             layout.addWidget(btn)
             
-            # Add arrow between steps (except last)
+            # Add separator between steps (except last)
             if step != WorkflowStep.EXPORT:
-                arrow = QLabel("→")
-                arrow.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                font = QFont()
-                font.setPointSize(14)
-                arrow.setFont(font)
-                layout.addWidget(arrow)
-        
-        layout.addStretch()
+                sep = QLabel("›")
+                sep.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                sep.setStyleSheet("color: #666; font-size: 14px;")
+                layout.addWidget(sep)
         
         # Set initial state
         self._update_button_states()
@@ -114,45 +114,46 @@ class WorkflowBar(QWidget):
         return self._current_step
     
     def _update_button_states(self) -> None:
-        """Update button checked states and styling."""
+        """Update button checked states and styling (Lightroom-style)."""
         for step, btn in self._step_buttons.items():
             btn.setChecked(step == self._current_step)
             
-            # Style based on state
+            # Minimal, flat Lightroom-style buttons
             if step == self._current_step:
+                # Current step: underlined text, no background
                 btn.setStyleSheet("""
                     QPushButton {
-                        background-color: #4a90d9;
-                        color: white;
+                        background: transparent;
+                        color: #fff;
                         font-weight: bold;
-                        border: 2px solid #2a70b9;
-                        border-radius: 5px;
-                        padding: 8px;
+                        border: none;
+                        border-bottom: 2px solid #4a90d9;
+                        padding: 5px 10px;
                     }
                 """)
             elif step in self._completed_steps:
+                # Completed step: subtle check mark indicator
                 btn.setStyleSheet("""
                     QPushButton {
-                        background-color: #5cb85c;
-                        color: white;
-                        border: 2px solid #4cae4c;
-                        border-radius: 5px;
-                        padding: 8px;
+                        background: transparent;
+                        color: #8f8;
+                        border: none;
+                        padding: 5px 10px;
                     }
                     QPushButton:hover {
-                        background-color: #449d44;
+                        color: #afa;
                     }
                 """)
             else:
+                # Inactive step: dimmed
                 btn.setStyleSheet("""
                     QPushButton {
-                        background-color: #f0f0f0;
-                        color: #666;
-                        border: 1px solid #ccc;
-                        border-radius: 5px;
-                        padding: 8px;
+                        background: transparent;
+                        color: #888;
+                        border: none;
+                        padding: 5px 10px;
                     }
                     QPushButton:hover {
-                        background-color: #e0e0e0;
+                        color: #aaa;
                     }
                 """)

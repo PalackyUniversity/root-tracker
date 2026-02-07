@@ -67,9 +67,14 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # Workflow bar at top
+        # Top bar with workflow steps aligned right
+        top_bar = QWidget()
+        top_layout = QHBoxLayout(top_bar)
+        top_layout.setContentsMargins(5, 5, 5, 5)
+        top_layout.addStretch()  # Push workflow bar to right
         self._workflow_bar = WorkflowBar()
-        main_layout.addWidget(self._workflow_bar)
+        top_layout.addWidget(self._workflow_bar)
+        main_layout.addWidget(top_bar)
         
         # Main content area with splitter
         self._splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -190,9 +195,12 @@ class MainWindow(QMainWindow):
         self._settings_panel.preprocess_requested.connect(self._on_preprocess_current)
         self._settings_panel.track_requested.connect(self._on_track_roots)
         self._settings_panel.export_requested.connect(self._on_export_results)
+        self._settings_panel.settings_changed.connect(self._settings_panel.mark_modified)
         
         # Image viewer
         self._image_viewer.zoom_changed.connect(self._on_zoom_changed)
+        self._image_viewer.navigate_back.connect(self._on_navigate_back)
+        self._image_viewer.navigate_next.connect(self._on_navigate_next)
     
     def _on_load_images(self) -> None:
         """Handle load images action."""
@@ -263,14 +271,12 @@ class MainWindow(QMainWindow):
             # Select first image
             self._image_tree.select_first_image()
             
-            # Mark step as complete
+            # Mark step as complete but DON'T auto-advance
             self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
-            self._workflow_bar.set_current_step(WorkflowStep.PREPROCESS)
-            self._settings_panel.set_step(WorkflowStep.PREPROCESS)
             
             total_images = sum(len(s.images) for s in self._series_dict.values())
             self._status_bar.showMessage(
-                f"Loaded {len(self._series_dict)} groups, {total_images} images."
+                f"Loaded {len(self._series_dict)} groups, {total_images} images. Click step 2 to continue."
             )
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load images:\n{e}")
@@ -324,6 +330,16 @@ class MainWindow(QMainWindow):
     
     def _on_step_changed(self, step: WorkflowStep) -> None:
         """Handle workflow step change."""
+        # Validate step prerequisites
+        if step > WorkflowStep.LOAD and not self._workflow_bar.is_step_completed(WorkflowStep.LOAD):
+            QMessageBox.warning(
+                self, "Step Not Available",
+                "Please load images first (Step 1) before proceeding."
+            )
+            # Reset workflow bar to current step
+            self._workflow_bar.set_current_step(WorkflowStep.LOAD)
+            return
+        
         self._settings_panel.set_step(step)
         
         # Refresh image display for new step
@@ -359,6 +375,7 @@ class MainWindow(QMainWindow):
         try:
             self._pipeline.preprocess_image(self._current_image)
             self._display_image(self._current_image)
+            self._settings_panel.mark_applied()
             self._status_bar.showMessage("Preprocessing complete.")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
@@ -468,3 +485,33 @@ class MainWindow(QMainWindow):
             "<p>A tool for tracking and analyzing plant root growth.</p>"
             "<p>Version 1.0</p>"
         )
+    
+    def _on_navigate_back(self) -> None:
+        """Navigate to previous image in series."""
+        if self._current_series is None or self._current_image is None:
+            return
+        
+        images = self._current_series.images
+        try:
+            idx = images.index(self._current_image)
+            if idx > 0:
+                self._current_image = images[idx - 1]
+                self._image_tree.select_image(self._current_image)
+                self._display_image(self._current_image)
+        except ValueError:
+            pass
+    
+    def _on_navigate_next(self) -> None:
+        """Navigate to next image in series."""
+        if self._current_series is None or self._current_image is None:
+            return
+        
+        images = self._current_series.images
+        try:
+            idx = images.index(self._current_image)
+            if idx < len(images) - 1:
+                self._current_image = images[idx + 1]
+                self._image_tree.select_image(self._current_image)
+                self._display_image(self._current_image)
+        except ValueError:
+            pass
