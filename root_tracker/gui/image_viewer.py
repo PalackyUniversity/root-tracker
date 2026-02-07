@@ -6,7 +6,7 @@ Provides pan/zoom functionality using QGraphicsView.
 
 from PySide6.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
+    QWidget, QVBoxLayout
 )
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QPixmap, QImage, QWheelEvent
@@ -21,18 +21,12 @@ class ImageViewer(QWidget):
     Features:
     - Mouse wheel zoom
     - Click and drag pan
-    - Fit to view button
-    - Navigation buttons (back/next)
     
     Signals:
         zoom_changed: Emitted when zoom level changes (int: percentage).
-        navigate_back: Emitted when back button is clicked.
-        navigate_next: Emitted when next button is clicked.
     """
     
     zoom_changed = Signal(int)
-    navigate_back = Signal()
-    navigate_next = Signal()
     
     # Zoom limits (10% to 500%)
     MIN_ZOOM = 0.1
@@ -54,44 +48,6 @@ class ImageViewer(QWidget):
         self._view = ZoomableGraphicsView(self._scene, self)
         self._view.zoom_changed.connect(self._on_view_zoom_changed)
         layout.addWidget(self._view)
-        
-        # Controls bar
-        controls_layout = QHBoxLayout()
-        controls_layout.setContentsMargins(5, 5, 5, 5)
-        
-        # Left side: Zoom controls
-        self._fit_btn = QPushButton("Fit")
-        self._fit_btn.setFixedWidth(40)
-        self._fit_btn.clicked.connect(self.fit_in_view)
-        controls_layout.addWidget(self._fit_btn)
-        
-        self._zoom_out_btn = QPushButton("−")
-        self._zoom_out_btn.setFixedWidth(30)
-        self._zoom_out_btn.clicked.connect(self.zoom_out)
-        controls_layout.addWidget(self._zoom_out_btn)
-        
-        self._zoom_label = QLabel("100%")
-        self._zoom_label.setFixedWidth(50)
-        self._zoom_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        controls_layout.addWidget(self._zoom_label)
-        
-        self._zoom_in_btn = QPushButton("+")
-        self._zoom_in_btn.setFixedWidth(30)
-        self._zoom_in_btn.clicked.connect(self.zoom_in)
-        controls_layout.addWidget(self._zoom_in_btn)
-        
-        controls_layout.addStretch()
-        
-        # Right side: Navigation buttons
-        self._back_btn = QPushButton("← Back")
-        self._back_btn.clicked.connect(self.navigate_back.emit)
-        controls_layout.addWidget(self._back_btn)
-        
-        self._next_btn = QPushButton("Next →")
-        self._next_btn.clicked.connect(self.navigate_next.emit)
-        controls_layout.addWidget(self._next_btn)
-        
-        layout.addLayout(controls_layout)
         
         # Pixmap item for displaying images
         self._pixmap_item: QGraphicsPixmapItem | None = None
@@ -177,9 +133,8 @@ class ImageViewer(QWidget):
         self._update_zoom_ui()
     
     def _update_zoom_ui(self) -> None:
-        """Update zoom label."""
+        """Update zoom signal."""
         percentage = int(self._zoom_factor * 100)
-        self._zoom_label.setText(f"{percentage}%")
         self.zoom_changed.emit(percentage)
     
     def _update_zoom_from_view(self) -> None:

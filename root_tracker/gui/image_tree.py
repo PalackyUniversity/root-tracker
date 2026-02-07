@@ -55,12 +55,10 @@ class ImageTree(QWidget):
         """)
         layout.addWidget(header)
         
-        # Tree widget
+        # Tree widget - single column
         self._tree = QTreeWidget()
-        self._tree.setHeaderLabels(["Name", "Date"])
-        self._tree.setColumnCount(2)
-        self._tree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self._tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self._tree.setHeaderHidden(True)  # Hide header for cleaner look
+        self._tree.setColumnCount(1)
         self._tree.itemSelectionChanged.connect(self._on_selection_changed)
         self._tree.setIndentation(20)
         
@@ -78,15 +76,15 @@ class ImageTree(QWidget):
         self._tree.clear()
         
         for group_name, series in sorted(series_dict.items()):
-            # Create group item
-            group_item = QTreeWidgetItem([group_name, f"{len(series.images)} images"])
+            # Create group item with count
+            group_item = QTreeWidgetItem([f"{group_name} ({len(series.images)})"])
             group_item.setFlags(group_item.flags() | Qt.ItemFlag.ItemIsSelectable)
             self._item_to_data[id(group_item)] = series
             
-            # Add image children
+            # Add image children - just show date
             for image_data in series.images:
-                date_str = image_data.date.strftime("%Y-%m-%d") if image_data.date else ""
-                image_item = QTreeWidgetItem([image_data.barcode or "Unknown", date_str])
+                date_str = image_data.date.strftime("%Y-%m-%d") if image_data.date else "Unknown"
+                image_item = QTreeWidgetItem([date_str])
                 self._item_to_data[id(image_item)] = image_data
                 group_item.addChild(image_item)
             

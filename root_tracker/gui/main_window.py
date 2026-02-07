@@ -69,8 +69,9 @@ class MainWindow(QMainWindow):
         
         # Top bar with workflow steps aligned right
         top_bar = QWidget()
+        top_bar.setFixedHeight(46)  # Minimal height for workflow bar
         top_layout = QHBoxLayout(top_bar)
-        top_layout.setContentsMargins(5, 5, 5, 5)
+        top_layout.setContentsMargins(5, 2, 5, 2)
         top_layout.addStretch()  # Push workflow bar to right
         self._workflow_bar = WorkflowBar()
         top_layout.addWidget(self._workflow_bar)
@@ -79,30 +80,68 @@ class MainWindow(QMainWindow):
         # Main content area with splitter
         self._splitter = QSplitter(Qt.Orientation.Horizontal)
         
-        # Left panel: Image tree + Settings
-        left_widget = QWidget()
-        left_layout = QVBoxLayout(left_widget)
-        left_layout.setContentsMargins(0, 0, 0, 0)
-        left_layout.setSpacing(0)
-        
+        # Left panel: Image tree only
         self._image_tree = ImageTree()
-        left_layout.addWidget(self._image_tree, stretch=1)
+        self._image_tree.setMinimumWidth(180)
+        self._image_tree.setMaximumWidth(250)
+        self._splitter.addWidget(self._image_tree)
         
-        self._settings_panel = SettingsPanel(self._config)
-        left_layout.addWidget(self._settings_panel, stretch=1)
-        
-        left_widget.setMinimumWidth(300)
-        left_widget.setMaximumWidth(400)
-        self._splitter.addWidget(left_widget)
-        
-        # Right panel: Image viewer
+        # Center: Image viewer
         self._image_viewer = ImageViewer()
         self._splitter.addWidget(self._image_viewer)
         
+        # Right panel: Settings
+        self._settings_panel = SettingsPanel(self._config)
+        self._settings_panel.setMinimumWidth(280)
+        self._settings_panel.setMaximumWidth(350)
+        self._splitter.addWidget(self._settings_panel)
+        
         # Set splitter proportions
-        self._splitter.setSizes([300, 900])
+        self._splitter.setSizes([200, 800, 300])
         
         main_layout.addWidget(self._splitter)
+        
+        # Bottom bar spanning full width
+        bottom_bar = QWidget()
+        bottom_bar.setFixedHeight(40)
+        bottom_layout = QHBoxLayout(bottom_bar)
+        bottom_layout.setContentsMargins(10, 5, 10, 5)
+        
+        # Left: Zoom controls
+        from PySide6.QtWidgets import QPushButton, QLabel
+        
+        self._fit_btn = QPushButton("Fit")
+        self._fit_btn.setFixedWidth(40)
+        self._fit_btn.clicked.connect(self._image_viewer.fit_in_view)
+        bottom_layout.addWidget(self._fit_btn)
+        
+        self._zoom_out_btn = QPushButton("−")
+        self._zoom_out_btn.setFixedWidth(30)
+        self._zoom_out_btn.clicked.connect(self._image_viewer.zoom_out)
+        bottom_layout.addWidget(self._zoom_out_btn)
+        
+        self._zoom_label = QLabel("100%")
+        self._zoom_label.setFixedWidth(50)
+        self._zoom_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        bottom_layout.addWidget(self._zoom_label)
+        
+        self._zoom_in_btn = QPushButton("+")
+        self._zoom_in_btn.setFixedWidth(30)
+        self._zoom_in_btn.clicked.connect(self._image_viewer.zoom_in)
+        bottom_layout.addWidget(self._zoom_in_btn)
+        
+        bottom_layout.addStretch()
+        
+        # Right: Step navigation (Back/Next for workflow steps)
+        self._back_step_btn = QPushButton("← Back")
+        self._back_step_btn.clicked.connect(self._on_step_back)
+        bottom_layout.addWidget(self._back_step_btn)
+        
+        self._next_step_btn = QPushButton("Next →")
+        self._next_step_btn.clicked.connect(self._on_step_next)
+        bottom_layout.addWidget(self._next_step_btn)
+        
+        main_layout.addWidget(bottom_bar)
         
         # Status bar
         self._status_bar = QStatusBar()
@@ -197,10 +236,8 @@ class MainWindow(QMainWindow):
         self._settings_panel.export_requested.connect(self._on_export_results)
         self._settings_panel.settings_changed.connect(self._settings_panel.mark_modified)
         
-        # Image viewer
+        # Image viewer - update zoom label in bottom bar
         self._image_viewer.zoom_changed.connect(self._on_zoom_changed)
-        self._image_viewer.navigate_back.connect(self._on_navigate_back)
-        self._image_viewer.navigate_next.connect(self._on_navigate_next)
     
     def _on_load_images(self) -> None:
         """Handle load images action."""
@@ -473,8 +510,8 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Error", f"Export failed:\n{e}")
     
     def _on_zoom_changed(self, percentage: int) -> None:
-        """Handle zoom level change."""
-        self._status_bar.showMessage(f"Zoom: {percentage}%", 2000)
+        """Handle zoom level change - update bottom bar label."""
+        self._zoom_label.setText(f"{percentage}%")
     
     def _on_about(self) -> None:
         """Show about dialog."""
@@ -486,32 +523,19 @@ class MainWindow(QMainWindow):
             "<p>Version 1.0</p>"
         )
     
-    def _on_navigate_back(self) -> None:
-        """Navigate to previous image in series."""
-        if self._current_series is None or self._current_image is None:
-            return
-        
-        images = self._current_series.images
-        try:
-            idx = images.index(self._current_image)
-            if idx > 0:
-                self._current_image = images[idx - 1]
-                self._image_tree.select_image(self._current_image)
-                self._display_image(self._current_image)
-        except ValueError:
-            pass
+    def _on_step_back(self) -> None:
+        """Navigate to previous workflow step."""
+        current = self._workflow_bar.get_current_step()
+        if current > WorkflowStep.LOAD:
+            new_step = WorkflowStep(current - 1)
+            self._workflow_bar.set_current_step(new_step)
+            self._on_step_changed(new_step)
     
-    def _on_navigate_next(self) -> None:
-        """Navigate to next image in series."""
-        if self._current_series is None or self._current_image is None:
-            return
-        
-        images = self._current_series.images
-        try:
-            idx = images.index(self._current_image)
-            if idx < len(images) - 1:
-                self._current_image = images[idx + 1]
-                self._image_tree.select_image(self._current_image)
-                self._display_image(self._current_image)
-        except ValueError:
-            pass
+    def _on_step_next(self) -> None:
+        """Navigate to next workflow step."""
+        current = self._workflow_bar.get_current_step()
+        if current < WorkflowStep.EXPORT:
+            new_step = WorkflowStep(current + 1)
+            # Use the same validation as clicking on step
+            self._workflow_bar.set_current_step(new_step)
+            self._on_step_changed(new_step)
