@@ -1,0 +1,17 @@
+data:
+  filename_template: "{group}.{date}"
+  date_format: "%d-%m-%y"
+  input: "data_in_vitro/"             # Input dir with data
+  output: "result/"                   # Output dir with results for sanity check
+  statistics: "statistics_clear.csv"  # Output statistics file
+
+margin: 0.03    # Margin for cropping (left, right, bottom) - range 0-1
+rotation: 180
+n_clusters: 6   # Number of plants in one image - if >6 plants, ensure that in variable COLORS are enough colors
+
+# Green area segmentation
+#  - these constants are just to get rid of contours with 1 pixel, etc.
+#  - proper green area segmentation means proper plant start point detection
+green:
+  min_count: 5   # Minimum number of pixels in green area
+  min_area: 100  # Minimum area of green area
