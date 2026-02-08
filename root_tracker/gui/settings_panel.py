@@ -261,6 +261,10 @@ class SettingsPanel(QWidget):
         self._redetect_btn.setEnabled(True)
         self._redetect_btn.setToolTip("Re-run plant centroid detection")
     
+    def mark_centroids_modified(self) -> None:
+        """Mark that centroids have been modified (enable Re-detect button)."""
+        self.enable_redetect()
+    
     def reset_for_group(self) -> None:
         """Reset settings for a new group (discard unsaved changes)."""
         if self._current_step == WorkflowStep.PREPROCESS and hasattr(self, '_rotation_spin'):

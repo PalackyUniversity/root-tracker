@@ -6,12 +6,71 @@ Provides pan/zoom functionality using QGraphicsView.
 
 from PySide6.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
-    QWidget, QVBoxLayout
+    QWidget, QVBoxLayout, QGraphicsEllipseItem
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap, QImage, QWheelEvent
+from PySide6.QtCore import Qt, Signal, QPointF
+from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor
 import numpy as np
 import cv2
+
+
+class DraggableCentroid(QGraphicsEllipseItem):
+    """
+    A draggable circle representing a plant centroid.
+    
+    Args:
+        x: Center X coordinate.
+        y: Center Y coordinate.
+        radius: Circle radius.
+        index: Index of this centroid in the list.
+        callback: Function to call when moved (takes index, new_x, new_y).
+    """
+    
+    def __init__(
+        self, 
+        x: float, 
+        y: float, 
+        radius: float = 15, 
+        index: int = 0,
+        callback = None
+    ) -> None:
+        # Create ellipse centered at (x, y)
+        super().__init__(x - radius, y - radius, radius * 2, radius * 2)
+        
+        self._center_x = x
+        self._center_y = y
+        self._radius = radius
+        self._index = index
+        self._callback = callback
+        
+        # Styling - bright green with semi-transparent fill
+        self.setPen(QPen(QColor(0, 255, 0), 2))
+        self.setBrush(QBrush(QColor(0, 255, 0, 80)))
+        
+        # Enable dragging
+        self.setFlag(QGraphicsEllipseItem.GraphicsItemFlag.ItemIsMovable, True)
+        self.setFlag(QGraphicsEllipseItem.GraphicsItemFlag.ItemSendsGeometryChanges, True)
+        self.setCursor(Qt.CursorShape.OpenHandCursor)
+        self.setZValue(100)  # Above the image
+    
+    def itemChange(self, change, value):
+        """Handle position changes to notify parent."""
+        if change == QGraphicsEllipseItem.GraphicsItemChange.ItemPositionHasChanged:
+            # Calculate new center from bounding rect
+            rect = self.rect()
+            new_x = self.scenePos().x() + rect.x() + self._radius
+            new_y = self.scenePos().y() + rect.y() + self._radius
+            if self._callback:
+                self._callback(self._index, new_x, new_y)
+        return super().itemChange(change, value)
+    
+    def get_center(self) -> tuple[float, float]:
+        """Get current center coordinates."""
+        rect = self.rect()
+        return (
+            self.scenePos().x() + rect.x() + self._radius,
+            self.scenePos().y() + rect.y() + self._radius
+        )
 
 
 class ImageViewer(QWidget):
@@ -21,12 +80,15 @@ class ImageViewer(QWidget):
     Features:
     - Mouse wheel zoom
     - Click and drag pan
+    - Draggable centroid markers
     
     Signals:
         zoom_changed: Emitted when zoom level changes (int: percentage).
+        centroid_moved: Emitted when a centroid is dragged (index, x, y).
     """
     
     zoom_changed = Signal(int)
+    centroid_moved = Signal(int, float, float)  # index, x, y
     
     # Zoom limits (10% to 500%)
     MIN_ZOOM = 0.1
@@ -36,6 +98,7 @@ class ImageViewer(QWidget):
         super().__init__(parent)
         
         self._zoom_factor = 1.0
+        self._centroid_items: list[DraggableCentroid] = []
         self._setup_ui()
     
     def _setup_ui(self) -> None:
@@ -150,6 +213,39 @@ class ImageViewer(QWidget):
     def _on_view_zoom_changed(self) -> None:
         """Handle zoom changed from view (mouse wheel)."""
         self._update_zoom_from_view()
+    
+    def set_centroids(self, positions: list[tuple[float, float]]) -> None:
+        """
+        Display draggable centroid markers at the given positions.
+        
+        Args:
+            positions: List of (x, y) tuples for centroid centers.
+        """
+        self.clear_centroids()
+        
+        for i, (x, y) in enumerate(positions):
+            centroid = DraggableCentroid(
+                x, y, 
+                radius=15, 
+                index=i,
+                callback=self._on_centroid_moved
+            )
+            self._scene.addItem(centroid)
+            self._centroid_items.append(centroid)
+    
+    def clear_centroids(self) -> None:
+        """Remove all centroid markers."""
+        for item in self._centroid_items:
+            self._scene.removeItem(item)
+        self._centroid_items.clear()
+    
+    def get_centroids(self) -> list[tuple[float, float]]:
+        """Get current centroid positions."""
+        return [item.get_center() for item in self._centroid_items]
+    
+    def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
+        """Handle centroid drag - emit signal."""
+        self.centroid_moved.emit(index, x, y)
 
 
 class ZoomableGraphicsView(QGraphicsView):

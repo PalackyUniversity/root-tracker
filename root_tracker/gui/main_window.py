@@ -248,6 +248,8 @@ class MainWindow(QMainWindow):
         self._settings_panel.track_requested.connect(self._on_track_roots)
         self._settings_panel.export_requested.connect(self._on_export_results)
         
+        # Image viewer - centroid dragging
+        self._image_viewer.centroid_moved.connect(self._on_centroid_moved)
         # Image viewer - update zoom label in bottom bar
         self._image_viewer.zoom_changed.connect(self._on_zoom_changed)
     
@@ -339,12 +341,20 @@ class MainWindow(QMainWindow):
         if step == WorkflowStep.LOAD:
             # Show original image
             image = cv2.imread(image_data.path)
+            self._image_viewer.clear_centroids()
         elif step == WorkflowStep.PREPROCESS:
             # Show processed image if available, else original
             if image_data.process is not None:
                 image = image_data.process
+                # Show centroids if we have position data
+                if image_data.positions_x and image_data.positions_y:
+                    positions = list(zip(image_data.positions_x, image_data.positions_y))
+                    self._image_viewer.set_centroids(positions)
+                else:
+                    self._image_viewer.clear_centroids()
             else:
                 image = cv2.imread(image_data.path)
+                self._image_viewer.clear_centroids()
         else:
             # Show annotated image if available
             if image_data.image is not None:
@@ -353,6 +363,7 @@ class MainWindow(QMainWindow):
                 image = image_data.process
             else:
                 image = cv2.imread(image_data.path)
+            self._image_viewer.clear_centroids()
         
         if image is not None:
             self._image_viewer.set_image(image)
@@ -403,6 +414,20 @@ class MainWindow(QMainWindow):
         
         # Reprocess current group
         self._preprocess_group(self._current_series)
+    
+    def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
+        """Handle centroid drag - update image data and enable Re-detect."""
+        if self._current_image is None:
+            return
+        
+        # Update the position in image data
+        if self._current_image.positions_x and index < len(self._current_image.positions_x):
+            self._current_image.positions_x[index] = x
+        if self._current_image.positions_y and index < len(self._current_image.positions_y):
+            self._current_image.positions_y[index] = y
+        
+        # Notify settings panel that centroids were modified
+        self._settings_panel.mark_centroids_modified()
     
     def _on_redetect_plants(self) -> None:
         """Re-run plant centroid detection (after user moved centroids)."""
