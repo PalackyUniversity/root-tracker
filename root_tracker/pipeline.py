@@ -143,7 +143,7 @@ class RootTrackingPipeline:
         image_data.green_areas = areas
         
         # Crop to root region
-        cropped = cropped[min_y:]
+        cropped = cropped[min_y:].copy()  # .copy() ensures contiguous array
         image_data.image = origo[min_y:].copy()
         
         # Remove background gradient

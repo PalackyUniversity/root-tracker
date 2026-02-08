@@ -68,6 +68,10 @@ class ImageViewer(QWidget):
             return
         
         # Convert OpenCV image to QPixmap
+        # Ensure array is contiguous for QImage
+        if not image.flags['C_CONTIGUOUS']:
+            image = np.ascontiguousarray(image)
+        
         if len(image.shape) == 2:
             # Grayscale
             height, width = image.shape
