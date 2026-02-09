@@ -276,6 +276,7 @@ class MainWindow(QMainWindow):
         
         # Settings panel
         self._settings_panel.apply_requested.connect(self._on_apply_settings)
+        self._settings_panel.apply_all_requested.connect(self._on_apply_all_settings)
         self._settings_panel.redetect_requested.connect(self._on_redetect_plants)
         self._settings_panel.track_requested.connect(self._on_track_roots)
         self._settings_panel.export_requested.connect(self._on_export_results)
@@ -496,6 +497,19 @@ class MainWindow(QMainWindow):
             self._pipeline is not None):
             self._preprocess_group(self._current_series)
     
+    def _update_config_from_panel(self) -> None:
+        """Update config object from settings panel values."""
+        values = self._settings_panel.get_current_values()
+        for key, value in values.items():
+            if hasattr(self._config, key):
+                setattr(self._config, key, value)
+            
+            # Handle nested registration settings
+            if key == "reg_enabled":
+                self._config.registration.enabled = value
+            elif key == "reg_margin":
+                self._config.registration.margin_ratio = value
+    
     def _on_apply_settings(self) -> None:
         """Handle Apply button - reprocess current group with new settings."""
         if self._pipeline is None or self._current_series is None:
@@ -503,13 +517,21 @@ class MainWindow(QMainWindow):
             return
         
         # Update config from settings panel
-        values = self._settings_panel.get_current_values()
-        for key, value in values.items():
-            if hasattr(self._config, key):
-                setattr(self._config, key, value)
+        self._update_config_from_panel()
         
         # Reprocess current group
         self._preprocess_group(self._current_series)
+        
+    def _on_apply_all_settings(self) -> None:
+        """Handle Apply All button - reprocess ALL groups with new settings."""
+        if self._pipeline is None or not self._series_dict:
+            return
+        
+        # Update config from settings panel
+        self._update_config_from_panel()
+        
+        # Process all groups
+        self._preprocess_all_groups()
     
     def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
         """Handle centroid drag - update image data and enable Re-detect."""

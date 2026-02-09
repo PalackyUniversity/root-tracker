@@ -90,6 +90,18 @@ class ImageRegistrator:
         """
         if len(images) < 2:
             return
+            
+        # If registration is disabled, just compute difference images without alignment
+        if not self.config.registration.enabled:
+            for n in range(len(images) - 1):
+                if images[n].process is None or images[n + 1].process is None:
+                    continue
+                    
+                # Compute difference image (simple subtraction)
+                diff = images[n + 1].process.astype(int) - images[n].process.astype(int)
+                diff[diff < 0] = 0
+                images[n + 1].diff = diff.astype(np.uint8)
+            return
         
         for n in range(len(images) - 1):
             template = images[n].canny

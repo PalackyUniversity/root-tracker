@@ -8,7 +8,7 @@ Settings are applied to the entire group on Apply button click.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QSpinBox, QDoubleSpinBox, QPushButton,
-    QGroupBox, QLineEdit, QComboBox
+    QGroupBox, QLineEdit, QComboBox, QCheckBox
 )
 from PySide6.QtCore import Signal
 
@@ -32,6 +32,7 @@ class SettingsPanel(QWidget):
     """
     
     apply_requested = Signal()  # Apply settings to current group
+    apply_all_requested = Signal()  # Apply settings to all groups
     redetect_requested = Signal()  # Re-run centroid detection
     track_requested = Signal()
     export_requested = Signal()
@@ -85,19 +86,26 @@ class SettingsPanel(QWidget):
         self._buttons_layout = QVBoxLayout(self._buttons_widget)
         self._buttons_layout.setContentsMargins(0, 10, 0, 0)
         
-        # Re-detect Plants button (only for Preprocess step)
-        self._redetect_btn = QPushButton("Re-detect centroids")
-        self._redetect_btn.setEnabled(False)
-        self._redetect_btn.setToolTip("Click after moving centroids to re-run auto-detection")
-        self._redetect_btn.clicked.connect(self._on_redetect_clicked)
-        self._buttons_layout.addWidget(self._redetect_btn)
+        # Re-detect Plants button is now part of Preprocess settings
         
-        # Apply button
-        self._apply_btn = QPushButton("Apply")
+        # Apply buttons layout
+        apply_layout = QHBoxLayout()
+        
+        # Apply to this group button
+        self._apply_btn = QPushButton("Apply to this group")
         self._apply_btn.setEnabled(False)
         self._apply_btn.setToolTip("No changes to apply")
         self._apply_btn.clicked.connect(self._on_apply_clicked)
-        self._buttons_layout.addWidget(self._apply_btn)
+        apply_layout.addWidget(self._apply_btn)
+        
+        # Apply to all groups button
+        self._apply_all_btn = QPushButton("Apply to all groups")
+        self._apply_all_btn.setEnabled(False)
+        self._apply_all_btn.setToolTip("No changes to apply")
+        self._apply_all_btn.clicked.connect(self._on_apply_all_clicked)
+        apply_layout.addWidget(self._apply_all_btn)
+        
+        self._buttons_layout.addLayout(apply_layout)
         
         self._main_layout.addWidget(self._buttons_widget)
         self._main_layout.addStretch()
@@ -118,11 +126,10 @@ class SettingsPanel(QWidget):
         if step == WorkflowStep.PREPROCESS:
             self._create_preprocess_settings()
             self._buttons_widget.show()
-            self._redetect_btn.show()
+            # self._redetect_btn is now inside the settings layout, not buttons layout
         elif step == WorkflowStep.TRACK:
             self._create_track_settings()
             self._buttons_widget.show()
-            self._redetect_btn.hide()
         elif step == WorkflowStep.EXPORT:
             self._create_export_settings()
             self._buttons_widget.hide()
@@ -169,7 +176,36 @@ class SettingsPanel(QWidget):
         self._n_clusters_spin.valueChanged.connect(self._on_setting_changed)
         attr_layout.addRow("Number of plants:", self._n_clusters_spin)
         
+        # Re-detect button inside Plant Attributes
+        self._redetect_btn = QPushButton("Re-detect centroids")
+        self._redetect_btn.setEnabled(False)
+        self._redetect_btn.setToolTip("Click after moving centroids to re-run auto-detection")
+        self._redetect_btn.clicked.connect(self._on_redetect_clicked)
+        
+        attr_layout.addRow(self._redetect_btn)
+        self._redetect_btn.show()
+        
         self._settings_layout.addWidget(attr_group)
+        
+        # Registration Group
+        reg_group = QGroupBox("Registration of Images in a Group")
+        reg_layout = QFormLayout(reg_group)
+        
+        self._reg_enabled_cb = QCheckBox("Enable Registration")
+        self._reg_enabled_cb.setChecked(self._config.registration.enabled)
+        self._reg_enabled_cb.stateChanged.connect(self._on_setting_changed)
+        self._reg_enabled_cb.stateChanged.connect(self._on_reg_enabled_changed)
+        reg_layout.addRow(self._reg_enabled_cb)
+        
+        self._reg_margin_spin = QDoubleSpinBox()
+        self._reg_margin_spin.setRange(0.0, 0.5)
+        self._reg_margin_spin.setSingleStep(0.05)
+        self._reg_margin_spin.setValue(self._config.registration.margin_ratio)
+        self._reg_margin_spin.valueChanged.connect(self._on_setting_changed)
+        self._reg_margin_spin.setEnabled(self._config.registration.enabled)
+        reg_layout.addRow("Margin Ratio:", self._reg_margin_spin)
+        
+        self._settings_layout.addWidget(reg_group)
         
         # Store original values
         self._store_original_values()
@@ -239,15 +275,19 @@ class SettingsPanel(QWidget):
         self._update_apply_button()
     
     def _update_apply_button(self) -> None:
-        """Update Apply button enabled state and tooltip."""
+        """Update Apply buttons enabled state."""
         if self._is_dirty:
             self._apply_btn.setEnabled(True)
             self._apply_btn.setToolTip("Apply changes to current group")
+            self._apply_all_btn.setEnabled(True)
+            self._apply_all_btn.setToolTip("Apply changes to ALL groups")
             self._status_indicator.setText("● Modified")
             self._status_indicator.setStyleSheet("color: #f0ad4e; font-size: 11px;")
         else:
             self._apply_btn.setEnabled(False)
             self._apply_btn.setToolTip("No changes to apply")
+            self._apply_all_btn.setEnabled(False)
+            self._apply_all_btn.setToolTip("No changes to apply")
             self._status_indicator.setText("")
     
     def _mark_clean(self) -> None:
@@ -256,9 +296,14 @@ class SettingsPanel(QWidget):
         self._update_apply_button()
     
     def _on_apply_clicked(self) -> None:
-        """Handle Apply button click."""
+        """Handle Apply to this group button click."""
         self._store_original_values()  # New baseline
         self.apply_requested.emit()
+        
+    def _on_apply_all_clicked(self) -> None:
+        """Handle Apply to all groups button click."""
+        self._store_original_values()  # New baseline
+        self.apply_all_requested.emit()
     
     def _on_redetect_clicked(self) -> None:
         """Handle Re-detect Plants button click."""
@@ -270,8 +315,9 @@ class SettingsPanel(QWidget):
     def enable_redetect(self) -> None:
         """Enable Re-detect button (called when user moves a centroid)."""
         self._centroids_modified = True
-        self._redetect_btn.setEnabled(True)
-        self._redetect_btn.setToolTip("Re-run plant centroid detection")
+        if self._current_step == WorkflowStep.PREPROCESS and hasattr(self, '_redetect_btn'):
+            self._redetect_btn.setEnabled(True)
+            self._redetect_btn.setToolTip("Re-run plant centroid detection")
     
     def mark_centroids_modified(self) -> None:
         """Mark that centroids have been modified (enable Re-detect button)."""
@@ -298,10 +344,22 @@ class SettingsPanel(QWidget):
                 self._margin_spin.blockSignals(True)
                 self._margin_spin.setValue(self._config.margin)
                 self._margin_spin.blockSignals(False)
+            
+            if hasattr(self, '_reg_enabled_cb'):
+                self._reg_enabled_cb.blockSignals(True)
+                self._reg_enabled_cb.setChecked(self._config.registration.enabled)
+                self._reg_enabled_cb.blockSignals(False)
+                self._on_reg_enabled_changed(self._config.registration.enabled)
+                
+            if hasattr(self, '_reg_margin_spin'):
+                self._reg_margin_spin.blockSignals(True)
+                self._reg_margin_spin.setValue(self._config.registration.margin_ratio)
+                self._reg_margin_spin.blockSignals(False)
         
         self._store_original_values()
         self._centroids_modified = False
-        self._redetect_btn.setEnabled(False)
+        if self._current_step == WorkflowStep.PREPROCESS and hasattr(self, '_redetect_btn'):
+            self._redetect_btn.setEnabled(False)
     
     def get_current_values(self) -> dict:
         """Get current setting values."""
@@ -315,6 +373,9 @@ class SettingsPanel(QWidget):
                     values["rotation"] = 0
                 values["n_clusters"] = self._n_clusters_spin.value()
                 values["margin"] = self._margin_spin.value()
+                if hasattr(self, '_reg_enabled_cb'):
+                    values["reg_enabled"] = self._reg_enabled_cb.isChecked()
+                    values["reg_margin"] = self._reg_margin_spin.value()
         
         elif self._current_step == WorkflowStep.TRACK:
             if hasattr(self, '_min_contour_area_spin'):
@@ -327,6 +388,12 @@ class SettingsPanel(QWidget):
         
         return values
     
+    def _on_reg_enabled_changed(self, state: int) -> None:
+        """Handle enabling/disabling registration parameters."""
+        enabled = bool(state)
+        if hasattr(self, '_reg_margin_spin'):
+            self._reg_margin_spin.setEnabled(enabled)
+
     def is_dirty(self) -> bool:
         """Check if there are unsaved changes."""
         return self._is_dirty

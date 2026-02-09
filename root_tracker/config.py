@@ -48,6 +48,7 @@ class ThresholdConfig:
 @dataclass
 class RegistrationConfig:
     """Configuration for image registration."""
+    enabled: bool = True
     margin_ratio: float = 0.25  # 1/4 of image dimensions
 
 
