@@ -400,11 +400,8 @@ class MainWindow(QMainWindow):
             # Show original image with barcode overlay
             image = cv2.imread(image_data.path)
             
-            # Rotate if needed (to match barcode detection)
-            if self._config.rotation:
-                from ..preprocessing import ImageCropper
-                cropper = ImageCropper(self._config)
-                image = cropper.rotate(image)
+            # No rotation in LOAD step - show raw image
+            pass
             
             # Draw barcode overlay if detected (detection is done at group level)
             if image_data.barcode_rect is not None:
@@ -522,8 +519,8 @@ class MainWindow(QMainWindow):
         self._update_config_from_panel()
         
         # Reprocess current group
-        self._preprocess_group(self._current_series)
-        
+        self._preprocess_group(self._current_series, force=True)
+
     def _on_apply_all_settings(self) -> None:
         """Handle Apply All button - reprocess ALL groups with new settings."""
         if self._pipeline is None or not self._series_dict:
@@ -533,8 +530,9 @@ class MainWindow(QMainWindow):
         self._update_config_from_panel()
         
         # Process all groups
-        self._preprocess_all_groups()
-    
+        # Process all groups
+        self._preprocess_all_groups(force=True)
+
     def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
         """Handle centroid drag - update image data and enable Re-detect."""
         if self._current_image is None:
@@ -736,22 +734,25 @@ class MainWindow(QMainWindow):
         if self._current_image:
             self._display_image(self._current_image)
     
-    def _preprocess_all_groups(self) -> None:
+    def _preprocess_all_groups(self, force: bool = False) -> None:
         """Preprocess all unprocessed groups with progress bar."""
         if self._pipeline is None or not self._series_dict:
             return
         
-        # Calculate total images across all unprocessed groups
-        unprocessed_groups = [
-            s for s in self._series_dict.values()
-            if not s.images or s.images[0].process is None
-        ]
-        
+        # Calculate total images across all unprocessed groups (or all if forced)
+        if force:
+            unprocessed_groups = list(self._series_dict.values())
+        else:
+            unprocessed_groups = [
+                s for s in self._series_dict.values()
+                if not s.images or s.images[0].process is None
+            ]
+
         if not unprocessed_groups:
             return
         
         total_images = sum(len(s.images) for s in unprocessed_groups)
-        
+
         # Lock UI
         self._set_ui_locked(True)
         
@@ -813,9 +814,9 @@ class MainWindow(QMainWindow):
     def _update_groups_progress(self, warning_text: str = "") -> None:
         """Update the groups processed label in status bar (step-aware)."""
         total = len(self._series_dict) if self._series_dict else 0
-        
+
         step = self._workflow_bar.get_current_step()
-        
+
         if step == WorkflowStep.LOAD:
             # Count groups with barcodes detected
             processed = sum(
@@ -830,36 +831,36 @@ class MainWindow(QMainWindow):
                 if series.images and series.images[0].process is not None
             ) if self._series_dict else 0
             text = f"{processed}/{total} groups processed"
-        
+
         if self._warning_count > 0:
             text += f" ({self._warning_count} warnings)"
         self._groups_progress_label.setText(text)
-    
+
     def _recalculate_warning_count(self) -> None:
         """Recalculate total warning count from all images."""
         if not self._series_dict:
             self._warning_count = 0
             return
-        
+
         self._warning_count = sum(
             1 for series in self._series_dict.values()
             for img in series.images
             if img.barcode_mismatch
         )
-    
+
     def _update_tree_warnings(self) -> None:
         """Refresh tree to show updated warning icons."""
         # Only refresh if there's a mismatch in the current series
         if self._current_series and self._current_series.has_barcode_warning:
             self._image_tree.refresh()
-    
-    def _preprocess_group(self, series: 'ImageSeries') -> None:
+
+    def _preprocess_group(self, series: 'ImageSeries', force: bool = False) -> None:
         """Preprocess and register all images in a group with progress."""
         if self._pipeline is None:
             return
         
         # Check if already processed (first image has process data)
-        if series.images and series.images[0].process is not None:
+        if not force and series.images and series.images[0].process is not None:
             if self._current_image:
                 self._display_image(self._current_image)
             return

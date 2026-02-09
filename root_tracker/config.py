@@ -79,7 +79,12 @@ class Config:
         config = Config(n_clusters=6, rotation=180)
     """
     # General settings
-    margin: float = 0.03  # Margin for cropping sides (0-1)
+    # Margins for cropping sides (0-1)
+    margin_top: float = 0.0
+    margin_bottom: float = 0.0
+    margin_left: float = 0.03
+    margin_right: float = 0.03
+    
     rotation: int = 180  # Rotation in degrees (0, 90, 180, 270)
     n_clusters: int = 6  # Number of plants per image
     
@@ -101,8 +106,16 @@ class Config:
         """Validate configuration values."""
         if self.rotation not in (0, 90, 180, 270):
             raise ValueError(f"rotation must be 0, 90, 180, or 270, got {self.rotation}")
-        if not 0 <= self.margin <= 1:
-            raise ValueError(f"margin must be between 0 and 1, got {self.margin}")
+        
+        for name, value in [
+            ("margin_top", self.margin_top),
+            ("margin_bottom", self.margin_bottom),
+            ("margin_left", self.margin_left),
+            ("margin_right", self.margin_right)
+        ]:
+            if not 0 <= value <= 1:
+                raise ValueError(f"{name} must be between 0 and 1, got {value}")
+                
         if self.n_clusters < 1:
             raise ValueError(f"n_clusters must be >= 1, got {self.n_clusters}")
     

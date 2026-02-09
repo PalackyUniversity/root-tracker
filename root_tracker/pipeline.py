@@ -108,13 +108,10 @@ class RootTrackingPipeline:
             True if there's a mismatch warning, False otherwise.
         """
         try:
+            # Read barcode from original image (decoupled from preprocessing rotation)
             image = cv2.imread(image_data.path)
             if image is None:
                 return False
-            
-            # Rotate if needed (to match how barcode appears in original processing)
-            if self.config.rotation:
-                image = self.cropper.rotate(image)
             
             # Read barcode with bounding box (use fast method)
             barcode_text, rect = self.barcode_reader.read_fast(image)
@@ -188,6 +185,11 @@ class RootTrackingPipeline:
         # Remove background gradient
         image_data.process = self.background_remover.remove_gradient(cropped)
         image_data.canny = self.background_remover.compute_canny_edges(image_data.process)
+        
+        # Apply margins to the processed image so they are visible in UI
+        # This will black out the edges based on config
+        image_data.process = self.thresholder.apply_margins(image_data.process)
+        image_data.image = self.thresholder.apply_margins(image_data.image)
     
     def preprocess_series(self, series: ImageSeries) -> None:
         """
@@ -253,13 +255,19 @@ class RootTrackingPipeline:
             
             # Threshold to get root mask
             thresh = self.thresholder.threshold(image_data.process)
-            thresh = self.thresholder.apply_side_margins(thresh)
+            thresh = self.thresholder.apply_margins(thresh)
             
             # Handle new growth from difference
-            margin = round(self.config.margin * thresh.shape[1])
             if image_data.diff is not None:
+                h, w = thresh.shape
+                margins = (
+                    round(self.config.margin_top * h),
+                    round(self.config.margin_bottom * h),
+                    round(self.config.margin_left * w),
+                    round(self.config.margin_right * w)
+                )
                 new_area, new_parts = self.thresholder.compute_new_growth(
-                    image_data.diff, margin
+                    image_data.diff, margins
                 )
                 image_data.new_area = new_area
                 image_data.new_parts = new_parts

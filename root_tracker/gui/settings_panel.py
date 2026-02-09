@@ -157,12 +157,33 @@ class SettingsPanel(QWidget):
         self._rotation_combo.currentTextChanged.connect(self._on_setting_changed)
         roi_layout.addRow("Rotation (°):", self._rotation_combo)
         
-        self._margin_spin = QDoubleSpinBox()
-        self._margin_spin.setRange(0.0, 0.5)
-        self._margin_spin.setSingleStep(0.01)
-        self._margin_spin.setValue(self._config.margin)
-        self._margin_spin.valueChanged.connect(self._on_setting_changed)
-        roi_layout.addRow("Side margin:", self._margin_spin)
+        self._margin_top_spin = QDoubleSpinBox()
+        self._margin_top_spin.setRange(0.0, 0.5)
+        self._margin_top_spin.setSingleStep(0.01)
+        self._margin_top_spin.setValue(self._config.margin_top)
+        self._margin_top_spin.valueChanged.connect(self._on_setting_changed)
+        roi_layout.addRow("Margin Top:", self._margin_top_spin)
+        
+        self._margin_bottom_spin = QDoubleSpinBox()
+        self._margin_bottom_spin.setRange(0.0, 0.5)
+        self._margin_bottom_spin.setSingleStep(0.01)
+        self._margin_bottom_spin.setValue(self._config.margin_bottom)
+        self._margin_bottom_spin.valueChanged.connect(self._on_setting_changed)
+        roi_layout.addRow("Margin Bottom:", self._margin_bottom_spin)
+        
+        self._margin_left_spin = QDoubleSpinBox()
+        self._margin_left_spin.setRange(0.0, 0.5)
+        self._margin_left_spin.setSingleStep(0.01)
+        self._margin_left_spin.setValue(self._config.margin_left)
+        self._margin_left_spin.valueChanged.connect(self._on_setting_changed)
+        roi_layout.addRow("Margin Left:", self._margin_left_spin)
+        
+        self._margin_right_spin = QDoubleSpinBox()
+        self._margin_right_spin.setRange(0.0, 0.5)
+        self._margin_right_spin.setSingleStep(0.01)
+        self._margin_right_spin.setValue(self._config.margin_right)
+        self._margin_right_spin.valueChanged.connect(self._on_setting_changed)
+        roi_layout.addRow("Margin Right:", self._margin_right_spin)
         
         self._settings_layout.addWidget(roi_group)
         
@@ -340,10 +361,22 @@ class SettingsPanel(QWidget):
                 self._n_clusters_spin.setValue(self._config.n_clusters)
                 self._n_clusters_spin.blockSignals(False)
             
-            if hasattr(self, '_margin_spin'):
-                self._margin_spin.blockSignals(True)
-                self._margin_spin.setValue(self._config.margin)
-                self._margin_spin.blockSignals(False)
+            if hasattr(self, '_margin_top_spin'):
+                self._margin_top_spin.blockSignals(True)
+                self._margin_top_spin.setValue(self._config.margin_top)
+                self._margin_top_spin.blockSignals(False)
+                
+                self._margin_bottom_spin.blockSignals(True)
+                self._margin_bottom_spin.setValue(self._config.margin_bottom)
+                self._margin_bottom_spin.blockSignals(False)
+                
+                self._margin_left_spin.blockSignals(True)
+                self._margin_left_spin.setValue(self._config.margin_left)
+                self._margin_left_spin.blockSignals(False)
+                
+                self._margin_right_spin.blockSignals(True)
+                self._margin_right_spin.setValue(self._config.margin_right)
+                self._margin_right_spin.blockSignals(False)
             
             if hasattr(self, '_reg_enabled_cb'):
                 self._reg_enabled_cb.blockSignals(True)
@@ -372,7 +405,10 @@ class SettingsPanel(QWidget):
                 except ValueError:
                     values["rotation"] = 0
                 values["n_clusters"] = self._n_clusters_spin.value()
-                values["margin"] = self._margin_spin.value()
+                values["margin_top"] = self._margin_top_spin.value()
+                values["margin_bottom"] = self._margin_bottom_spin.value()
+                values["margin_left"] = self._margin_left_spin.value()
+                values["margin_right"] = self._margin_right_spin.value()
                 if hasattr(self, '_reg_enabled_cb'):
                     values["reg_enabled"] = self._reg_enabled_cb.isChecked()
                     values["reg_margin"] = self._reg_margin_spin.value()

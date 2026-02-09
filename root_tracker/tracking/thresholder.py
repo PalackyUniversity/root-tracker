@@ -90,7 +90,7 @@ class RootThresholder:
         
         return thresh
     
-    def apply_side_margins(self, mask: np.ndarray) -> np.ndarray:
+    def apply_margins(self, mask: np.ndarray) -> np.ndarray:
         """
         Remove root detections near side margins (box edges).
         
@@ -98,12 +98,28 @@ class RootThresholder:
             mask: Binary root mask.
             
         Returns:
-            Mask with side margins cleared.
+            Mask with margins cleared.
         """
-        margin = round(self.config.margin * mask.shape[1])
+        if len(mask.shape) == 3:
+            h, w, _ = mask.shape
+        else:
+            h, w = mask.shape
+            
+        top = round(self.config.margin_top * h)
+        bottom = round(self.config.margin_bottom * h)
+        left = round(self.config.margin_left * w)
+        right = round(self.config.margin_right * w)
+        
         result = mask.copy()
-        result[:, :margin] = 0
-        result[:, -margin:] = 0
+        if top > 0:
+            result[:top, :] = 0
+        if bottom > 0:
+            result[-bottom:, :] = 0
+        if left > 0:
+            result[:, :left] = 0
+        if right > 0:
+            result[:, -right:] = 0
+            
         return result
     
     def filter_small_contours(self, mask: np.ndarray) -> tuple[np.ndarray, list]:
@@ -130,14 +146,14 @@ class RootThresholder:
     def compute_new_growth(
         self, 
         diff_image: np.ndarray, 
-        margin: int
+        margins: tuple[int, int, int, int]
     ) -> tuple[int, int]:
         """
         Compute metrics for newly grown roots from difference image.
         
         Args:
             diff_image: Difference between consecutive images.
-            margin: Side margin in pixels.
+            margins: Tuple of (top, bottom, left, right) margins in pixels.
             
         Returns:
             Tuple of (new_area, new_parts_count).
@@ -150,8 +166,15 @@ class RootThresholder:
         )[1]
         
         # Apply margins
-        thresh_new[:, :margin] = 0
-        thresh_new[:, -margin:] = 0
+        top, bottom, left, right = margins
+        if top > 0:
+            thresh_new[:top, :] = 0
+        if bottom > 0:
+            thresh_new[-bottom:, :] = 0
+        if left > 0:
+            thresh_new[:, :left] = 0
+        if right > 0:
+            thresh_new[:, -right:] = 0
         
         new_area = cv2.countNonZero(thresh_new)
         
