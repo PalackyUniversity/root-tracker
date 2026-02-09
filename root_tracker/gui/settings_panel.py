@@ -58,22 +58,12 @@ class SettingsPanel(QWidget):
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(5, 5, 5, 5)
         
-        header_label = QLabel("Settings")
-        header_label.setStyleSheet("font-weight: bold;")
-        header_layout.addWidget(header_label)
-        
         header_layout.addStretch()
         
         self._status_indicator = QLabel("")
         self._status_indicator.setStyleSheet("font-size: 11px;")
         header_layout.addWidget(self._status_indicator)
         
-        header_widget.setStyleSheet("""
-            QWidget {
-                background-color: #f0f0f0;
-                border-bottom: 1px solid #ccc;
-            }
-        """)
         self._main_layout.addWidget(header_widget)
         
         # Settings container (rebuilt per step)

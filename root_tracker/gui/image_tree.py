@@ -47,18 +47,6 @@ class ImageTree(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # Header label
-        header = QLabel("Images")
-        header.setStyleSheet("""
-            QLabel {
-                font-weight: bold;
-                padding: 5px;
-                background-color: #f0f0f0;
-                border-bottom: 1px solid #ccc;
-            }
-        """)
-        layout.addWidget(header)
-        
         # Stacked widget for empty state vs tree
         self._stack = QStackedWidget()
         
