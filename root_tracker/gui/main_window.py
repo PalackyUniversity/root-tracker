@@ -61,6 +61,9 @@ class MainWindow(QMainWindow):
         
         # Start on Load step with settings panel hidden
         self._settings_panel.hide()
+        
+        # Set initial button states (no images loaded yet)
+        self._update_initial_ui_state()
     
     def _setup_ui(self) -> None:
         """Set up the main UI layout."""
@@ -166,6 +169,13 @@ class MainWindow(QMainWindow):
         self._process_all_btn.setToolTip("Process all groups")
         self._process_all_btn.clicked.connect(self._on_process_all_clicked)
         self._status_bar.addPermanentWidget(self._process_all_btn)
+        
+        # Next step button (rightmost)
+        self._next_step_btn = QPushButton("Next")
+        self._next_step_btn.setFixedHeight(26)
+        self._next_step_btn.setToolTip("Go to next step (auto-processes current step if needed)")
+        self._next_step_btn.clicked.connect(self._on_next_step_clicked)
+        self._status_bar.addPermanentWidget(self._next_step_btn)
         
         # Small spacer after buttons
         spacer2 = QWidget()
@@ -851,6 +861,7 @@ class MainWindow(QMainWindow):
         if locked:
             self._process_group_btn.setEnabled(False)
             self._process_all_btn.setEnabled(False)
+            self._next_step_btn.setEnabled(False)
         else:
             self._update_process_button_states()
     
@@ -896,6 +907,36 @@ class MainWindow(QMainWindow):
             # Other steps - disable both buttons
             self._process_group_btn.setEnabled(False)
             self._process_all_btn.setEnabled(False)
+        
+        # Next button: enabled unless on Export step or no images
+        on_export = (step == WorkflowStep.EXPORT)
+        self._next_step_btn.setEnabled(not on_export and bool(self._series_dict))
+        
+        # Zoom controls: enabled only when images are loaded
+        has_images = bool(self._series_dict)
+        self._fit_btn.setEnabled(has_images)
+        self._zoom_in_btn.setEnabled(has_images)
+        self._zoom_out_btn.setEnabled(has_images)
+        self._zoom_label.setEnabled(has_images)
+        
+        # Groups progress label: visible only when images are loaded
+        self._groups_progress_label.setVisible(has_images)
+    
+    def _update_initial_ui_state(self) -> None:
+        """Set initial UI state when no images are loaded."""
+        # Disable zoom controls
+        self._fit_btn.setEnabled(False)
+        self._zoom_in_btn.setEnabled(False)
+        self._zoom_out_btn.setEnabled(False)
+        self._zoom_label.setEnabled(False)
+        
+        # Disable process buttons
+        self._process_group_btn.setEnabled(False)
+        self._process_all_btn.setEnabled(False)
+        self._next_step_btn.setEnabled(False)
+        
+        # Hide groups progress label
+        self._groups_progress_label.hide()
     
     def _on_track_roots(self) -> None:
         """Run root tracking on current group."""
@@ -978,11 +1019,74 @@ class MainWindow(QMainWindow):
             self._workflow_bar.set_current_step(new_step)
             self._on_step_changed(new_step)
     
-    def _on_step_next(self) -> None:
-        """Navigate to next workflow step."""
+    def _on_next_step_clicked(self) -> None:
+        """
+        Handle Next button click.
+        
+        Auto-processes the current step if not complete, then advances to next step.
+        """
         current = self._workflow_bar.get_current_step()
-        if current < WorkflowStep.EXPORT:
-            new_step = WorkflowStep(current + 1)
-            # Use the same validation as clicking on step
-            self._workflow_bar.set_current_step(new_step)
-            self._on_step_changed(new_step)
+        
+        # Can't go past export
+        if current >= WorkflowStep.EXPORT:
+            return
+        
+        # Check if we have images loaded (required for all steps)
+        if not self._series_dict:
+            QMessageBox.warning(self, "Warning", "Please load images first.")
+            return
+        
+        # Auto-process current step if needed
+        if current == WorkflowStep.LOAD:
+            # Ensure all barcodes are detected
+            if not all(
+                all(img.barcode_detected for img in series.images)
+                for series in self._series_dict.values()
+                if series.images
+            ):
+                self._detect_barcodes_all_groups()
+            
+            # Mark as completed and move to next
+            if not self._workflow_bar.is_step_completed(WorkflowStep.LOAD):
+                self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
+            
+        elif current == WorkflowStep.PREPROCESS:
+            # Ensure barcodes were detected first (previous step)
+            if not all(
+                all(img.barcode_detected for img in series.images)
+                for series in self._series_dict.values()
+                if series.images
+            ):
+                self._detect_barcodes_all_groups()
+                if not self._workflow_bar.is_step_completed(WorkflowStep.LOAD):
+                    self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
+            
+            # Ensure all groups are preprocessed
+            if not all(
+                series.images and series.images[0].process is not None
+                for series in self._series_dict.values()
+            ):
+                self._preprocess_all_groups()
+            
+            # Mark as completed
+            if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
+                self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
+                
+        elif current == WorkflowStep.TRACK:
+            # Ensure previous steps are done
+            if not self._workflow_bar.is_step_completed(WorkflowStep.LOAD):
+                self._detect_barcodes_all_groups()
+                self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
+            
+            if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
+                self._preprocess_all_groups()
+                self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
+            
+            # Track is handled differently - just move to export
+            if not self._workflow_bar.is_step_completed(WorkflowStep.TRACK):
+                self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
+        
+        # Advance to next step
+        new_step = WorkflowStep(current + 1)
+        self._workflow_bar.set_current_step(new_step)
+        self._on_step_changed(new_step)
