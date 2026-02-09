@@ -52,6 +52,9 @@ class ImageData:
     
     # Barcode read from image
     barcode_read: str = ""
+    barcode_rect: tuple[int, int, int, int] | None = None  # (x, y, w, h) bounding box
+    barcode_mismatch: bool = False  # True if detected barcode doesn't match expected
+    barcode_detected: bool = False  # True if barcode detection was attempted
     
     # Processed image arrays
     image: Optional[np.ndarray] = field(default=None, repr=False)
@@ -153,3 +156,8 @@ class ImageSeries:
     def barcode(self) -> str:
         """Get the barcode (last part of group path)."""
         return self.group.split("/")[-1]
+    
+    @property
+    def has_barcode_warning(self) -> bool:
+        """Check if any image has a barcode mismatch."""
+        return any(img.barcode_mismatch for img in self.images)

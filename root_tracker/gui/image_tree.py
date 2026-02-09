@@ -108,8 +108,9 @@ class ImageTree(QWidget):
             return
         
         for group_name, series in sorted(series_dict.items()):
-            # Create group item with count
-            group_item = QTreeWidgetItem([f"{group_name} ({len(series.images)})"])
+            # Create group item with count (add warning icon if mismatches exist)
+            warning_prefix = "⚠️ " if series.has_barcode_warning else ""
+            group_item = QTreeWidgetItem([f"{warning_prefix}{group_name} ({len(series.images)})"])
             group_item.setFlags(group_item.flags() | Qt.ItemFlag.ItemIsSelectable)
             self._item_to_data[id(group_item)] = series
             

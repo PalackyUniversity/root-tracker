@@ -94,6 +94,51 @@ class RootTrackingPipeline:
         self._series = self.loader.create_series()
         return self._series
     
+    def detect_barcode_in_image(self, image_data: ImageData) -> bool:
+        """
+        Detect barcode in an image during load step.
+        
+        Reads barcode from the full image and compares with expected barcode.
+        Sets barcode_read, barcode_rect, and barcode_mismatch fields.
+        
+        Args:
+            image_data: The image to detect barcode in.
+            
+        Returns:
+            True if there's a mismatch warning, False otherwise.
+        """
+        try:
+            image = cv2.imread(image_data.path)
+            if image is None:
+                return False
+            
+            # Rotate if needed (to match how barcode appears in original processing)
+            if self.config.rotation:
+                image = self.cropper.rotate(image)
+            
+            # Read barcode with bounding box (use fast method)
+            barcode_text, rect = self.barcode_reader.read_fast(image)
+            
+            image_data.barcode_read = barcode_text
+            image_data.barcode_rect = rect
+            image_data.barcode_detected = True  # Mark as detected (even if no barcode found)
+            
+            # Check for mismatch (if barcode was detected)
+            if barcode_text:
+                # Compare with expected barcode (case-insensitive)
+                image_data.barcode_mismatch = barcode_text.lower() != image_data.barcode.lower()
+            else:
+                image_data.barcode_mismatch = False
+            
+            return image_data.barcode_mismatch
+            
+        except Exception:
+            image_data.barcode_read = ""
+            image_data.barcode_rect = None
+            image_data.barcode_mismatch = False
+            image_data.barcode_detected = True  # Mark as detected even on failure
+            return False
+    
     def preprocess_image(self, image_data: ImageData) -> None:
         """
         Preprocess a single image.
@@ -119,12 +164,6 @@ class RootTrackingPipeline:
         
         # Find where to crop (below green areas)
         min_y = self.green_detector.find_crop_start(green_contours, cropped.shape[0])
-        
-        # Try to read barcode from area above plants
-        try:
-            image_data.barcode_read = self.barcode_reader.read_text_only(cropped[:min_y])
-        except Exception:
-            image_data.barcode_read = ""
         
         # Mask out green areas and adjust positions
         origo = cropped.copy()
