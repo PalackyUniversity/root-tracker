@@ -59,8 +59,8 @@ class CropConfig:
     blue_hsv_lower: tuple[int, int, int] = (70, 0, 0)
     blue_hsv_upper: tuple[int, int, int] = (140, 255, 255)
     # Vertical crop ratios (relative to cropped height)
-    top_ratio: float = 0.1
-    bottom_ratio: float = 0.85
+    top_ratio: float = 0.0
+    bottom_ratio: float = 1.0
 
 
 @dataclass
@@ -81,7 +81,7 @@ class Config:
     # General settings
     # Margins for cropping sides (0-1)
     margin_top: float = 0.0
-    margin_bottom: float = 0.0
+    margin_bottom: float = 0.03
     margin_left: float = 0.03
     margin_right: float = 0.03
     
