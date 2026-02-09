@@ -130,9 +130,11 @@ class StatisticsCalculator:
             plant_main_root_length_rgr=main_root_length_rgr,
         )
     
+        return warnings
+    
     def validate_monotonic_growth(
         self, 
-        statistics: list[dict], 
+        statistics: list[PlantStatistics], 
         key: str
     ) -> list[str]:
         """
@@ -141,28 +143,32 @@ class StatisticsCalculator:
         Logs warnings for any decreases (which may indicate tracking errors).
         
         Args:
-            statistics: List of statistics dictionaries.
-            key: The key to validate.
+            statistics: List of PlantStatistics objects.
+            key: The key (attribute name) to validate.
             
         Returns:
             List of warning messages.
         """
         warnings = []
         
+        # Sort by date just in case
+        sorted_stats = sorted(statistics, key=lambda s: s.image_date)
+        
         for plant_id in range(1, self.config.n_clusters + 1):
             prev_value = None
             
-            for stat in statistics:
-                if stat.get("plant_id") != plant_id:
+            for stat in sorted_stats:
+                current_plant_id = getattr(stat, "plant_id", None)
+                if current_plant_id != plant_id:
                     continue
                 
-                current_value = stat.get(key)
+                current_value = getattr(stat, key, None)
                 if current_value is None:
                     continue
                 
                 if prev_value is not None and current_value < prev_value:
                     warnings.append(
-                        f"For image '{stat['image_path']}' plant {plant_id}: "
+                        f"For image '{stat.image_path}' plant {plant_id}: "
                         f"'{key}' decreased from {prev_value} to {current_value}"
                     )
                 

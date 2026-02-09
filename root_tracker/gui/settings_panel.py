@@ -240,11 +240,6 @@ class SettingsPanel(QWidget):
         
         self._settings_layout.addWidget(group)
         
-        # Track button
-        self._track_btn = QPushButton("Run Root Tracking")
-        self._track_btn.clicked.connect(self.track_requested.emit)
-        self._settings_layout.addWidget(self._track_btn)
-        
         self._store_original_values()
     
     def _create_export_settings(self) -> None:

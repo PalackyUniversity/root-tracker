@@ -210,7 +210,11 @@ class RootTrackingPipeline:
         """
         self.registrator.register_series(series.images)
     
-    def track_and_analyze_series(self, series: ImageSeries) -> list[PlantStatistics]:
+    def track_and_analyze_series(
+        self, 
+        series: ImageSeries,
+        progress_callback: callable = None
+    ) -> list[PlantStatistics]:
         """
         Step 3: Run tracking algorithm and compute statistics.
         
@@ -223,9 +227,10 @@ class RootTrackingPipeline:
         
         Args:
             series: ImageSeries to analyze.
+            progress_callback: Optional callback(current, total) for progress.
             
         Returns:
-            List of statistics dictionaries.
+            List of PlantStatistics objects.
         """
         statistics = []
         
@@ -242,7 +247,8 @@ class RootTrackingPipeline:
         if not pos_x_median:
             return statistics
         
-        for value_n, image_data in enumerate(series.images):
+        total_images = len(series.images)
+        for idx, image_data in enumerate(series.images):
             if image_data.process is None:
                 continue
             
@@ -386,7 +392,7 @@ class RootTrackingPipeline:
                 ])
                 
                 # Create statistics record
-                previous_image = series.images[value_n - 1] if value_n > 0 else None
+                previous_image = series.images[idx - 1] if idx > 0 else None
                 time_delta = (image_data.date - previous_image.date).days if previous_image else 1
                 
                 # Calculate RGR values
@@ -394,7 +400,7 @@ class RootTrackingPipeline:
                 main_root_length_rgr = None
                 area_change = None
                 
-                if value_n > 0 and previous_image:
+                if idx > 0 and previous_image:
                     prev_length = previous_image.plant_length[k] if k < len(previous_image.plant_length) else None
                     prev_longest = previous_image.longest[k] if k < len(previous_image.longest) else None
                     
@@ -434,6 +440,10 @@ class RootTrackingPipeline:
             
             # Save annotated image
             self.exporter.save_image(image_data.image, os.path.basename(image_data.path))
+            
+            # Update progress (after processing)
+            if progress_callback:
+                progress_callback(idx + 1, total_images)
         
         # Validate monotonic growth
         for key in ["image_total_area", "image_total_length", "plant_total_length", 

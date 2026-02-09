@@ -278,7 +278,7 @@ class MainWindow(QMainWindow):
         self._settings_panel.apply_requested.connect(self._on_apply_settings)
         self._settings_panel.apply_all_requested.connect(self._on_apply_all_settings)
         self._settings_panel.redetect_requested.connect(self._on_redetect_plants)
-        self._settings_panel.track_requested.connect(self._on_track_roots)
+        # self._settings_panel.track_requested.connect(self._on_track_roots)
         self._settings_panel.export_requested.connect(self._on_export_results)
         
         # Image viewer - centroid dragging
@@ -424,12 +424,8 @@ class MainWindow(QMainWindow):
             # Show processed image (RGB) if available, else original (rotated + cropped)
             if image_data.image is not None:
                 image = image_data.image
-                # Show centroids if we have position data
-                if image_data.positions_x and image_data.positions_y:
-                    positions = list(zip(image_data.positions_x, image_data.positions_y))
-                    self._image_viewer.set_centroids(positions)
-                else:
-                    self._image_viewer.clear_centroids()
+                # Don't show centroids in Preprocess step (requested)
+                self._image_viewer.clear_centroids()
             else:
                 # Preview: Rotate and auto-crop (to avoid "flash" of raw image)
                 image = cv2.imread(image_data.path)
@@ -478,6 +474,60 @@ class MainWindow(QMainWindow):
         else:
             self._settings_panel.show()
             self._settings_panel.set_step(step)
+            
+            # Special handling for TRACK step
+            if step == WorkflowStep.TRACK and self._current_series and self._pipeline:
+                # Dependency check: Ensure preprocessing is done for current series
+                needs_preprocessing = False
+                if self._current_series.images:
+                    # Check if first image has process data (sufficient proxy)
+                    if self._current_series.images[0].process is None:
+                        needs_preprocessing = True
+                
+                if needs_preprocessing:
+                    self._processing_label.setText("Auto-preprocessing...")
+                    self._processing_label.show()
+                    self._progress_bar.setValue(0)
+                    self._progress_bar.show()
+                    QApplication.processEvents()
+                    
+                    # Force valid processing if needed, but mainly ensure it runs
+                    # Keep progress visible for tracking
+                    self._preprocess_group(self._current_series, force=True, hide_progress=True) 
+                    # Actually, if we want to merge progress, we should keep it visible?
+                    # But _preprocess_group uses 0-N images. Tracking uses 0-100%.
+                    # It's better to show "Preprocessing..." then "Tracking...".
+                    # Let's hide it briefly or reset it. 
+                    # User said: "merge the total percentage... or show it as one continual progress bar"
+                    # Implementing true merger is hard because steps are different units.
+                    # Best effort: Preprocess (0-50%), Track (50-100%)?
+                    # For now, let's just ensure it doesn't flicker too much.
+                    # If I hide it in preprocess, it vanishes, then tracking shows it again.
+                    # If I keep it, tracking needs to reset it or continue.
+                    # Let's try: Preprocess finishes -> Hide=False -> Track starts (Resets to 0 or continues?)
+                    
+                    # Let's use hide_progress=False, then manually update label for tracking
+                    self._preprocess_group(self._current_series, force=True, hide_progress=False)
+                    self._processing_label.setText("Preprocessing complete. Starting tracking...")
+                    QApplication.processEvents()
+                
+                # Auto-run tracking if enabled (reusing auto-preview checkbox or default)
+                # User requested: "process automaticaly (if checkbox in the menu is chedk)"
+                if self._auto_preview_action.isChecked():
+                    self._processing_label.setText("Auto-tracking...")
+                    self._processing_label.show()
+                     # If we just preprocessed, keep progress bar visible
+                    if not needs_preprocessing:
+                        self._progress_bar.setValue(0)
+                        self._progress_bar.show()
+                    
+                    # Delay slightly to allow UI to update
+                    QApplication.processEvents()
+                    self._on_track_roots()
+                    
+                    # Hide progress indicators
+                    self._processing_label.hide()
+                    self._progress_bar.hide()
         
         # Auto-preview when switching to Preprocess step
         if (step == WorkflowStep.PREPROCESS and 
@@ -854,8 +904,15 @@ class MainWindow(QMainWindow):
         if self._current_series and self._current_series.has_barcode_warning:
             self._image_tree.refresh()
 
-    def _preprocess_group(self, series: 'ImageSeries', force: bool = False) -> None:
-        """Preprocess and register all images in a group with progress."""
+    def _preprocess_group(self, series: 'ImageSeries', force: bool = False, hide_progress: bool = True) -> None:
+        """
+        Preprocess the given group (series).
+        
+        Args:
+            series: ImageSeries to process.
+            force: If True, re-process even if data exists.
+            hide_progress: If True, hide progress bar after completion.
+        """
         if self._pipeline is None:
             return
         
@@ -865,15 +922,15 @@ class MainWindow(QMainWindow):
                 self._display_image(self._current_image)
             return
         
-        # Lock UI
-        self._set_ui_locked(True)
-        
         # Show progress bar in status bar
         total_images = len(series.images)
         self._progress_bar.setMaximum(total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
+        self._processing_label.setText(f"Processing {series.group}...")
         self._processing_label.show()
+        self._set_ui_locked(True)
+        QApplication.processEvents()
         
         start_time = time.time()
         
@@ -911,9 +968,15 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
         finally:
-            self._progress_bar.hide()
-            self._processing_label.hide()
-            self._set_ui_locked(False)
+            if hide_progress:
+                self._progress_bar.hide()
+                self._processing_label.hide()
+                self._set_ui_locked(False)
+            else:
+                # If chaining (e.g. before tracking), keep UI locked but reset cursor
+                # actually, tracking will set override cursor again, so we can restore here
+                # but we should keep progress bar visible
+                pass
         
         # Restore focus to tree
         self._image_tree.setFocus()
@@ -1018,24 +1081,47 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please preprocess images first.")
             return
         
+        # Prepare progress bar (always reset for tracking phase)
         self._processing_label.setText("Tracking roots...")
         self._processing_label.show()
+        
+        # Reset to percentage mode
+        self._progress_bar.setRange(0, 100)
+        self._progress_bar.setValue(0)
+        self._progress_bar.show()
+        
         QApplication.setOverrideCursor(Qt.WaitCursor)
         QApplication.processEvents()
         
         try:
-            stats = self._pipeline.track_and_analyze_series(self._current_series)
+            # Define progress callback
+            def update_progress(current, total):
+                if total > 0:
+                    percent = int((current / total) * 100)
+                    self._progress_bar.setValue(percent)
+                QApplication.processEvents()
+            
+            stats = self._pipeline.track_and_analyze_series(
+                self._current_series, 
+                progress_callback=update_progress
+            )
             
             self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
-            self._workflow_bar.set_current_step(WorkflowStep.EXPORT)
-            self._settings_panel.set_step(WorkflowStep.EXPORT)
+            # User requested to stay on TRACK step after processing
+            # self._workflow_bar.set_current_step(WorkflowStep.EXPORT)
+            # self._settings_panel.set_step(WorkflowStep.EXPORT)
             
             if self._current_image:
                 self._display_image(self._current_image)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
         finally:
+            # Only hide if we showed it (logic slightly complex with auto-run, 
+            # but usually hiding here is safe as auto-run will also hide or rely on this)
+            # Actually, auto-run hides it at end of its block. 
+            # If we hide here, auto-run's hide is redundant which is fine.
             self._processing_label.hide()
+            self._progress_bar.hide()
             QApplication.restoreOverrideCursor()
     
     def _on_export_results(self) -> None:
@@ -1114,55 +1200,12 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please load images first.")
             return
         
-        # Auto-process current step if needed
-        if current == WorkflowStep.LOAD:
-            # Ensure all barcodes are detected
-            if not all(
-                all(img.barcode_detected for img in series.images)
-                for series in self._series_dict.values()
-                if series.images
-            ):
-                self._detect_barcodes_all_groups()
-            
-            # Mark as completed and move to next
-            if not self._workflow_bar.is_step_completed(WorkflowStep.LOAD):
-                self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
-            
-        elif current == WorkflowStep.PREPROCESS:
-            # Ensure barcodes were detected first (previous step)
-            if not all(
-                all(img.barcode_detected for img in series.images)
-                for series in self._series_dict.values()
-                if series.images
-            ):
-                self._detect_barcodes_all_groups()
-                if not self._workflow_bar.is_step_completed(WorkflowStep.LOAD):
-                    self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
-            
-            # Ensure all groups are preprocessed
-            if not all(
-                series.images and series.images[0].process is not None
-                for series in self._series_dict.values()
-            ):
-                self._preprocess_all_groups()
-            
-            # Mark as completed
-            if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
-                self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
-                
-        elif current == WorkflowStep.TRACK:
-            # Ensure previous steps are done
-            if not self._workflow_bar.is_step_completed(WorkflowStep.LOAD):
-                self._detect_barcodes_all_groups()
-                self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
-            
-            if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
-                self._preprocess_all_groups()
-                self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
-            
-            # Track is handled differently - just move to export
-            if not self._workflow_bar.is_step_completed(WorkflowStep.TRACK):
-                self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
+        # Simply advance to next step to let user decide what to process
+        # The auto-processing logic below was too aggressive (processing all groups)
+        if current < WorkflowStep.EXPORT:
+            new_step = WorkflowStep(current + 1)
+            self._workflow_bar.set_current_step(new_step)
+            self._on_step_changed(new_step)
         
         # Advance to next step
         new_step = WorkflowStep(current + 1)
