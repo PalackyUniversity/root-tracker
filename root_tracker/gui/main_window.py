@@ -510,6 +510,7 @@ class MainWindow(QMainWindow):
         
         self._processing_label.setText("Re-detecting...")
         self._processing_label.show()
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         QApplication.processEvents()
         
         try:
@@ -524,6 +525,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Detection failed:\n{e}")
         finally:
             self._processing_label.hide()
+            QApplication.restoreOverrideCursor()
     
     def _on_auto_preview_toggled(self, enabled: bool) -> None:
         """Handle Auto Preview menu toggle."""
@@ -865,6 +867,11 @@ class MainWindow(QMainWindow):
     
     def _set_ui_locked(self, locked: bool) -> None:
         """Lock/unlock UI during processing."""
+        if locked:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+        else:
+            QApplication.restoreOverrideCursor()
+
         self._workflow_bar.setEnabled(not locked)
         self._settings_panel.setEnabled(not locked)
         self._image_tree.setEnabled(not locked)  # Freeze image selection
@@ -960,6 +967,7 @@ class MainWindow(QMainWindow):
         
         self._processing_label.setText("Tracking roots...")
         self._processing_label.show()
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         QApplication.processEvents()
         
         try:
@@ -975,6 +983,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
         finally:
             self._processing_label.hide()
+            QApplication.restoreOverrideCursor()
     
     def _on_export_results(self) -> None:
         """Export results to CSV."""
@@ -989,6 +998,7 @@ class MainWindow(QMainWindow):
             
             self._processing_label.setText("Exporting...")
             self._processing_label.show()
+            QApplication.setOverrideCursor(Qt.WaitCursor)
             QApplication.processEvents()
             
             try:
@@ -1010,6 +1020,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, "Error", f"Export failed:\n{e}")
             finally:
                 self._processing_label.hide()
+                QApplication.restoreOverrideCursor()
     
     def _on_zoom_changed(self, percentage: int) -> None:
         """Handle zoom level change - update bottom bar label."""
