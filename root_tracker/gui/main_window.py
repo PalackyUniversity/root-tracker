@@ -26,7 +26,6 @@ from .image_viewer import ImageViewer
 from .settings_panel import SettingsPanel
 from .dialogs import LoadDialog, ExportDialog
 
-
 class MainWindow(QMainWindow):
     """
     Main application window.
@@ -74,15 +73,9 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         
-        # Top bar with workflow steps aligned right
-        top_bar = QWidget()
-        top_bar.setFixedHeight(46)  # Minimal height for workflow bar
-        top_layout = QHBoxLayout(top_bar)
-        top_layout.setContentsMargins(5, 2, 5, 2)
-        top_layout.addStretch()  # Push workflow bar to right
+        
+        # Initialize workflow bar (will be added to menu bar)
         self._workflow_bar = WorkflowBar()
-        top_layout.addWidget(self._workflow_bar)
-        main_layout.addWidget(top_bar)
         
         # Main content area with splitter
         self._splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -185,6 +178,27 @@ class MainWindow(QMainWindow):
     def _setup_menu(self) -> None:
         """Set up the menu bar."""
         menubar = self.menuBar()
+        
+        # Style the menu bar to match workflow bar height and center items
+        menubar.setStyleSheet("""
+            QMenuBar {
+                background-color: transparent;
+                border-bottom: 1px solid #333;
+                min-height: 38px;
+            }
+            QMenuBar::item {
+                height: 38px;
+                background: transparent;
+                font-size: 14px;
+                vertical-align: middle;
+            }
+            QMenuBar::item:selected {
+                background: #444;
+            }
+        """)
+        
+        # Add workflow bar to right side of menu bar
+        menubar.setCornerWidget(self._workflow_bar, Qt.Corner.TopRightCorner)
         
         # File menu
         file_menu = menubar.addMenu("&File")

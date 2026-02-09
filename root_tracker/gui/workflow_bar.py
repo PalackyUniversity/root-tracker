@@ -54,7 +54,7 @@ class WorkflowBar(QWidget):
     def _setup_ui(self) -> None:
         """Set up the UI components."""
         # Minimal fixed height
-        self.setFixedHeight(36)
+        self.setFixedHeight(42)
         
         layout = QHBoxLayout(self)
         layout.setContentsMargins(5, 2, 5, 2)
