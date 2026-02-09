@@ -5,6 +5,7 @@ Integrates all components into the main window layout.
 """
 
 import os
+import time
 import cv2
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -136,23 +137,35 @@ class MainWindow(QMainWindow):
         spacer = QLabel()
         self._status_bar.addWidget(spacer, 1)  # stretch=1 to fill space
         
-        # Right side: Status label, Progress bar, Preview, Back, Next
-        self._status_label = QLabel("Ready")
-        self._status_label.setMinimumWidth(150)
-        self._status_bar.addPermanentWidget(self._status_label)
+        # Right side: Processing label + progress bar (hidden by default), groups progress, buttons
+        self._processing_label = QLabel("")
+        self._processing_label.hide()
+        self._status_bar.addPermanentWidget(self._processing_label)
         
         self._progress_bar = QProgressBar()
-        self._progress_bar.setFixedSize(120, 18)
+        self._progress_bar.setFixedSize(150, 18)
         self._progress_bar.setMaximum(100)
         self._progress_bar.hide()
         self._status_bar.addPermanentWidget(self._progress_bar)
         
-        self._preview_btn = QPushButton("Preview")
-        self._preview_btn.setFixedHeight(26)
-        self._preview_btn.setEnabled(False)
-        self._preview_btn.setToolTip("Auto Preview is enabled - processing happens automatically")
-        self._preview_btn.clicked.connect(self._on_preview_clicked)
-        self._status_bar.addPermanentWidget(self._preview_btn)
+        self._groups_progress_label = QLabel("0/0 groups processed")
+        self._groups_progress_label.setMinimumWidth(150)
+        self._status_bar.addPermanentWidget(self._groups_progress_label)
+        
+        # Track warning count for groups
+        self._warning_count = 0
+        
+        self._process_group_btn = QPushButton("Process group")
+        self._process_group_btn.setFixedHeight(26)
+        self._process_group_btn.setToolTip("Process the currently selected group")
+        self._process_group_btn.clicked.connect(self._on_process_group_clicked)
+        self._status_bar.addPermanentWidget(self._process_group_btn)
+        
+        self._process_all_btn = QPushButton("Process all groups")
+        self._process_all_btn.setFixedHeight(26)
+        self._process_all_btn.setToolTip("Process all groups")
+        self._process_all_btn.clicked.connect(self._on_process_all_clicked)
+        self._status_bar.addPermanentWidget(self._process_all_btn)
         
         self._back_step_btn = QPushButton("← Back")
         self._back_step_btn.setFixedHeight(26)
@@ -271,9 +284,6 @@ class MainWindow(QMainWindow):
             # Create pipeline and load images
             self._pipeline = RootTrackingPipeline(self._config)
             
-            self._status_label.setText("Loading images...")
-            QApplication.processEvents()
-            
             try:
                 self._series_dict = self._pipeline.load_images()
                 
@@ -283,7 +293,6 @@ class MainWindow(QMainWindow):
                         f"No images found in '{self._config.data.input}' matching template '{self._config.data.filename_template}'.\n\n"
                         "Check that the folder path and filename template are correct."
                     )
-                    self._status_label.setText("No images found.")
                     return
                 
                 self._image_tree.set_series(self._series_dict)
@@ -294,13 +303,10 @@ class MainWindow(QMainWindow):
                 # Mark step as complete but DON'T auto-advance
                 self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
                 
-                total_images = sum(len(s.images) for s in self._series_dict.values())
-                self._status_label.setText(
-                    f"Loaded {len(self._series_dict)} groups, {total_images} images. Click Next to continue."
-                )
+                # Update groups progress label
+                self._update_groups_progress()
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to load images:\n{e}")
-                self._status_label.setText("Load failed.")
     
 
     def _on_image_selected(self, image_data: ImageData) -> None:
@@ -310,8 +316,6 @@ class MainWindow(QMainWindow):
         
         # Load and display the image
         self._display_image(image_data)
-        
-        self._status_label.setText(f"Selected: {image_data.barcode or image_data.path}")
     
     def _on_group_selected(self, series: ImageSeries) -> None:
         """Handle group selection in tree."""
@@ -330,8 +334,6 @@ class MainWindow(QMainWindow):
             self._auto_preview_action.isChecked() and 
             self._pipeline is not None):
             self._preprocess_group(series)
-        
-        self._status_label.setText(f"Selected group: {series.group} ({len(series.images)} images)")
     
     def _display_image(self, image_data: ImageData) -> None:
         """Display an image in the viewer."""
@@ -397,8 +399,6 @@ class MainWindow(QMainWindow):
             self._current_series is not None and
             self._pipeline is not None):
             self._preprocess_group(self._current_series)
-        
-        self._status_label.setText(f"Step: {step.name}")
     
     def _on_apply_settings(self) -> None:
         """Handle Apply button - reprocess current group with new settings."""
@@ -434,7 +434,8 @@ class MainWindow(QMainWindow):
         if self._pipeline is None or self._current_series is None:
             return
         
-        self._status_label.setText("Re-detecting plant centroids...")
+        self._processing_label.setText("Re-detecting...")
+        self._processing_label.show()
         QApplication.processEvents()
         
         try:
@@ -445,24 +446,105 @@ class MainWindow(QMainWindow):
             
             if self._current_image:
                 self._display_image(self._current_image)
-            
-            self._status_label.setText("Plant detection complete.")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Detection failed:\n{e}")
+        finally:
+            self._processing_label.hide()
     
     def _on_auto_preview_toggled(self, enabled: bool) -> None:
         """Handle Auto Preview menu toggle."""
-        if enabled:
-            self._preview_btn.setEnabled(False)
-            self._preview_btn.setToolTip("Auto Preview is enabled - processing happens automatically")
-        else:
-            self._preview_btn.setEnabled(True)
-            self._preview_btn.setToolTip("Click to preview preprocessing for current group")
+        # Auto Preview controls whether preprocessing happens automatically on group selection
+        pass
     
-    def _on_preview_clicked(self) -> None:
-        """Handle Preview button click (when Auto Preview is disabled)."""
+    def _on_process_group_clicked(self) -> None:
+        """Handle 'Process group' button click."""
         if self._current_series is not None:
             self._preprocess_group(self._current_series)
+    
+    def _on_process_all_clicked(self) -> None:
+        """Handle 'Process all groups' button click."""
+        if self._pipeline is None or not self._series_dict:
+            return
+        
+        # Calculate total images across all unprocessed groups
+        unprocessed_groups = [
+            s for s in self._series_dict.values()
+            if not s.images or s.images[0].process is None
+        ]
+        
+        if not unprocessed_groups:
+            return
+        
+        total_images = sum(len(s.images) for s in unprocessed_groups)
+        
+        # Lock UI
+        self._set_ui_locked(True)
+        
+        # Setup cumulative progress bar
+        self._progress_bar.setMaximum(total_images)
+        self._progress_bar.setValue(0)
+        self._progress_bar.show()
+        self._processing_label.show()
+        
+        current_image_count = 0
+        self._warning_count = 0
+        start_time = time.time()
+        
+        try:
+            for group_idx, series in enumerate(unprocessed_groups):
+                for i, image_data in enumerate(series.images):
+                    current_image_count += 1
+                    
+                    # Calculate ETA
+                    elapsed = time.time() - start_time
+                    if current_image_count > 0 and elapsed > 0:
+                        avg_time_per_image = elapsed / current_image_count
+                        remaining_images = total_images - current_image_count
+                        eta_seconds = int(avg_time_per_image * remaining_images)
+                        if eta_seconds >= 60:
+                            eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
+                        else:
+                            eta_text = f"{eta_seconds}s"
+                        self._processing_label.setText(f"ETA: {eta_text}")
+                    else:
+                        self._processing_label.setText("Processing...")
+                    
+                    self._pipeline.preprocess_image(image_data)
+                    self._progress_bar.setValue(current_image_count)
+                    QApplication.processEvents()
+                
+                # Register the series
+                self._pipeline.register_series(series)
+                
+                # Update groups progress after each group
+                self._update_groups_progress()
+            
+            # Mark step complete
+            if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
+                self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
+            
+            if self._current_image:
+                self._display_image(self._current_image)
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
+        finally:
+            self._progress_bar.hide()
+            self._processing_label.hide()
+            self._set_ui_locked(False)
+    
+    def _update_groups_progress(self, warning_text: str = "") -> None:
+        """Update the groups processed label in status bar."""
+        total = len(self._series_dict) if self._series_dict else 0
+        processed = sum(
+            1 for series in self._series_dict.values()
+            if series.images and series.images[0].process is not None
+        ) if self._series_dict else 0
+        
+        text = f"{processed}/{total} groups processed"
+        if self._warning_count > 0:
+            text += f" ({self._warning_count} warnings)"
+        self._groups_progress_label.setText(text)
     
     def _preprocess_group(self, series: 'ImageSeries') -> None:
         """Preprocess and register all images in a group with progress."""
@@ -471,7 +553,6 @@ class MainWindow(QMainWindow):
         
         # Check if already processed (first image has process data)
         if series.images and series.images[0].process is not None:
-            self._status_label.setText(f"Group '{series.group}' already preprocessed.")
             if self._current_image:
                 self._display_image(self._current_image)
             return
@@ -480,13 +561,30 @@ class MainWindow(QMainWindow):
         self._set_ui_locked(True)
         
         # Show progress bar in status bar
-        self._progress_bar.setMaximum(len(series.images))
+        total_images = len(series.images)
+        self._progress_bar.setMaximum(total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
+        self._processing_label.show()
+        
+        start_time = time.time()
         
         try:
             for i, image_data in enumerate(series.images):
-                self._status_label.setText(f"Preprocessing {i + 1}/{len(series.images)}...")
+                # Calculate ETA
+                elapsed = time.time() - start_time
+                if i > 0 and elapsed > 0:
+                    avg_time_per_image = elapsed / i
+                    remaining_images = total_images - i
+                    eta_seconds = int(avg_time_per_image * remaining_images)
+                    if eta_seconds >= 60:
+                        eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
+                    else:
+                        eta_text = f"{eta_seconds}s"
+                    self._processing_label.setText(f"ETA: {eta_text}")
+                else:
+                    self._processing_label.setText("Processing...")
+                
                 self._pipeline.preprocess_image(image_data)
                 self._progress_bar.setValue(i + 1)
                 QApplication.processEvents()
@@ -501,13 +599,12 @@ class MainWindow(QMainWindow):
             if self._current_image:
                 self._display_image(self._current_image)
             
-            self._status_label.setText(
-                f"Preprocessed {len(series.images)} images."
-            )
+            self._update_groups_progress()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
         finally:
             self._progress_bar.hide()
+            self._processing_label.hide()
             self._set_ui_locked(False)
     
     def _set_ui_locked(self, locked: bool) -> None:
@@ -520,8 +617,8 @@ class MainWindow(QMainWindow):
         self._fit_btn.setEnabled(not locked)
         self._zoom_in_btn.setEnabled(not locked)
         self._zoom_out_btn.setEnabled(not locked)
-        if not self._auto_preview_action.isChecked():
-            self._preview_btn.setEnabled(not locked)
+        self._process_group_btn.setEnabled(not locked)
+        self._process_all_btn.setEnabled(not locked)
     
     def _on_track_roots(self) -> None:
         """Run root tracking on current group."""
@@ -529,7 +626,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Warning", "Please preprocess images first.")
             return
         
-        self._status_label.setText("Tracking roots...")
+        self._processing_label.setText("Tracking roots...")
+        self._processing_label.show()
         QApplication.processEvents()
         
         try:
@@ -541,10 +639,10 @@ class MainWindow(QMainWindow):
             
             if self._current_image:
                 self._display_image(self._current_image)
-            
-            self._status_label.setText(f"Tracking complete. {len(stats)} records generated.")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
+        finally:
+            self._processing_label.hide()
     
     def _on_export_results(self) -> None:
         """Export results to CSV."""
@@ -557,7 +655,8 @@ class MainWindow(QMainWindow):
         if dialog.exec() == ExportDialog.DialogCode.Accepted:
             self._config.data.output = dialog.output_path
             
-            self._status_label.setText("Exporting...")
+            self._processing_label.setText("Exporting...")
+            self._processing_label.show()
             QApplication.processEvents()
             
             try:
@@ -575,9 +674,10 @@ class MainWindow(QMainWindow):
                     self, "Export Complete",
                     f"Results exported to:\n{csv_path}"
                 )
-                self._status_label.setText(f"Exported to {csv_path}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Export failed:\n{e}")
+            finally:
+                self._processing_label.hide()
     
     def _on_zoom_changed(self, percentage: int) -> None:
         """Handle zoom level change - update bottom bar label."""
