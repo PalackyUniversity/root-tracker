@@ -482,20 +482,22 @@ class MainWindow(QMainWindow):
             self._settings_panel.show()
             self._settings_panel.set_step(step)
         
-        # Refresh image display for new step
-        if self._current_image:
-            self._display_image(self._current_image)
-        
-        # Update button states for new step
-        self._update_process_button_states()
-        self._update_groups_progress()
-        
         # Auto-preview when switching to Preprocess step
         if (step == WorkflowStep.PREPROCESS and 
             self._auto_preview_action.isChecked() and 
             self._current_series is not None and
             self._pipeline is not None):
+            # Don't display image yet - wait for processing to finish
+            # The _preprocess_group content will handle display at the end
             self._preprocess_group(self._current_series)
+        else:
+            # Refresh image display for new step immediately
+            if self._current_image:
+                self._display_image(self._current_image)
+        
+        # Update button states for new step
+        self._update_process_button_states()
+        self._update_groups_progress()
     
     def _update_config_from_panel(self) -> None:
         """Update config object from settings panel values."""

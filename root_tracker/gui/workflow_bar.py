@@ -131,19 +131,6 @@ class WorkflowBar(QWidget):
                         padding: 5px 10px;
                     }
                 """)
-            elif step in self._completed_steps:
-                # Completed step: subtle check mark indicator
-                btn.setStyleSheet("""
-                    QPushButton {
-                        background: transparent;
-                        color: #8f8;
-                        border: none;
-                        padding: 5px 10px;
-                    }
-                    QPushButton:hover {
-                        color: #afa;
-                    }
-                """)
             else:
                 # Inactive step: dimmed
                 btn.setStyleSheet("""
