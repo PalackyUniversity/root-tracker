@@ -155,7 +155,7 @@ class MainWindow(QMainWindow):
         # Track warning count for groups
         self._warning_count = 0
         
-        self._process_group_btn = QPushButton("Process group")
+        self._process_group_btn = QPushButton("Process this group")
         self._process_group_btn.setFixedHeight(26)
         self._process_group_btn.setToolTip("Process the currently selected group")
         self._process_group_btn.clicked.connect(self._on_process_group_clicked)
@@ -167,15 +167,10 @@ class MainWindow(QMainWindow):
         self._process_all_btn.clicked.connect(self._on_process_all_clicked)
         self._status_bar.addPermanentWidget(self._process_all_btn)
         
-        self._back_step_btn = QPushButton("← Back")
-        self._back_step_btn.setFixedHeight(26)
-        self._back_step_btn.clicked.connect(self._on_step_back)
-        self._status_bar.addPermanentWidget(self._back_step_btn)
-        
-        self._next_step_btn = QPushButton("Next →")
-        self._next_step_btn.setFixedHeight(26)
-        self._next_step_btn.clicked.connect(self._on_step_next)
-        self._status_bar.addPermanentWidget(self._next_step_btn)
+        # Small spacer after buttons
+        spacer2 = QWidget()
+        spacer2.setFixedWidth(0.25)
+        self._status_bar.addPermanentWidget(spacer2)
     
     def _setup_menu(self) -> None:
         """Set up the menu bar."""
@@ -575,15 +570,10 @@ class MainWindow(QMainWindow):
                 self._progress_bar.setValue(i + 1)
                 QApplication.processEvents()
             
-            # Update warning count and tree
+            # Update warning count and tree (refresh preserves selection)
             self._recalculate_warning_count()
             self._update_groups_progress()
             self._image_tree.refresh()
-            
-            # Restore selection and display current image
-            if self._current_image:
-                self._image_tree.select_image(self._current_image)
-                self._display_image(self._current_image)
                 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Barcode detection failed:\n{e}")
@@ -591,6 +581,13 @@ class MainWindow(QMainWindow):
             self._progress_bar.hide()
             self._processing_label.hide()
             self._set_ui_locked(False)
+        
+        # Restore focus (tree was disabled during processing)
+        self._image_tree.setFocus()
+        
+        # Display the current image
+        if self._current_image:
+            self._display_image(self._current_image)
     
     def _detect_barcodes_all_groups(self) -> None:
         """Detect barcodes for all groups with progress bar."""
@@ -650,13 +647,8 @@ class MainWindow(QMainWindow):
                 self._recalculate_warning_count()
                 self._update_groups_progress()
             
-            # Update tree to show warning icons
+            # Update tree to show warning icons (refresh preserves selection)
             self._image_tree.refresh()
-            
-            # Restore selection and display current image
-            if self._current_image:
-                self._image_tree.select_image(self._current_image)
-                self._display_image(self._current_image)
                 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Barcode detection failed:\n{e}")
@@ -664,6 +656,13 @@ class MainWindow(QMainWindow):
             self._progress_bar.hide()
             self._processing_label.hide()
             self._set_ui_locked(False)
+        
+        # Restore focus (tree was disabled during processing)
+        self._image_tree.setFocus()
+        
+        # Display current image if we have one
+        if self._current_image:
+            self._display_image(self._current_image)
     
     def _preprocess_all_groups(self) -> None:
         """Preprocess all unprocessed groups with progress bar."""
@@ -845,8 +844,6 @@ class MainWindow(QMainWindow):
         self._workflow_bar.setEnabled(not locked)
         self._settings_panel.setEnabled(not locked)
         self._image_tree.setEnabled(not locked)  # Freeze image selection
-        self._back_step_btn.setEnabled(not locked)
-        self._next_step_btn.setEnabled(not locked)
         self._fit_btn.setEnabled(not locked)
         self._zoom_in_btn.setEnabled(not locked)
         self._zoom_out_btn.setEnabled(not locked)

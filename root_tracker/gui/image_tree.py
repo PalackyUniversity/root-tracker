@@ -181,9 +181,27 @@ class ImageTree(QWidget):
         return None
     
     def refresh(self) -> None:
-        """Refresh the tree display."""
-        if self._series_dict:
-            self.set_series(self._series_dict)
+        """Refresh the tree display, preserving current selection and focus."""
+        if not self._series_dict:
+            return
+        
+        # Remember current selection before rebuilding
+        selected_data = self.get_selected_data()
+        had_focus = self._tree.hasFocus()
+        
+        # Rebuild tree
+        self.set_series(self._series_dict)
+        
+        # Restore selection
+        if isinstance(selected_data, ImageData):
+            self.select_image(selected_data)
+        elif isinstance(selected_data, ImageSeries):
+            self.select_series(selected_data)
+        
+        # Restore focus if tree had it before
+        if had_focus:
+            self._tree.setFocus()
+
     
     def select_image(self, image_data: ImageData) -> None:
         """
@@ -206,6 +224,29 @@ class ImageTree(QWidget):
                             self._tree.blockSignals(False)
                             return
     
+    def select_series(self, series: 'ImageSeries') -> None:
+        """
+        Select a group (series) header in the tree.
+        
+        Args:
+            series: The series to select.
+        """
+        # Find the tree item for this series
+        for item_id, data in self._item_to_data.items():
+            if data is series:
+                # Find the group item with this id
+                for i in range(self._tree.topLevelItemCount()):
+                    group = self._tree.topLevelItem(i)
+                    if id(group) == item_id:
+                        self._tree.blockSignals(True)
+                        self._tree.setCurrentItem(group)
+                        self._tree.blockSignals(False)
+                        return
+    
     def is_empty(self) -> bool:
         """Check if no images are loaded."""
         return len(self._series_dict) == 0
+    
+    def setFocus(self) -> None:
+        """Set focus to the internal tree widget for keyboard navigation."""
+        self._tree.setFocus()
