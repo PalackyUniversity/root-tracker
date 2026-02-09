@@ -804,6 +804,9 @@ class MainWindow(QMainWindow):
             self._progress_bar.hide()
             self._processing_label.hide()
             self._set_ui_locked(False)
+        
+        # Restore focus to tree
+        self._image_tree.setFocus()
     
     def _update_groups_progress(self, warning_text: str = "") -> None:
         """Update the groups processed label in status bar (step-aware)."""
@@ -908,6 +911,9 @@ class MainWindow(QMainWindow):
             self._progress_bar.hide()
             self._processing_label.hide()
             self._set_ui_locked(False)
+        
+        # Restore focus to tree
+        self._image_tree.setFocus()
     
     def _set_ui_locked(self, locked: bool) -> None:
         """Lock/unlock UI during processing."""
