@@ -493,7 +493,8 @@ class MainWindow(QMainWindow):
                     
                     # Force valid processing if needed, but mainly ensure it runs
                     # Keep progress visible for tracking
-                    self._preprocess_group(self._current_series, force=True, hide_progress=True) 
+                    # _preprocess_group call moved to be single below
+                    
                     # Actually, if we want to merge progress, we should keep it visible?
                     # But _preprocess_group uses 0-N images. Tracking uses 0-100%.
                     # It's better to show "Preprocessing..." then "Tracking...".
@@ -528,6 +529,12 @@ class MainWindow(QMainWindow):
                     # Hide progress indicators
                     self._processing_label.hide()
                     self._progress_bar.hide()
+                else:
+                    # If we preprocessed but didn't track, we MUST unlock UI
+                    if needs_preprocessing:
+                        self._force_unlock_ui()
+                        self._processing_label.hide()
+                        self._progress_bar.hide()
         
         # Auto-preview when switching to Preprocess step
         if (step == WorkflowStep.PREPROCESS and 
@@ -1001,6 +1008,20 @@ class MainWindow(QMainWindow):
             self._next_step_btn.setEnabled(False)
         else:
             self._update_process_button_states()
+            
+    def _force_unlock_ui(self) -> None:
+        """Force unlock UI and reset cursor stack."""
+        while QApplication.overrideCursor() is not None:
+            QApplication.restoreOverrideCursor()
+            
+        self._workflow_bar.setEnabled(True)
+        self._settings_panel.setEnabled(True)
+        self._image_tree.setEnabled(True)
+        self._fit_btn.setEnabled(True)
+        self._zoom_in_btn.setEnabled(True)
+        self._zoom_out_btn.setEnabled(True)
+        
+        self._update_process_button_states()
     
     def _update_process_button_states(self) -> None:
         """Update process button enabled states based on current step and processing status."""
@@ -1122,7 +1143,7 @@ class MainWindow(QMainWindow):
             # If we hide here, auto-run's hide is redundant which is fine.
             self._processing_label.hide()
             self._progress_bar.hide()
-            QApplication.restoreOverrideCursor()
+            self._force_unlock_ui()
     
     def _on_export_results(self) -> None:
         """Export results to CSV."""
