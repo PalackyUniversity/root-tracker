@@ -8,7 +8,7 @@ Settings are applied to the entire group on Apply button click.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QSpinBox, QDoubleSpinBox, QPushButton,
-    QGroupBox, QLineEdit
+    QGroupBox, QLineEdit, QComboBox
 )
 from PySide6.QtCore import Signal
 
@@ -86,7 +86,7 @@ class SettingsPanel(QWidget):
         self._buttons_layout.setContentsMargins(0, 10, 0, 0)
         
         # Re-detect Plants button (only for Preprocess step)
-        self._redetect_btn = QPushButton("Re-detect Plants")
+        self._redetect_btn = QPushButton("Re-detect centroids")
         self._redetect_btn.setEnabled(False)
         self._redetect_btn.setToolTip("Click after moving centroids to re-run auto-detection")
         self._redetect_btn.clicked.connect(self._on_redetect_clicked)
@@ -134,30 +134,42 @@ class SettingsPanel(QWidget):
     
     def _create_preprocess_settings(self) -> None:
         """Create settings for Preprocess step."""
-        group = QGroupBox("Group Settings")
-        layout = QFormLayout(group)
+        # ROI Group
+        roi_group = QGroupBox("Region of Interest")
+        roi_layout = QFormLayout(roi_group)
         
-        self._rotation_spin = QSpinBox()
-        self._rotation_spin.setRange(0, 360)
-        self._rotation_spin.setSingleStep(90)
-        self._rotation_spin.setValue(self._config.rotation)
-        self._rotation_spin.valueChanged.connect(self._on_setting_changed)
-        layout.addRow("Rotation (°):", self._rotation_spin)
-        
-        self._n_clusters_spin = QSpinBox()
-        self._n_clusters_spin.setRange(1, 20)
-        self._n_clusters_spin.setValue(self._config.n_clusters)
-        self._n_clusters_spin.valueChanged.connect(self._on_setting_changed)
-        layout.addRow("Number of plants:", self._n_clusters_spin)
+        self._rotation_combo = QComboBox()
+        self._rotation_combo.addItems(["0", "90", "180", "270"])
+        # Set current value
+        current_rot = str(self._config.rotation)
+        if current_rot in ["0", "90", "180", "270"]:
+            self._rotation_combo.setCurrentText(current_rot)
+        else:
+            self._rotation_combo.setCurrentText("0")
+            
+        self._rotation_combo.currentTextChanged.connect(self._on_setting_changed)
+        roi_layout.addRow("Rotation (°):", self._rotation_combo)
         
         self._margin_spin = QDoubleSpinBox()
         self._margin_spin.setRange(0.0, 0.5)
         self._margin_spin.setSingleStep(0.01)
         self._margin_spin.setValue(self._config.margin)
         self._margin_spin.valueChanged.connect(self._on_setting_changed)
-        layout.addRow("Side margin:", self._margin_spin)
+        roi_layout.addRow("Side margin:", self._margin_spin)
         
-        self._settings_layout.addWidget(group)
+        self._settings_layout.addWidget(roi_group)
+        
+        # Plant Attributes Group
+        attr_group = QGroupBox("Plant Attributes")
+        attr_layout = QFormLayout(attr_group)
+        
+        self._n_clusters_spin = QSpinBox()
+        self._n_clusters_spin.setRange(1, 20)
+        self._n_clusters_spin.setValue(self._config.n_clusters)
+        self._n_clusters_spin.valueChanged.connect(self._on_setting_changed)
+        attr_layout.addRow("Number of plants:", self._n_clusters_spin)
+        
+        self._settings_layout.addWidget(attr_group)
         
         # Store original values
         self._store_original_values()
@@ -267,18 +279,25 @@ class SettingsPanel(QWidget):
     
     def reset_for_group(self) -> None:
         """Reset settings for a new group (discard unsaved changes)."""
-        if self._current_step == WorkflowStep.PREPROCESS and hasattr(self, '_rotation_spin'):
-            self._rotation_spin.blockSignals(True)
-            self._rotation_spin.setValue(self._config.rotation)
-            self._rotation_spin.blockSignals(False)
+        if self._current_step == WorkflowStep.PREPROCESS:
+            if hasattr(self, '_rotation_combo'):
+                self._rotation_combo.blockSignals(True)
+                rot = str(self._config.rotation)
+                if rot in ["0", "90", "180", "270"]:
+                    self._rotation_combo.setCurrentText(rot)
+                else:
+                    self._rotation_combo.setCurrentText("0")
+                self._rotation_combo.blockSignals(False)
             
-            self._n_clusters_spin.blockSignals(True)
-            self._n_clusters_spin.setValue(self._config.n_clusters)
-            self._n_clusters_spin.blockSignals(False)
+            if hasattr(self, '_n_clusters_spin'):
+                self._n_clusters_spin.blockSignals(True)
+                self._n_clusters_spin.setValue(self._config.n_clusters)
+                self._n_clusters_spin.blockSignals(False)
             
-            self._margin_spin.blockSignals(True)
-            self._margin_spin.setValue(self._config.margin)
-            self._margin_spin.blockSignals(False)
+            if hasattr(self, '_margin_spin'):
+                self._margin_spin.blockSignals(True)
+                self._margin_spin.setValue(self._config.margin)
+                self._margin_spin.blockSignals(False)
         
         self._store_original_values()
         self._centroids_modified = False
@@ -289,8 +308,11 @@ class SettingsPanel(QWidget):
         values = {}
         
         if self._current_step == WorkflowStep.PREPROCESS:
-            if hasattr(self, '_rotation_spin'):
-                values["rotation"] = self._rotation_spin.value()
+            if hasattr(self, '_rotation_combo'):
+                try:
+                    values["rotation"] = int(self._rotation_combo.currentText())
+                except ValueError:
+                    values["rotation"] = 0
                 values["n_clusters"] = self._n_clusters_spin.value()
                 values["margin"] = self._margin_spin.value()
         

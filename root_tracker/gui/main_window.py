@@ -348,6 +348,14 @@ class MainWindow(QMainWindow):
                 self._detect_barcodes_in_group(self._current_series)
                 return  # _detect_barcodes_in_group already displays the image
         
+        # Auto-preprocess if enabled and on PREPROCESS step
+        if (step == WorkflowStep.PREPROCESS and 
+            self._auto_preview_action.isChecked() and 
+            self._pipeline is not None and
+            self._current_series is not None):
+            self._preprocess_group(self._current_series)
+            return
+        
         # Load and display the image
         self._display_image(image_data)
         
@@ -415,9 +423,9 @@ class MainWindow(QMainWindow):
             
             self._image_viewer.clear_centroids()
         elif step == WorkflowStep.PREPROCESS:
-            # Show processed image if available, else original
-            if image_data.process is not None:
-                image = image_data.process
+            # Show processed image (RGB) if available, else original (rotated + cropped)
+            if image_data.image is not None:
+                image = image_data.image
                 # Show centroids if we have position data
                 if image_data.positions_x and image_data.positions_y:
                     positions = list(zip(image_data.positions_x, image_data.positions_y))
@@ -425,7 +433,21 @@ class MainWindow(QMainWindow):
                 else:
                     self._image_viewer.clear_centroids()
             else:
+                # Preview: Rotate and auto-crop (to avoid "flash" of raw image)
                 image = cv2.imread(image_data.path)
+                
+                from ..preprocessing import ImageCropper
+                cropper = ImageCropper(self._config)
+                
+                # Rotate
+                image = cropper.rotate(image)
+                
+                # Auto-crop (try to simulate what processing will do)
+                try:
+                    image = cropper.auto_crop_to_blue_background(image)
+                except Exception:
+                    pass
+                
                 self._image_viewer.clear_centroids()
         else:
             # Show annotated image if available
