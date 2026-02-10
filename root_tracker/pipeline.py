@@ -378,16 +378,43 @@ class RootTrackingPipeline:
                 cv2.line(annotated, (top[0] + 100, top[1]), (top[0] + 100, bottom[1]), (255, 255, 255), 3)
                 cv2.line(annotated, (top[0] + 100, bottom[1]), bottom, (255, 255, 255), 1)
                 
-                # Trace longest path
+                # Trace longest path (backtracking from bottom)
                 mask_longest = np.zeros_like(skeleton_split)
-                cv2.drawContours(mask_longest, plant_contours[:1] if plant_contours else [], -1, 255, cv2.FILLED)
+                conts = []
+                last_len = None
+                
+                # We need to trace back from the bottom point to the top
+                current_bottom = bottom
+                
+                while last_len != len(conts):
+                    last_len = len(conts)
+                    for uc in upper_corners:
+                        # Find the segment that ends at current_bottom
+                        if 'lower_point' in uc and uc['lower_point'] == current_bottom:
+                            # Found the segment, add its contour
+                            if uc['contour_index'] < len(segment_contours):
+                                conts.append(segment_contours[uc['contour_index']])
+                                
+                            # Now find the pair that connects to the top of this segment
+                            for p1, p2 in pairs:
+                                if p1 == uc['point']:
+                                    current_bottom = p2
+                                    break
+                            break
+
+                cv2.drawContours(mask_longest, conts, -1, 255, cv2.FILLED)
                 longest_length = cv2.countNonZero(mask_longest)
                 image_data.longest.append(longest_length)
                 
                 # Color the roots
                 color = self.linker.get_color(k)
                 bright_color = tuple(min(c + 170, 255) for c in color)
+                
+                # Draw all roots normal thickness
                 cv2.drawContours(annotated, plant_contours, -1, color, 3)
+                
+                # Draw main root thicker and brighter
+                cv2.drawContours(annotated, conts, -1, bright_color, 12)
                 
                 # Count root endpoints
                 used_points = {p for p, _ in pairs}
