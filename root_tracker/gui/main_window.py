@@ -336,30 +336,46 @@ class MainWindow(QMainWindow):
         """Handle image selection in tree."""
         self._current_image = image_data
         self._current_series = self._image_tree.get_selected_series()
-        
+
         step = self._workflow_bar.get_current_step()
-        
+
         # Auto-detect barcodes for this group if on LOAD step and auto-preview enabled
-        if (step == WorkflowStep.LOAD and 
-            self._auto_preview_action.isChecked() and 
+        if (step == WorkflowStep.LOAD and
+            self._auto_preview_action.isChecked() and
             self._pipeline is not None and
             self._current_series is not None):
             # Only detect if group has undetected barcodes
             if not all(img.barcode_detected for img in self._current_series.images):
                 self._detect_barcodes_in_group(self._current_series)
                 return  # _detect_barcodes_in_group already displays the image
-        
+
         # Auto-preprocess if enabled and on PREPROCESS step
-        if (step == WorkflowStep.PREPROCESS and 
-            self._auto_preview_action.isChecked() and 
+        if (step == WorkflowStep.PREPROCESS and
+            self._auto_preview_action.isChecked() and
             self._pipeline is not None and
             self._current_series is not None):
+            # First ensure barcodes are detected
+            if not all(img.barcode_detected for img in self._current_series.images):
+                self._detect_barcodes_in_group(self._current_series, continue_to_next_step=True)
+                return
             self._preprocess_group(self._current_series)
             return
-        
+
+        # Auto-process if enabled and on TRACK step
+        if (step == WorkflowStep.TRACK and
+            self._auto_preview_action.isChecked() and
+            self._pipeline is not None and
+            self._current_series is not None):
+            # First ensure barcodes are detected
+            if not all(img.barcode_detected for img in self._current_series.images):
+                self._detect_barcodes_in_group(self._current_series, continue_to_next_step=True)
+                return
+            self._auto_process_for_tracking(self._current_series)
+            return
+
         # Load and display the image
         self._display_image(image_data)
-        
+
         # Update button states for new selection
         self._update_process_button_states()
     
@@ -367,27 +383,41 @@ class MainWindow(QMainWindow):
         """Handle group selection in tree."""
         # Reset settings for new group (discard unsaved changes)
         self._settings_panel.reset_for_group()
-        
+
         self._current_series = series
         self._current_image = series.images[0] if series.images else None
-        
+
         step = self._workflow_bar.get_current_step()
-        
+
         # Auto-detect barcodes if on LOAD step and auto-preview enabled
-        if (step == WorkflowStep.LOAD and 
-            self._auto_preview_action.isChecked() and 
+        if (step == WorkflowStep.LOAD and
+            self._auto_preview_action.isChecked() and
             self._pipeline is not None):
             self._detect_barcodes_in_group(series)
-        
+
         if self._current_image:
             self._display_image(self._current_image)
-        
+
         # Auto-preprocess if enabled and on PREPROCESS step
-        if (step == WorkflowStep.PREPROCESS and 
-            self._auto_preview_action.isChecked() and 
+        if (step == WorkflowStep.PREPROCESS and
+            self._auto_preview_action.isChecked() and
             self._pipeline is not None):
+            # First ensure barcodes are detected
+            if not all(img.barcode_detected for img in series.images):
+                self._detect_barcodes_in_group(series, continue_to_next_step=True)
+                return
             self._preprocess_group(series)
-        
+
+        # Auto-process if enabled and on TRACK step
+        if (step == WorkflowStep.TRACK and
+            self._auto_preview_action.isChecked() and
+            self._pipeline is not None):
+            # First ensure barcodes are detected
+            if not all(img.barcode_detected for img in series.images):
+                self._detect_barcodes_in_group(series, continue_to_next_step=True)
+                return
+            self._auto_process_for_tracking(series)
+
         # Update button states for new selection
         self._update_process_button_states()
     
@@ -689,18 +719,27 @@ class MainWindow(QMainWindow):
         elif step == WorkflowStep.PREPROCESS:
             self._preprocess_all_groups()
     
-    def _detect_barcodes_in_group(self, series: 'ImageSeries') -> None:
-        """Detect barcodes for all images in a group with progress bar."""
+    def _detect_barcodes_in_group(self, series: 'ImageSeries', continue_to_next_step: bool = False) -> None:
+        """
+        Detect barcodes for all images in a group with progress bar.
+
+        Args:
+            series: ImageSeries to detect barcodes in.
+            continue_to_next_step: If True, automatically continue to preprocessing/tracking after detection.
+        """
         if self._pipeline is None:
             return
-        
+
         # Check if barcodes already detected for this group
         if all(img.barcode_detected for img in series.images):
+            # Already detected - continue if requested
+            if continue_to_next_step:
+                self._continue_after_barcode_detection(series)
             return
-        
+
         # Lock UI
         self._set_ui_locked(True)
-        
+
         # Show progress bar
         total_images = len(series.images)
         self._progress_bar.setMaximum(total_images)
@@ -708,9 +747,9 @@ class MainWindow(QMainWindow):
         self._progress_bar.show()
         self._processing_label.setText("Detecting barcodes...")
         self._processing_label.show()
-        
+
         start_time = time.time()
-        
+
         try:
             for i, image_data in enumerate(series.images):
                 if not image_data.barcode_detected:
@@ -725,30 +764,115 @@ class MainWindow(QMainWindow):
                         else:
                             eta_text = f"{eta_seconds}s"
                         self._processing_label.setText(f"ETA: {eta_text}")
-                    
+
                     self._pipeline.detect_barcode_in_image(image_data)
-                
+
                 self._progress_bar.setValue(i + 1)
                 QApplication.processEvents()
-            
+
             # Update warning count and tree (refresh preserves selection)
             self._recalculate_warning_count()
             self._update_groups_progress()
             self._image_tree.refresh()
-                
+
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Barcode detection failed:\n{e}")
-        finally:
             self._progress_bar.hide()
             self._processing_label.hide()
             self._set_ui_locked(False)
-        
-        # Restore focus (tree was disabled during processing)
-        self._image_tree.setFocus()
-        
-        # Display the current image
-        if self._current_image:
-            self._display_image(self._current_image)
+            return
+        finally:
+            pass  # Don't hide progress/unlock here if continuing to next step
+
+        # Continue to next step if requested
+        if continue_to_next_step:
+            self._continue_after_barcode_detection(series)
+        else:
+            # Normal completion - hide progress and unlock
+            self._progress_bar.hide()
+            self._processing_label.hide()
+            self._set_ui_locked(False)
+
+            # Restore focus (tree was disabled during processing)
+            self._image_tree.setFocus()
+
+            # Display the current image
+            if self._current_image:
+                self._display_image(self._current_image)
+
+    def _continue_after_barcode_detection(self, series: 'ImageSeries') -> None:
+        """
+        Continue to next processing step after barcode detection completes.
+
+        Called from _detect_barcodes_in_group when continue_to_next_step=True.
+
+        Args:
+            series: ImageSeries that was just processed.
+        """
+        step = self._workflow_bar.get_current_step()
+
+        if step == WorkflowStep.PREPROCESS:
+            # Continue to preprocessing
+            self._preprocess_group(series, hide_progress=True)
+            # Force unlock UI to clear any stacked wait cursors
+            self._force_unlock_ui()
+            # Restore focus and display
+            self._image_tree.setFocus()
+            if self._current_image:
+                self._display_image(self._current_image)
+        elif step == WorkflowStep.TRACK:
+            # Continue with full tracking pipeline (will preprocess if needed, then track)
+            # Check if preprocessing is needed
+            preprocess_hash = self._config.preprocess_config_hash()
+            state = series.pipeline_state
+            if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
+                self._processing_label.setText("Preprocessing...")
+                QApplication.processEvents()
+                self._preprocess_group(series, force=True, hide_progress=False)
+
+            # Check if tracking is needed
+            if not self._pipeline.is_tracking_current(series):
+                self._processing_label.setText("Tracking...")
+                self._progress_bar.setValue(0)
+                QApplication.processEvents()
+
+                try:
+                    # Define progress callback
+                    def update_progress(current, total):
+                        if total > 0:
+                            percent = int((current / total) * 100)
+                            self._progress_bar.setValue(percent)
+                        QApplication.processEvents()
+
+                    stats = self._pipeline.track_and_analyze_series(
+                        series,
+                        progress_callback=update_progress
+                    )
+
+                    # Update pipeline state
+                    series.pipeline_state.tracked = True
+                    series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
+                    series.pipeline_state.last_statistics = stats
+
+                    self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
+
+            # All done - hide progress and unlock
+            self._processing_label.hide()
+            self._progress_bar.hide()
+            self._force_unlock_ui()
+            if self._current_image:
+                self._display_image(self._current_image)
+            self._image_tree.setFocus()
+        else:
+            # LOAD or EXPORT step - just finish normally
+            self._progress_bar.hide()
+            self._processing_label.hide()
+            self._set_ui_locked(False)
+            if self._current_image:
+                self._display_image(self._current_image)
+            self._image_tree.setFocus()
     
     def _detect_barcodes_all_groups(self) -> None:
         """Detect barcodes for all groups with progress bar."""
@@ -955,7 +1079,7 @@ class MainWindow(QMainWindow):
     def _preprocess_group(self, series: 'ImageSeries', force: bool = False, hide_progress: bool = True) -> None:
         """
         Preprocess the given group (series).
-        
+
         Args:
             series: ImageSeries to process.
             force: If True, re-process even if data exists.
@@ -963,7 +1087,7 @@ class MainWindow(QMainWindow):
         """
         if self._pipeline is None:
             return
-        
+
         # Check if already processed with current config
         current_hash = self._config.preprocess_config_hash()
         already_done = (
@@ -974,7 +1098,7 @@ class MainWindow(QMainWindow):
             if self._current_image:
                 self._display_image(self._current_image)
             return
-        
+
         # Show progress bar in status bar
         total_images = len(series.images)
         self._progress_bar.setMaximum(total_images)
@@ -984,9 +1108,9 @@ class MainWindow(QMainWindow):
         self._processing_label.show()
         self._set_ui_locked(True)
         QApplication.processEvents()
-        
+
         start_time = time.time()
-        
+
         try:
             for i, image_data in enumerate(series.images):
                 # Calculate ETA
@@ -1002,11 +1126,11 @@ class MainWindow(QMainWindow):
                     self._processing_label.setText(f"ETA: {eta_text}")
                 else:
                     self._processing_label.setText("Processing...")
-                
+
                 self._pipeline.preprocess_image(image_data)
                 self._progress_bar.setValue(i + 1)
                 QApplication.processEvents()
-            
+
             # Register the series
             self._pipeline.register_series(series)
 
@@ -1033,9 +1157,89 @@ class MainWindow(QMainWindow):
                 self._set_ui_locked(False)
             else:
                 pass
-        
+
         # Restore focus to tree
         self._image_tree.setFocus()
+
+    def _auto_process_for_tracking(self, series: 'ImageSeries') -> None:
+        """
+        Auto-process a series for tracking (barcode detection → preprocessing → tracking).
+
+        Called when selecting an image/group in TRACK step with auto-preview enabled.
+
+        Args:
+            series: ImageSeries to process.
+        """
+        if self._pipeline is None:
+            return
+
+        # Step 1: Ensure barcodes are detected
+        if not all(img.barcode_detected for img in series.images):
+            self._processing_label.setText("Detecting barcodes...")
+            self._processing_label.show()
+            self._progress_bar.setValue(0)
+            self._progress_bar.show()
+            QApplication.processEvents()
+            self._detect_barcodes_in_group(series)
+
+        # Step 2: Ensure preprocessing is done
+        preprocess_hash = self._config.preprocess_config_hash()
+        state = series.pipeline_state
+        if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
+            self._processing_label.setText("Preprocessing...")
+            self._processing_label.show()
+            self._progress_bar.setValue(0)
+            self._progress_bar.show()
+            QApplication.processEvents()
+            self._preprocess_group(series, force=True, hide_progress=False)
+
+        # Step 3: Check if tracking is needed
+        if self._pipeline.is_tracking_current(series):
+            # Already tracked with current config - just display
+            self._processing_label.hide()
+            self._progress_bar.hide()
+            self._force_unlock_ui()
+            if self._current_image:
+                self._display_image(self._current_image)
+            return
+
+        # Step 4: Run tracking
+        self._processing_label.setText("Tracking...")
+        self._processing_label.show()
+        self._progress_bar.setValue(0)
+        self._progress_bar.show()
+        QApplication.processEvents()
+
+        try:
+            # Define progress callback
+            def update_progress(current, total):
+                if total > 0:
+                    percent = int((current / total) * 100)
+                    self._progress_bar.setValue(percent)
+                QApplication.processEvents()
+
+            stats = self._pipeline.track_and_analyze_series(
+                series,
+                progress_callback=update_progress
+            )
+
+            # Update pipeline state
+            series.pipeline_state.tracked = True
+            series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
+            series.pipeline_state.last_statistics = stats
+
+            self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
+
+            if self._current_image:
+                self._display_image(self._current_image)
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
+        finally:
+            self._processing_label.hide()
+            self._progress_bar.hide()
+            self._force_unlock_ui()
+            # Restore focus to tree
+            self._image_tree.setFocus()
     
     def _set_ui_locked(self, locked: bool) -> None:
         """Lock/unlock UI during processing."""
