@@ -1345,6 +1345,24 @@ class MainWindow(QMainWindow):
             
             self._process_group_btn.setEnabled(not group_done and self._current_series is not None)
             self._process_all_btn.setEnabled(not all_done and bool(self._series_dict))
+            
+        elif step == WorkflowStep.TRACK:
+            # Check if current group is tracked
+            group_done = False
+            if self._current_series:
+                group_done = self._pipeline.is_tracking_current(self._current_series)
+
+            # Check if all groups are tracked
+            all_done = False
+            if self._series_dict:
+                all_done = all(
+                    self._pipeline.is_tracking_current(series)
+                    for series in self._series_dict.values()
+                )
+            
+            self._process_group_btn.setEnabled(not group_done and self._current_series is not None)
+            self._process_all_btn.setEnabled(not all_done and bool(self._series_dict))
+            
         else:
             # Other steps - disable both buttons
             self._process_group_btn.setEnabled(False)
