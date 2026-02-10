@@ -20,6 +20,7 @@ class MaskTool(Enum):
     RECTANGLE = "rectangle"
     BRUSH_ERASER = "brush_eraser"
     RECT_ERASER = "rect_eraser"
+    MOVE = "move"
 
 
 class MaskOverlay:

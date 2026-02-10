@@ -301,7 +301,7 @@ class ImageViewer(QWidget):
                 self._brush_cursor = None
 
         # Update view mouse tracking and drag mode
-        if tool != MaskTool.NONE:
+        if tool != MaskTool.NONE and tool != MaskTool.MOVE:
             self._view.setMouseTracking(True)
             self._view.setDragMode(QGraphicsView.DragMode.NoDrag)
         else:
@@ -455,7 +455,7 @@ class ZoomableGraphicsView(QGraphicsView):
             return
 
         # Check if a masking tool is active
-        if viewer._mask_tool == MaskTool.NONE:
+        if viewer._mask_tool == MaskTool.NONE or viewer._mask_tool == MaskTool.MOVE:
             super().mousePressEvent(event)
             return
 

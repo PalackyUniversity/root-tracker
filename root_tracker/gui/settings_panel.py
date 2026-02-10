@@ -58,6 +58,7 @@ class SettingsPanel(QWidget):
         self._brush_size_spin: QSpinBox | None = None
         self._brush_eraser_radio: QRadioButton | None = None
         self._brush_eraser_size_spin: QSpinBox | None = None
+        self._move_radio: QRadioButton | None = None
         self._rect_radio: QRadioButton | None = None
         self._rect_eraser_radio: QRadioButton | None = None
         self._mask_apply_btn: QPushButton | None = None
@@ -266,6 +267,12 @@ class SettingsPanel(QWidget):
         self._mask_tool_group = QButtonGroup(self)
         self._mask_tool_group.buttonClicked.connect(self._on_mask_tool_selected)
 
+        # Move tool (Default)
+        self._move_radio = QRadioButton("Move")
+        self._move_radio.setChecked(True)
+        self._mask_tool_group.addButton(self._move_radio, 0)  # ID = 0
+        mask_layout.addWidget(self._move_radio)
+
         # Brush tool
         brush_row = QHBoxLayout()
         self._brush_radio = QRadioButton("Brush")
@@ -340,7 +347,10 @@ class SettingsPanel(QWidget):
     def _on_mask_tool_selected(self, button: QRadioButton) -> None:
         """Handle mask tool selection."""
         # Determine which tool was selected based on the button
-        if button == self._brush_radio:
+        if button == self._move_radio:
+            tool = MaskTool.MOVE
+            size = 0
+        elif button == self._brush_radio:
             tool = MaskTool.BRUSH
             size = self._brush_size_spin.value()
         elif button == self._rect_radio:
@@ -360,11 +370,23 @@ class SettingsPanel(QWidget):
 
     def _on_brush_size_changed(self, size: int) -> None:
         """Handle brush size change."""
+        # Sync with eraser size
+        if self._brush_eraser_size_spin is not None:
+            self._brush_eraser_size_spin.blockSignals(True)
+            self._brush_eraser_size_spin.setValue(size)
+            self._brush_eraser_size_spin.blockSignals(False)
+
         if self._brush_radio is not None and self._brush_radio.isChecked():
             self.mask_tool_changed.emit(MaskTool.BRUSH.value, size)
 
     def _on_brush_eraser_size_changed(self, size: int) -> None:
         """Handle brush eraser size change."""
+        # Sync with brush size
+        if self._brush_size_spin is not None:
+            self._brush_size_spin.blockSignals(True)
+            self._brush_size_spin.setValue(size)
+            self._brush_size_spin.blockSignals(False)
+
         if self._brush_eraser_radio is not None and self._brush_eraser_radio.isChecked():
             self.mask_tool_changed.emit(MaskTool.BRUSH_ERASER.value, size)
 
