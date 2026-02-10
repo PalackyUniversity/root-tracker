@@ -13,6 +13,7 @@ import numpy as np
 
 from ..config import Config
 from ..models import ImageData, ImageSeries
+from . import mask_io
 
 
 class ImageLoader:
@@ -107,9 +108,17 @@ class ImageLoader:
             
             if group not in series_dict:
                 series_dict[group] = ImageSeries(group=group)
-            
+
             series_dict[group].add_image(image_data)
-        
+
+        # Auto-load masks for each series
+        for series in series_dict.values():
+            mask = mask_io.load_mask(series, self.config)
+            if mask is not None:
+                series.user_mask = mask
+                # Initialize working_mask as a copy of user_mask
+                series.working_mask = mask.copy()
+
         return series_dict
     
     def load_series_images(self, series: ImageSeries) -> None:

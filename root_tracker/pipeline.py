@@ -265,7 +265,10 @@ class RootTrackingPipeline:
             # Threshold to get root mask
             thresh = self.thresholder.threshold(image_data.process)
             thresh = self.thresholder.apply_margins(thresh)
-            
+
+            # Apply user mask if present (series-level mask)
+            thresh = self.thresholder.apply_user_mask(thresh, series.user_mask)
+
             # Handle new growth from difference
             if image_data.diff is not None:
                 h, w = thresh.shape

@@ -160,16 +160,22 @@ class PipelineState:
 class ImageSeries:
     """
     A collection of images belonging to the same group/barcode.
-    
+
     Images are stored sorted by date for time-series analysis.
-    
+
     Attributes:
         group: The group identifier (barcode).
         images: List of ImageData objects, sorted by date.
+        user_mask: Applied/committed mask for removing root detections (shared across all images).
+        working_mask: Currently edited mask (uncommitted changes).
     """
     group: str
     images: list[ImageData] = field(default_factory=list)
     pipeline_state: PipelineState = field(default_factory=PipelineState)
+
+    # User-defined mask for root removal (applies to all images in series)
+    user_mask: Optional[np.ndarray] = field(default=None, repr=False)
+    working_mask: Optional[np.ndarray] = field(default=None, repr=False)
 
     def clear_tracking_results(self) -> None:
         """Clear tracking results for all images and reset pipeline state."""
@@ -221,3 +227,16 @@ class ImageSeries:
     def has_barcode_warning(self) -> bool:
         """Check if any image has a barcode mismatch."""
         return any(img.barcode_mismatch for img in self.images)
+
+    def has_pending_mask_changes(self) -> bool:
+        """Check if there are uncommitted mask edits."""
+        # No pending changes if working_mask doesn't exist
+        if self.working_mask is None:
+            return False
+
+        # No pending changes if user_mask doesn't exist and working_mask is all zeros
+        if self.user_mask is None:
+            return np.any(self.working_mask > 0)
+
+        # Compare working_mask with user_mask
+        return not np.array_equal(self.working_mask, self.user_mask)

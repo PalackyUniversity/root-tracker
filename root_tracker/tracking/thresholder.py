@@ -121,7 +121,24 @@ class RootThresholder:
             result[:, -right:] = 0
             
         return result
-    
+
+    def apply_user_mask(self, mask: np.ndarray, user_mask: np.ndarray | None) -> np.ndarray:
+        """
+        Apply user-defined mask to remove root detections in masked areas.
+
+        Args:
+            mask: Binary root detection mask.
+            user_mask: User-defined mask (255 = remove roots, 0 = keep).
+
+        Returns:
+            Filtered mask with user-masked areas removed.
+        """
+        if user_mask is None:
+            return mask
+
+        # Remove detections where user_mask is 255
+        return cv2.bitwise_and(mask, cv2.bitwise_not(user_mask))
+
     def filter_small_contours(self, mask: np.ndarray) -> tuple[np.ndarray, list]:
         """
         Remove small contours from the mask.

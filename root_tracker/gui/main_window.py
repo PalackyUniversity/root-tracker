@@ -7,6 +7,7 @@ Integrates all components into the main window layout.
 import os
 import time
 import cv2
+import numpy as np
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QMenuBar, QMenu, QStatusBar, QMessageBox,
@@ -18,13 +19,14 @@ from PySide6.QtGui import QAction, QKeySequence
 from ..config import Config
 from ..models import ImageData, ImageSeries
 from ..pipeline import RootTrackingPipeline
-from ..io import ImageLoader
+from ..io import ImageLoader, mask_io
 
 from .workflow_bar import WorkflowBar, WorkflowStep
 from .image_tree import ImageTree
 from .image_viewer import ImageViewer
 from .settings_panel import SettingsPanel
 from .dialogs import LoadDialog, ExportDialog
+from .masking_tools import MaskTool
 
 class MainWindow(QMainWindow):
     """
@@ -280,11 +282,18 @@ class MainWindow(QMainWindow):
         self._settings_panel.redetect_requested.connect(self._on_redetect_plants)
         # self._settings_panel.track_requested.connect(self._on_track_roots)
         self._settings_panel.export_requested.connect(self._on_export_results)
-        
+
+        # Masking signals
+        self._settings_panel.mask_tool_changed.connect(self._on_mask_tool_changed)
+        self._settings_panel.mask_apply_requested.connect(self._on_mask_apply)
+        self._settings_panel.mask_erase_all_requested.connect(self._on_mask_erase_all)
+
         # Image viewer - centroid dragging
         self._image_viewer.centroid_moved.connect(self._on_centroid_moved)
         # Image viewer - update zoom label in bottom bar
         self._image_viewer.zoom_changed.connect(self._on_zoom_changed)
+        # Image viewer - mask modification
+        self._image_viewer.mask_modified.connect(self._on_mask_modified)
     
     def _on_load_images(self) -> None:
         """Handle load images action (Ctrl+O)."""
@@ -384,8 +393,15 @@ class MainWindow(QMainWindow):
         # Reset settings for new group (discard unsaved changes)
         self._settings_panel.reset_for_group()
 
+        # Deselect mask tools when switching groups
+        self._settings_panel.deselect_mask_tools()
+
         self._current_series = series
         self._current_image = series.images[0] if series.images else None
+
+        # Initialize working_mask if needed
+        if series.working_mask is None and series.user_mask is not None:
+            series.working_mask = series.user_mask.copy()
 
         step = self._workflow_bar.get_current_step()
 
@@ -484,9 +500,22 @@ class MainWindow(QMainWindow):
             else:
                 image = cv2.imread(image_data.path)
             self._image_viewer.clear_centroids()
-        
+
         if image is not None:
             self._image_viewer.set_image(image)
+
+            # Set mask data if in TRACK step
+            if step == WorkflowStep.TRACK and self._current_series is not None:
+                self._image_viewer.set_mask_data(
+                    self._current_series.user_mask,
+                    self._current_series.working_mask
+                )
+                # Update Apply button state
+                has_changes = self._current_series.has_pending_mask_changes()
+                self._settings_panel.update_mask_apply_button(has_changes)
+            else:
+                # Clear mask data in other steps
+                self._image_viewer.set_mask_data(None, None)
     
     def _on_step_changed(self, step: WorkflowStep) -> None:
         """Handle workflow step change."""
@@ -1444,7 +1473,124 @@ class MainWindow(QMainWindow):
     def _on_zoom_changed(self, percentage: int) -> None:
         """Handle zoom level change - update bottom bar label."""
         self._zoom_label.setText(f"{percentage}%")
-    
+
+    # ========== Masking Handlers ==========
+
+    def _on_mask_tool_changed(self, tool_name: str, size: int) -> None:
+        """Handle mask tool selection change."""
+        # Convert string to MaskTool enum
+        try:
+            tool = MaskTool(tool_name)
+        except ValueError:
+            tool = MaskTool.NONE
+
+        self._image_viewer.set_mask_tool(tool, size)
+
+    def _on_mask_modified(self) -> None:
+        """Handle mask modification - update Apply button state."""
+        if self._current_series is not None:
+            # Sync working mask from viewer to series
+            working_mask = self._image_viewer.get_working_mask()
+            self._current_series.working_mask = working_mask.copy() if working_mask is not None else None
+
+            # Update Apply button based on pending changes
+            has_changes = self._current_series.has_pending_mask_changes()
+            self._settings_panel.update_mask_apply_button(has_changes)
+
+    def _on_mask_apply(self) -> None:
+        """
+        Apply working mask and save to disk.
+
+        This commits the working_mask to user_mask, saves it, and optionally retracks.
+        """
+        if self._current_series is None or self._pipeline is None:
+            return
+
+        # Get working mask from viewer
+        working_mask = self._image_viewer.get_working_mask()
+
+        # Commit to series
+        self._current_series.user_mask = working_mask.copy() if working_mask is not None else None
+        self._current_series.working_mask = working_mask.copy() if working_mask is not None else None
+
+        # Save to disk
+        try:
+            if working_mask is not None:
+                mask_io.save_mask(self._current_series, self._config)
+            else:
+                # No mask - delete file if it exists
+                mask_io.delete_mask(self._current_series, self._config)
+        except Exception as e:
+            QMessageBox.warning(self, "Warning", f"Failed to save mask:\n{e}")
+
+        # Clear tracking results (mask changed)
+        self._current_series.clear_tracking_results()
+
+        # Update Apply button
+        self._settings_panel.update_mask_apply_button(False)
+
+        # Auto-retrack if enabled
+        if self._auto_preview_action.isChecked():
+            self._processing_label.setText("Re-tracking with new mask...")
+            self._processing_label.show()
+            self._progress_bar.setValue(0)
+            self._progress_bar.show()
+            QApplication.processEvents()
+
+            try:
+                # Define progress callback
+                def update_progress(current, total):
+                    if total > 0:
+                        percent = int((current / total) * 100)
+                        self._progress_bar.setValue(percent)
+                    QApplication.processEvents()
+
+                stats = self._pipeline.track_and_analyze_series(
+                    self._current_series,
+                    progress_callback=update_progress
+                )
+
+                # Update pipeline state
+                self._current_series.pipeline_state.tracked = True
+                self._current_series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
+                self._current_series.pipeline_state.last_statistics = stats
+
+                if self._current_image:
+                    self._display_image(self._current_image)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
+            finally:
+                self._processing_label.hide()
+                self._progress_bar.hide()
+        else:
+            # Just update display
+            if self._current_image:
+                self._display_image(self._current_image)
+
+    def _on_mask_erase_all(self) -> None:
+        """Erase all masks (both working and applied)."""
+        if self._current_series is None:
+            return
+
+        # Clear masks in series
+        self._current_series.user_mask = None
+        self._current_series.working_mask = None
+
+        # Clear in viewer
+        self._image_viewer.clear_all_masks()
+
+        # Delete mask file
+        try:
+            mask_io.delete_mask(self._current_series, self._config)
+        except Exception:
+            pass
+
+        # Update Apply button
+        self._settings_panel.update_mask_apply_button(False)
+
+        # Clear tracking results
+        self._current_series.clear_tracking_results()
+
     def _on_about(self) -> None:
         """Show about dialog."""
         QMessageBox.about(
