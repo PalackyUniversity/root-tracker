@@ -61,6 +61,7 @@ class ImageData:
     process: Optional[np.ndarray] = field(default=None, repr=False)
     canny: Optional[np.ndarray] = field(default=None, repr=False)
     diff: Optional[np.ndarray] = field(default=None, repr=False)
+    image_annotated: Optional[np.ndarray] = field(default=None, repr=False)
     
     # Plant detection results
     green_areas: list[int] = field(default_factory=list)
@@ -76,11 +77,33 @@ class ImageData:
     longest: list[int] = field(default_factory=list)
     colored_samples: dict[int, set] = field(default_factory=dict)
     
+    def clear_tracking_results(self) -> None:
+        """Clear all tracking/analysis results, preserving preprocessing data."""
+        self.total_length = None
+        self.total_area = None
+        self.new_area = None
+        self.new_parts = None
+        self.plant_length = []
+        self.longest = []
+        self.colored_samples = {}
+        self.image_annotated = None
+
+    def clear_preprocessing_results(self) -> None:
+        """Clear all preprocessing results (and tracking, since it depends on them)."""
+        self.clear_tracking_results()
+        self.image = None
+        self.process = None
+        self.canny = None
+        self.diff = None
+        self.green_areas = []
+        self.positions_x = []
+        self.positions_y = []
+
     @property
     def filename(self) -> str:
         """Get the filename without path."""
         return Path(self.path).name
-    
+
     def copy_for_editing(self) -> "ImageData":
         """
         Create a shallow copy for GUI editing purposes.
@@ -96,6 +119,7 @@ class ImageData:
             process=self.process.copy() if self.process is not None else None,
             canny=self.canny.copy() if self.canny is not None else None,
             diff=self.diff.copy() if self.diff is not None else None,
+            image_annotated=self.image_annotated.copy() if self.image_annotated is not None else None,
             green_areas=self.green_areas.copy(),
             positions_x=self.positions_x.copy(),
             positions_y=self.positions_y.copy(),
@@ -107,6 +131,29 @@ class ImageData:
             longest=self.longest.copy(),
             colored_samples={k: v.copy() for k, v in self.colored_samples.items()},
         )
+
+
+@dataclass
+class PipelineState:
+    """Tracks which pipeline steps have been completed for a series."""
+    preprocessed: bool = False
+    preprocess_config_hash: str = ""
+    tracked: bool = False
+    tracking_config_hash: str = ""
+    last_statistics: list = field(default_factory=list)
+
+    def invalidate_from(self, step: str) -> None:
+        """Invalidate this step and all subsequent steps."""
+        steps = ['preprocess', 'track']
+        idx = steps.index(step)
+        for s in steps[idx:]:
+            if s == 'preprocess':
+                self.preprocessed = False
+                self.preprocess_config_hash = ""
+            elif s == 'track':
+                self.tracked = False
+                self.tracking_config_hash = ""
+                self.last_statistics = []
 
 
 @dataclass
@@ -122,7 +169,20 @@ class ImageSeries:
     """
     group: str
     images: list[ImageData] = field(default_factory=list)
-    
+    pipeline_state: PipelineState = field(default_factory=PipelineState)
+
+    def clear_tracking_results(self) -> None:
+        """Clear tracking results for all images and reset pipeline state."""
+        for img in self.images:
+            img.clear_tracking_results()
+        self.pipeline_state.invalidate_from('track')
+
+    def clear_preprocessing_results(self) -> None:
+        """Clear all preprocessing and tracking results."""
+        for img in self.images:
+            img.clear_preprocessing_results()
+        self.pipeline_state.invalidate_from('preprocess')
+
     def __post_init__(self) -> None:
         """Sort images by date after initialization."""
         self.sort_by_date()

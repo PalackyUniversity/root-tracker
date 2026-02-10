@@ -5,6 +5,7 @@ Uses Python dataclasses for type-safe configuration with validation.
 """
 
 from dataclasses import dataclass, field
+from hashlib import md5
 from pathlib import Path
 from typing import Optional
 import yaml
@@ -160,3 +161,26 @@ class Config:
         if self._base_path is None:
             return Path.cwd()
         return self._base_path
+
+    def preprocess_config_hash(self) -> str:
+        """Hash of config values that affect preprocessing."""
+        values = (
+            self.rotation, self.n_clusters,
+            self.margin_top, self.margin_bottom, self.margin_left, self.margin_right,
+            self.green.min_count, self.green.min_area,
+            self.green.hsv_lower, self.green.hsv_upper,
+            self.crop.top_ratio, self.crop.bottom_ratio,
+            self.crop.blue_hsv_lower, self.crop.blue_hsv_upper,
+            self.registration.enabled, self.registration.margin_ratio,
+        )
+        return md5(str(values).encode()).hexdigest()
+
+    def tracking_config_hash(self) -> str:
+        """Hash of config values that affect tracking."""
+        values = (
+            self.threshold.low, self.threshold.high,
+            self.threshold.min_contour_area, self.threshold.min_contour_length,
+            self.n_clusters,
+            self.margin_top, self.margin_bottom, self.margin_left, self.margin_right,
+        )
+        return md5(str(values).encode()).hexdigest()

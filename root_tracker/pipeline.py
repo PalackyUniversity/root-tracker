@@ -251,12 +251,15 @@ class RootTrackingPipeline:
         for idx, image_data in enumerate(series.images):
             if image_data.process is None:
                 continue
-            
+
+            # Create annotated copy — never mutate image_data.image
+            annotated = image_data.image.copy()
+
             # Draw plant markers
             for i, (x, y) in enumerate(zip(pos_x_median, pos_y_median)):
                 color = self.linker.get_color(i)
-                cv2.circle(image_data.image, (x, y), 10, color, 4)
-                cv2.putText(image_data.image, str(i + 1), (x + 10, y - 10),
+                cv2.circle(annotated, (x, y), 10, color, 4)
+                cv2.putText(annotated, str(i + 1), (x + 10, y - 10),
                            cv2.FONT_HERSHEY_PLAIN, 2, color, 2)
             
             # Threshold to get root mask
@@ -336,7 +339,7 @@ class RootTrackingPipeline:
             
             # Draw links on image
             for upper, lower in pairs:
-                cv2.line(image_data.image, upper, lower, (255, 255, 255), 1)
+                cv2.line(annotated, upper, lower, (255, 255, 255), 1)
             
             # Compute per-plant statistics
             image_data.plant_length = []
@@ -368,9 +371,9 @@ class RootTrackingPipeline:
                     bottom = (pos_x_median[k], pos_y_median[k])
                 
                 # Draw main root indicator
-                cv2.line(image_data.image, top, (top[0] + 100, top[1]), (255, 255, 255), 1)
-                cv2.line(image_data.image, (top[0] + 100, top[1]), (top[0] + 100, bottom[1]), (255, 255, 255), 3)
-                cv2.line(image_data.image, (top[0] + 100, bottom[1]), bottom, (255, 255, 255), 1)
+                cv2.line(annotated, top, (top[0] + 100, top[1]), (255, 255, 255), 1)
+                cv2.line(annotated, (top[0] + 100, top[1]), (top[0] + 100, bottom[1]), (255, 255, 255), 3)
+                cv2.line(annotated, (top[0] + 100, bottom[1]), bottom, (255, 255, 255), 1)
                 
                 # Trace longest path
                 mask_longest = np.zeros_like(skeleton_split)
@@ -381,7 +384,7 @@ class RootTrackingPipeline:
                 # Color the roots
                 color = self.linker.get_color(k)
                 bright_color = tuple(min(c + 170, 255) for c in color)
-                cv2.drawContours(image_data.image, plant_contours, -1, color, 3)
+                cv2.drawContours(annotated, plant_contours, -1, color, 3)
                 
                 # Count root endpoints
                 used_points = {p for p, _ in pairs}
@@ -438,8 +441,11 @@ class RootTrackingPipeline:
                 
                 statistics.append(stats)
             
+            # Store annotated image
+            image_data.image_annotated = annotated
+
             # Save annotated image
-            self.exporter.save_image(image_data.image, os.path.basename(image_data.path))
+            self.exporter.save_image(image_data.image_annotated, os.path.basename(image_data.path))
             
             # Update progress (after processing)
             if progress_callback:
@@ -454,6 +460,15 @@ class RootTrackingPipeline:
         
         return statistics
     
+    def is_tracking_current(self, series: ImageSeries) -> bool:
+        """Check if tracking results are still valid for the current config."""
+        state = series.pipeline_state
+        return (
+            state.tracked
+            and state.tracking_config_hash == self.config.tracking_config_hash()
+            and state.preprocess_config_hash == self.config.preprocess_config_hash()
+        )
+
     def export_results(self, statistics: list[PlantStatistics]) -> str:
         """
         Step 4: Export results to CSV.

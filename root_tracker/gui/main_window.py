@@ -444,8 +444,10 @@ class MainWindow(QMainWindow):
                 
                 self._image_viewer.clear_centroids()
         else:
-            # Show annotated image if available
-            if image_data.image is not None:
+            # TRACK/EXPORT: prefer annotated image, fall back to preprocessed
+            if image_data.image_annotated is not None:
+                image = image_data.image_annotated
+            elif image_data.image is not None:
                 image = image_data.image
             elif image_data.process is not None:
                 image = image_data.process
@@ -464,94 +466,92 @@ class MainWindow(QMainWindow):
                 self, "Step Not Available",
                 "Please load images first (Step 1) before proceeding."
             )
-            # Reset workflow bar to current step
             self._workflow_bar.set_current_step(WorkflowStep.LOAD)
             return
-        
-        # Hide settings panel on Load step (use Ctrl+O instead)
+
+        # Show/hide settings panel
         if step == WorkflowStep.LOAD:
             self._settings_panel.hide()
         else:
             self._settings_panel.show()
             self._settings_panel.set_step(step)
-            
-            # Special handling for TRACK step
-            if step == WorkflowStep.TRACK and self._current_series and self._pipeline:
-                # Dependency check: Ensure preprocessing is done for current series
-                needs_preprocessing = False
-                if self._current_series.images:
-                    # Check if first image has process data (sufficient proxy)
-                    if self._current_series.images[0].process is None:
-                        needs_preprocessing = True
-                
-                if needs_preprocessing:
-                    self._processing_label.setText("Auto-preprocessing...")
-                    self._processing_label.show()
-                    self._progress_bar.setValue(0)
-                    self._progress_bar.show()
-                    QApplication.processEvents()
-                    
-                    # Force valid processing if needed, but mainly ensure it runs
-                    # Keep progress visible for tracking
-                    # _preprocess_group call moved to be single below
-                    
-                    # Actually, if we want to merge progress, we should keep it visible?
-                    # But _preprocess_group uses 0-N images. Tracking uses 0-100%.
-                    # It's better to show "Preprocessing..." then "Tracking...".
-                    # Let's hide it briefly or reset it. 
-                    # User said: "merge the total percentage... or show it as one continual progress bar"
-                    # Implementing true merger is hard because steps are different units.
-                    # Best effort: Preprocess (0-50%), Track (50-100%)?
-                    # For now, let's just ensure it doesn't flicker too much.
-                    # If I hide it in preprocess, it vanishes, then tracking shows it again.
-                    # If I keep it, tracking needs to reset it or continue.
-                    # Let's try: Preprocess finishes -> Hide=False -> Track starts (Resets to 0 or continues?)
-                    
-                    # Let's use hide_progress=False, then manually update label for tracking
-                    self._preprocess_group(self._current_series, force=True, hide_progress=False)
-                    self._processing_label.setText("Preprocessing complete. Starting tracking...")
-                    QApplication.processEvents()
-                
-                # Auto-run tracking if enabled (reusing auto-preview checkbox or default)
-                # User requested: "process automaticaly (if checkbox in the menu is chedk)"
-                if self._auto_preview_action.isChecked():
-                    self._processing_label.setText("Auto-tracking...")
-                    self._processing_label.show()
-                     # If we just preprocessed, keep progress bar visible
-                    if not needs_preprocessing:
-                        self._progress_bar.setValue(0)
-                        self._progress_bar.show()
-                    
-                    # Delay slightly to allow UI to update
-                    QApplication.processEvents()
-                    self._on_track_roots()
-                    
-                    # Hide progress indicators
-                    self._processing_label.hide()
-                    self._progress_bar.hide()
-                else:
-                    # If we preprocessed but didn't track, we MUST unlock UI
-                    if needs_preprocessing:
-                        self._force_unlock_ui()
-                        self._processing_label.hide()
-                        self._progress_bar.hide()
-        
-        # Auto-preview when switching to Preprocess step
-        if (step == WorkflowStep.PREPROCESS and 
-            self._auto_preview_action.isChecked() and 
-            self._current_series is not None and
-            self._pipeline is not None):
-            # Don't display image yet - wait for processing to finish
-            # The _preprocess_group content will handle display at the end
-            self._preprocess_group(self._current_series)
+
+        # Step-specific auto-processing
+        if step == WorkflowStep.PREPROCESS:
+            self._handle_enter_preprocess()
+        elif step == WorkflowStep.TRACK:
+            self._handle_enter_track()
         else:
-            # Refresh image display for new step immediately
+            # LOAD and EXPORT: just refresh display
             if self._current_image:
                 self._display_image(self._current_image)
-        
-        # Update button states for new step
+
         self._update_process_button_states()
         self._update_groups_progress()
+
+    def _handle_enter_preprocess(self) -> None:
+        """Handle entering the PREPROCESS step."""
+        if (self._auto_preview_action.isChecked()
+                and self._current_series is not None
+                and self._pipeline is not None):
+            state = self._current_series.pipeline_state
+            current_hash = self._config.preprocess_config_hash()
+            if state.preprocessed and state.preprocess_config_hash == current_hash:
+                # Already done and current — just display
+                if self._current_image:
+                    self._display_image(self._current_image)
+            else:
+                self._preprocess_group(self._current_series)
+        elif self._current_image:
+            self._display_image(self._current_image)
+
+    def _handle_enter_track(self) -> None:
+        """Handle entering the TRACK step."""
+        if self._current_series is None or self._pipeline is None:
+            if self._current_image:
+                self._display_image(self._current_image)
+            return
+
+        state = self._current_series.pipeline_state
+
+        # Ensure preprocessing is done first
+        preprocess_hash = self._config.preprocess_config_hash()
+        if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
+            self._processing_label.setText("Auto-preprocessing...")
+            self._processing_label.show()
+            self._progress_bar.setValue(0)
+            self._progress_bar.show()
+            QApplication.processEvents()
+            self._preprocess_group(self._current_series, force=True, hide_progress=False)
+            self._processing_label.setText("Preprocessing complete. Starting tracking...")
+            QApplication.processEvents()
+
+        # Check if tracking is already done and current
+        if self._pipeline.is_tracking_current(self._current_series):
+            # Tracking already done — just display the annotated image
+            self._processing_label.hide()
+            self._progress_bar.hide()
+            self._force_unlock_ui()
+            if self._current_image:
+                self._display_image(self._current_image)
+            return
+
+        # Auto-run tracking if enabled
+        if self._auto_preview_action.isChecked():
+            self._processing_label.setText("Auto-tracking...")
+            self._processing_label.show()
+            self._progress_bar.setValue(0)
+            self._progress_bar.show()
+            QApplication.processEvents()
+            self._on_track_roots()
+            self._processing_label.hide()
+            self._progress_bar.hide()
+        else:
+            self._force_unlock_ui()
+            self._processing_label.hide()
+            self._progress_bar.hide()
+            if self._current_image:
+                self._display_image(self._current_image)
     
     def _update_config_from_panel(self) -> None:
         """Update config object from settings panel values."""
@@ -559,36 +559,70 @@ class MainWindow(QMainWindow):
         for key, value in values.items():
             if hasattr(self._config, key):
                 setattr(self._config, key, value)
-            
+
             # Handle nested registration settings
             if key == "reg_enabled":
                 self._config.registration.enabled = value
             elif key == "reg_margin":
                 self._config.registration.margin_ratio = value
+            # Handle nested threshold settings
+            elif key == "min_contour_area":
+                self._config.threshold.min_contour_area = value
+            elif key == "min_contour_length":
+                self._config.threshold.min_contour_length = value
     
     def _on_apply_settings(self) -> None:
         """Handle Apply button - reprocess current group with new settings."""
         if self._pipeline is None or self._current_series is None:
             QMessageBox.warning(self, "Warning", "Please load images first.")
             return
-        
+
+        # Snapshot config hashes BEFORE updating
+        old_preprocess_hash = self._config.preprocess_config_hash()
+        old_tracking_hash = self._config.tracking_config_hash()
+
         # Update config from settings panel
         self._update_config_from_panel()
-        
-        # Reprocess current group
-        self._preprocess_group(self._current_series, force=True)
+
+        # Determine what changed
+        preprocess_changed = (old_preprocess_hash != self._config.preprocess_config_hash())
+        tracking_changed = (old_tracking_hash != self._config.tracking_config_hash())
+
+        if preprocess_changed:
+            # Preprocessing params changed — invalidate everything and reprocess
+            self._current_series.clear_preprocessing_results()
+            self._preprocess_group(self._current_series, force=True)
+        elif tracking_changed:
+            # Only tracking params changed — invalidate tracking only
+            self._current_series.clear_tracking_results()
+            step = self._workflow_bar.get_current_step()
+            if step == WorkflowStep.TRACK and self._auto_preview_action.isChecked():
+                self._on_track_roots()
+            elif self._current_image:
+                self._display_image(self._current_image)
 
     def _on_apply_all_settings(self) -> None:
         """Handle Apply All button - reprocess ALL groups with new settings."""
         if self._pipeline is None or not self._series_dict:
             return
-        
+
+        # Snapshot config hashes BEFORE updating
+        old_preprocess_hash = self._config.preprocess_config_hash()
+        old_tracking_hash = self._config.tracking_config_hash()
+
         # Update config from settings panel
         self._update_config_from_panel()
-        
-        # Process all groups
-        # Process all groups
-        self._preprocess_all_groups(force=True)
+
+        preprocess_changed = (old_preprocess_hash != self._config.preprocess_config_hash())
+        tracking_changed = (old_tracking_hash != self._config.tracking_config_hash())
+
+        if preprocess_changed:
+            for series in self._series_dict.values():
+                series.clear_preprocessing_results()
+            self._preprocess_all_groups(force=True)
+        elif tracking_changed:
+            for series in self._series_dict.values():
+                series.clear_tracking_results()
 
     def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
         """Handle centroid drag - update image data and enable Re-detect."""
@@ -615,11 +649,11 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()
         
         try:
-            # TODO: Re-run centroid detection on current group
-            # For now, just reprocess
+            # Re-run preprocessing on current group
+            self._current_series.clear_tracking_results()
             for image_data in self._current_series.images:
                 self._pipeline.preprocess_image(image_data)
-            
+
             if self._current_image:
                 self._display_image(self._current_image)
         except Exception as e:
@@ -797,12 +831,14 @@ class MainWindow(QMainWindow):
             return
         
         # Calculate total images across all unprocessed groups (or all if forced)
+        current_hash = self._config.preprocess_config_hash()
         if force:
             unprocessed_groups = list(self._series_dict.values())
         else:
             unprocessed_groups = [
                 s for s in self._series_dict.values()
-                if not s.images or s.images[0].process is None
+                if not s.pipeline_state.preprocessed
+                or s.pipeline_state.preprocess_config_hash != current_hash
             ]
 
         if not unprocessed_groups:
@@ -847,10 +883,15 @@ class MainWindow(QMainWindow):
                 
                 # Register the series
                 self._pipeline.register_series(series)
-                
+
+                # Update pipeline state
+                series.pipeline_state.preprocessed = True
+                series.pipeline_state.preprocess_config_hash = self._config.preprocess_config_hash()
+                series.pipeline_state.invalidate_from('track')
+
                 # Update groups progress after each group
                 self._update_groups_progress()
-            
+
             # Mark step complete
             if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
                 self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
@@ -885,7 +926,7 @@ class MainWindow(QMainWindow):
             # Count groups with preprocessing done
             processed = sum(
                 1 for series in self._series_dict.values()
-                if series.images and series.images[0].process is not None
+                if series.pipeline_state.preprocessed
             ) if self._series_dict else 0
             text = f"{processed}/{total} groups processed"
 
@@ -923,8 +964,13 @@ class MainWindow(QMainWindow):
         if self._pipeline is None:
             return
         
-        # Check if already processed (first image has process data)
-        if not force and series.images and series.images[0].process is not None:
+        # Check if already processed with current config
+        current_hash = self._config.preprocess_config_hash()
+        already_done = (
+            series.pipeline_state.preprocessed
+            and series.pipeline_state.preprocess_config_hash == current_hash
+        )
+        if not force and already_done:
             if self._current_image:
                 self._display_image(self._current_image)
             return
@@ -963,14 +1009,20 @@ class MainWindow(QMainWindow):
             
             # Register the series
             self._pipeline.register_series(series)
-            
+
+            # Update pipeline state
+            series.pipeline_state.preprocessed = True
+            series.pipeline_state.preprocess_config_hash = self._config.preprocess_config_hash()
+            # Invalidate tracking since preprocessing changed
+            series.pipeline_state.invalidate_from('track')
+
             # Only mark complete if not already completed
             if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
                 self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
-            
+
             if self._current_image:
                 self._display_image(self._current_image)
-            
+
             self._update_groups_progress()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
@@ -980,9 +1032,6 @@ class MainWindow(QMainWindow):
                 self._processing_label.hide()
                 self._set_ui_locked(False)
             else:
-                # If chaining (e.g. before tracking), keep UI locked but reset cursor
-                # actually, tracking will set override cursor again, so we can restore here
-                # but we should keep progress bar visible
                 pass
         
         # Restore focus to tree
@@ -1048,14 +1097,14 @@ class MainWindow(QMainWindow):
         elif step == WorkflowStep.PREPROCESS:
             # Check if current group is preprocessed
             group_done = False
-            if self._current_series and self._current_series.images:
-                group_done = self._current_series.images[0].process is not None
-            
+            if self._current_series:
+                group_done = self._current_series.pipeline_state.preprocessed
+
             # Check if all groups are preprocessed
             all_done = False
             if self._series_dict:
                 all_done = all(
-                    series.images and series.images[0].process is not None
+                    series.pipeline_state.preprocessed
                     for series in self._series_dict.values()
                 )
             
@@ -1127,11 +1176,13 @@ class MainWindow(QMainWindow):
                 progress_callback=update_progress
             )
             
+            # Update pipeline state
+            self._current_series.pipeline_state.tracked = True
+            self._current_series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
+            self._current_series.pipeline_state.last_statistics = stats
+
             self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
-            # User requested to stay on TRACK step after processing
-            # self._workflow_bar.set_current_step(WorkflowStep.EXPORT)
-            # self._settings_panel.set_step(WorkflowStep.EXPORT)
-            
+
             if self._current_image:
                 self._display_image(self._current_image)
         except Exception as e:
@@ -1162,11 +1213,15 @@ class MainWindow(QMainWindow):
             QApplication.processEvents()
             
             try:
-                # Get all statistics
+                # Collect statistics (use cached when available)
                 all_stats = []
                 for series in self._series_dict.values():
-                    stats = self._pipeline.track_and_analyze_series(series)
-                    all_stats.extend(stats)
+                    state = series.pipeline_state
+                    if state.tracked and state.last_statistics:
+                        all_stats.extend(state.last_statistics)
+                    else:
+                        stats = self._pipeline.track_and_analyze_series(series)
+                        all_stats.extend(stats)
                 
                 csv_path = self._pipeline.export_results(all_stats)
                 
@@ -1205,30 +1260,16 @@ class MainWindow(QMainWindow):
             self._on_step_changed(new_step)
     
     def _on_next_step_clicked(self) -> None:
-        """
-        Handle Next button click.
-        
-        Auto-processes the current step if not complete, then advances to next step.
-        """
+        """Handle Next button click — advance to next step."""
         current = self._workflow_bar.get_current_step()
-        
-        # Can't go past export
+
         if current >= WorkflowStep.EXPORT:
             return
-        
-        # Check if we have images loaded (required for all steps)
+
         if not self._series_dict:
             QMessageBox.warning(self, "Warning", "Please load images first.")
             return
-        
-        # Simply advance to next step to let user decide what to process
-        # The auto-processing logic below was too aggressive (processing all groups)
-        if current < WorkflowStep.EXPORT:
-            new_step = WorkflowStep(current + 1)
-            self._workflow_bar.set_current_step(new_step)
-            self._on_step_changed(new_step)
-        
-        # Advance to next step
+
         new_step = WorkflowStep(current + 1)
         self._workflow_bar.set_current_step(new_step)
         self._on_step_changed(new_step)
