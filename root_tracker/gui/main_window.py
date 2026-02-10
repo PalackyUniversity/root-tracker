@@ -285,7 +285,6 @@ class MainWindow(QMainWindow):
 
         # Masking signals
         self._settings_panel.mask_tool_changed.connect(self._on_mask_tool_changed)
-        self._settings_panel.mask_apply_requested.connect(self._on_mask_apply)
         self._settings_panel.mask_erase_all_requested.connect(self._on_mask_erase_all)
 
         # Image viewer - centroid dragging
@@ -510,9 +509,6 @@ class MainWindow(QMainWindow):
                     self._current_series.user_mask,
                     self._current_series.working_mask
                 )
-                # Update Apply button state
-                has_changes = self._current_series.has_pending_mask_changes()
-                self._settings_panel.update_mask_apply_button(has_changes)
             else:
                 # Clear mask data in other steps
                 self._image_viewer.set_mask_data(None, None)
@@ -631,10 +627,36 @@ class MainWindow(QMainWindow):
                 self._config.threshold.min_contour_length = value
     
     def _on_apply_settings(self) -> None:
-        """Handle Apply button - reprocess current group with new settings."""
+        """Handle Apply button - reprocess current group with new settings and apply mask."""
         if self._pipeline is None or self._current_series is None:
             QMessageBox.warning(self, "Warning", "Please load images first.")
             return
+
+        step = self._workflow_bar.get_current_step()
+
+        # Handle mask application in Track step
+        mask_changed = False
+        if step == WorkflowStep.TRACK:
+            # Check if mask changed
+            mask_changed = self._current_series.has_pending_mask_changes()
+            if mask_changed:
+                # Apply mask
+                working_mask = self._image_viewer.get_working_mask()
+                self._current_series.user_mask = working_mask.copy() if working_mask is not None else None
+                self._current_series.working_mask = working_mask.copy() if working_mask is not None else None
+
+                # Save to disk
+                try:
+                    if working_mask is not None and np.any(working_mask > 0):
+                        mask_io.save_mask(self._current_series, self._config)
+                    else:
+                        # All mask erased - delete file
+                        mask_io.delete_mask(self._current_series, self._config)
+                except Exception as e:
+                    QMessageBox.warning(self, "Warning", f"Failed to save mask:\n{e}")
+
+                # Clear tracking results (mask changed)
+                self._current_series.clear_tracking_results()
 
         # Snapshot config hashes BEFORE updating
         old_preprocess_hash = self._config.preprocess_config_hash()
@@ -651,11 +673,11 @@ class MainWindow(QMainWindow):
             # Preprocessing params changed — invalidate everything and reprocess
             self._current_series.clear_preprocessing_results()
             self._preprocess_group(self._current_series, force=True)
-        elif tracking_changed:
-            # Only tracking params changed — invalidate tracking only
-            self._current_series.clear_tracking_results()
-            step = self._workflow_bar.get_current_step()
-            if step == WorkflowStep.TRACK and self._auto_preview_action.isChecked():
+        elif tracking_changed or mask_changed:
+            # Tracking params or mask changed — invalidate tracking only and retrack
+            if not mask_changed:  # Already cleared above if mask changed
+                self._current_series.clear_tracking_results()
+            if self._auto_preview_action.isChecked():
                 self._on_track_roots()
             elif self._current_image:
                 self._display_image(self._current_image)
@@ -1487,85 +1509,14 @@ class MainWindow(QMainWindow):
         self._image_viewer.set_mask_tool(tool, size)
 
     def _on_mask_modified(self) -> None:
-        """Handle mask modification - update Apply button state."""
+        """Handle mask modification - mark settings as dirty."""
         if self._current_series is not None:
             # Sync working mask from viewer to series
             working_mask = self._image_viewer.get_working_mask()
             self._current_series.working_mask = working_mask.copy() if working_mask is not None else None
 
-            # Update Apply button based on pending changes
-            has_changes = self._current_series.has_pending_mask_changes()
-            self._settings_panel.update_mask_apply_button(has_changes)
-
-    def _on_mask_apply(self) -> None:
-        """
-        Apply working mask and save to disk.
-
-        This commits the working_mask to user_mask, saves it, and optionally retracks.
-        """
-        if self._current_series is None or self._pipeline is None:
-            return
-
-        # Get working mask from viewer
-        working_mask = self._image_viewer.get_working_mask()
-
-        # Commit to series
-        self._current_series.user_mask = working_mask.copy() if working_mask is not None else None
-        self._current_series.working_mask = working_mask.copy() if working_mask is not None else None
-
-        # Save to disk
-        try:
-            if working_mask is not None:
-                mask_io.save_mask(self._current_series, self._config)
-            else:
-                # No mask - delete file if it exists
-                mask_io.delete_mask(self._current_series, self._config)
-        except Exception as e:
-            QMessageBox.warning(self, "Warning", f"Failed to save mask:\n{e}")
-
-        # Clear tracking results (mask changed)
-        self._current_series.clear_tracking_results()
-
-        # Update Apply button
-        self._settings_panel.update_mask_apply_button(False)
-
-        # Auto-retrack if enabled
-        if self._auto_preview_action.isChecked():
-            self._processing_label.setText("Re-tracking with new mask...")
-            self._processing_label.show()
-            self._progress_bar.setValue(0)
-            self._progress_bar.show()
-            QApplication.processEvents()
-
-            try:
-                # Define progress callback
-                def update_progress(current, total):
-                    if total > 0:
-                        percent = int((current / total) * 100)
-                        self._progress_bar.setValue(percent)
-                    QApplication.processEvents()
-
-                stats = self._pipeline.track_and_analyze_series(
-                    self._current_series,
-                    progress_callback=update_progress
-                )
-
-                # Update pipeline state
-                self._current_series.pipeline_state.tracked = True
-                self._current_series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
-                self._current_series.pipeline_state.last_statistics = stats
-
-                if self._current_image:
-                    self._display_image(self._current_image)
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
-            finally:
-                self._processing_label.hide()
-                self._progress_bar.hide()
-        else:
-            # Just update display
-            if self._current_image:
-                self._display_image(self._current_image)
+            # Mark settings as dirty so Apply buttons enable
+            self._settings_panel._mark_dirty()
 
     def _on_mask_erase_all(self) -> None:
         """Erase all masks (both working and applied)."""
@@ -1585,8 +1536,8 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
-        # Update Apply button
-        self._settings_panel.update_mask_apply_button(False)
+        # Mark as dirty so Apply button enables (to commit the erasure)
+        self._settings_panel._mark_dirty()
 
         # Clear tracking results
         self._current_series.clear_tracking_results()

@@ -40,7 +40,6 @@ class SettingsPanel(QWidget):
 
     # Masking signals
     mask_tool_changed = Signal(str, int)  # tool name, brush size
-    mask_apply_requested = Signal()
     mask_erase_all_requested = Signal()
     
     def __init__(self, config: Config, parent: QWidget | None = None) -> None:
@@ -61,7 +60,6 @@ class SettingsPanel(QWidget):
         self._move_radio: QRadioButton | None = None
         self._rect_radio: QRadioButton | None = None
         self._rect_eraser_radio: QRadioButton | None = None
-        self._mask_apply_btn: QPushButton | None = None
         self._mask_erase_all_btn: QPushButton | None = None
 
         self._setup_ui()
@@ -280,7 +278,7 @@ class SettingsPanel(QWidget):
         brush_row.addWidget(self._brush_radio)
         self._brush_size_spin = QSpinBox()
         self._brush_size_spin.setRange(1, 100)
-        self._brush_size_spin.setValue(10)
+        self._brush_size_spin.setValue(100)
         self._brush_size_spin.setSuffix(" px")
         self._brush_size_spin.setFixedWidth(80)
         self._brush_size_spin.valueChanged.connect(self._on_brush_size_changed)
@@ -300,7 +298,7 @@ class SettingsPanel(QWidget):
         brush_eraser_row.addWidget(self._brush_eraser_radio)
         self._brush_eraser_size_spin = QSpinBox()
         self._brush_eraser_size_spin.setRange(1, 100)
-        self._brush_eraser_size_spin.setValue(10)
+        self._brush_eraser_size_spin.setValue(100)
         self._brush_eraser_size_spin.setSuffix(" px")
         self._brush_eraser_size_spin.setFixedWidth(80)
         self._brush_eraser_size_spin.valueChanged.connect(self._on_brush_eraser_size_changed)
@@ -317,28 +315,6 @@ class SettingsPanel(QWidget):
         self._mask_erase_all_btn = QPushButton("Erase All")
         self._mask_erase_all_btn.clicked.connect(self.mask_erase_all_requested.emit)
         mask_layout.addWidget(self._mask_erase_all_btn)
-
-        # Apply Mask button
-        self._mask_apply_btn = QPushButton("Apply Mask")
-        self._mask_apply_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #5cb85c;
-                color: white;
-                font-weight: bold;
-                padding: 8px;
-                border-radius: 4px;
-            }
-            QPushButton:hover {
-                background-color: #449d44;
-            }
-            QPushButton:disabled {
-                background-color: #cccccc;
-                color: #666666;
-            }
-        """)
-        self._mask_apply_btn.clicked.connect(self.mask_apply_requested.emit)
-        self._mask_apply_btn.setEnabled(False)  # Disabled until there are pending changes
-        mask_layout.addWidget(self._mask_apply_btn)
 
         self._settings_layout.addWidget(mask_group)
 
@@ -390,19 +366,15 @@ class SettingsPanel(QWidget):
         if self._brush_eraser_radio is not None and self._brush_eraser_radio.isChecked():
             self.mask_tool_changed.emit(MaskTool.BRUSH_ERASER.value, size)
 
-    def update_mask_apply_button(self, has_pending_changes: bool) -> None:
+    def has_pending_mask_changes(self) -> bool:
         """
-        Update the Apply Mask button state.
+        Check if there are pending mask changes in Track step.
 
-        Args:
-            has_pending_changes: Whether there are uncommitted mask changes.
+        Returns:
+            True if in Track step and should mark dirty, False otherwise.
         """
-        if self._mask_apply_btn is not None:
-            self._mask_apply_btn.setEnabled(has_pending_changes)
-            if has_pending_changes:
-                self._mask_apply_btn.setText("Apply Mask *")
-            else:
-                self._mask_apply_btn.setText("Apply Mask")
+        # This will be called by main_window to check if Apply buttons should be enabled
+        return False  # Placeholder - actual check done in main_window
 
     def deselect_mask_tools(self) -> None:
         """Deselect all mask tools (go back to pan/zoom mode)."""
@@ -472,6 +444,11 @@ class SettingsPanel(QWidget):
     def _mark_clean(self) -> None:
         """Mark settings as clean (no pending changes)."""
         self._is_dirty = False
+        self._update_apply_button()
+
+    def _mark_dirty(self) -> None:
+        """Mark settings as dirty (has pending changes)."""
+        self._is_dirty = True
         self._update_apply_button()
     
     def _on_apply_clicked(self) -> None:
