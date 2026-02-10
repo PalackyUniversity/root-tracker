@@ -572,13 +572,12 @@ class MainWindow(QMainWindow):
         # Ensure preprocessing is done first
         preprocess_hash = self._config.preprocess_config_hash()
         if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
-            self._processing_label.setText("Auto-preprocessing...")
+            self._processing_label.setText("Preprocessing...")
             self._processing_label.show()
             self._progress_bar.setValue(0)
             self._progress_bar.show()
             QApplication.processEvents()
             self._preprocess_group(self._current_series, force=True, hide_progress=False)
-            self._processing_label.setText("Preprocessing complete. Starting tracking...")
             QApplication.processEvents()
 
         # Check if tracking is already done and current
@@ -593,7 +592,7 @@ class MainWindow(QMainWindow):
 
         # Auto-run tracking if enabled
         if self._auto_preview_action.isChecked():
-            self._processing_label.setText("Auto-tracking...")
+            self._processing_label.setText("Tracking...")
             self._processing_label.show()
             self._progress_bar.setValue(0)
             self._progress_bar.show()
@@ -802,23 +801,17 @@ class MainWindow(QMainWindow):
         start_time = time.time()
 
         try:
+            current_image_count = 0
             for i, image_data in enumerate(series.images):
                 if not image_data.barcode_detected:
-                    # Calculate ETA
-                    elapsed = time.time() - start_time
-                    if i > 0 and elapsed > 0:
-                        avg_time = elapsed / i
-                        remaining = total_images - i
-                        eta_seconds = int(avg_time * remaining)
-                        if eta_seconds >= 60:
-                            eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
-                        else:
-                            eta_text = f"{eta_seconds}s"
-                        self._processing_label.setText(f"ETA: {eta_text}")
-
+                    self._update_progress_label("Detecting barcodes", start_time, current_image_count, total_images)
                     self._pipeline.detect_barcode_in_image(image_data)
+                    current_image_count += 1
+                else:
+                    self._update_progress_label("Detecting barcodes", start_time, current_image_count, total_images)
+                    current_image_count += 1
 
-                self._progress_bar.setValue(i + 1)
+                self._progress_bar.setValue(current_image_count)
                 QApplication.processEvents()
 
             # Update warning count and tree (refresh preserves selection)
@@ -847,9 +840,33 @@ class MainWindow(QMainWindow):
             # Restore focus (tree was disabled during processing)
             self._image_tree.setFocus()
 
-            # Display the current image
             if self._current_image:
                 self._display_image(self._current_image)
+
+    def _update_progress_label(self, action_name: str, start_time: float, current: int, total: int) -> None:
+        """
+        Update processing label with action name and ETA.
+
+        Args:
+            action_name: Name of action (e.g., "Detecting barcodes").
+            start_time: Time when processing started.
+            current: Number of items processed so far.
+            total: Total number of items to process.
+        """
+        if current > 0:
+            elapsed = time.time() - start_time
+            if elapsed > 0:
+                avg_time = elapsed / current
+                remaining = total - current
+                eta_seconds = int(avg_time * remaining)
+                if eta_seconds >= 60:
+                    eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
+                else:
+                    eta_text = f"{eta_seconds}s"
+                self._processing_label.setText(f"{action_name}... ETA {eta_text}")
+                return
+
+        self._processing_label.setText(f"{action_name}...")
 
     def _continue_after_barcode_detection(self, series: 'ImageSeries') -> None:
         """
@@ -888,11 +905,13 @@ class MainWindow(QMainWindow):
                 QApplication.processEvents()
 
                 try:
+                    start_time = time.time()
                     # Define progress callback
                     def update_progress(current, total):
                         if total > 0:
                             percent = int((current / total) * 100)
                             self._progress_bar.setValue(percent)
+                            self._update_progress_label("Tracking", start_time, current, total)
                         QApplication.processEvents()
 
                     stats = self._pipeline.track_and_analyze_series(
@@ -958,24 +977,10 @@ class MainWindow(QMainWindow):
             for series in undetected_groups:
                 for image_data in series.images:
                     if not image_data.barcode_detected:
-                        current_image_count += 1
-                        
-                        # Calculate ETA
-                        elapsed = time.time() - start_time
-                        if current_image_count > 0 and elapsed > 0:
-                            avg_time = elapsed / current_image_count
-                            remaining = total_images - current_image_count
-                            eta_seconds = int(avg_time * remaining)
-                            if eta_seconds >= 60:
-                                eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
-                            else:
-                                eta_text = f"{eta_seconds}s"
-                            self._processing_label.setText(f"ETA: {eta_text}")
-                        
                         self._pipeline.detect_barcode_in_image(image_data)
-                    else:
-                        current_image_count += 1
                     
+                    current_image_count += 1
+                    self._update_progress_label("Detecting barcodes", start_time, current_image_count, total_images)
                     self._progress_bar.setValue(current_image_count)
                     QApplication.processEvents()
                 
@@ -1037,21 +1042,7 @@ class MainWindow(QMainWindow):
             for group_idx, series in enumerate(unprocessed_groups):
                 for i, image_data in enumerate(series.images):
                     current_image_count += 1
-                    
-                    # Calculate ETA
-                    elapsed = time.time() - start_time
-                    if current_image_count > 0 and elapsed > 0:
-                        avg_time_per_image = elapsed / current_image_count
-                        remaining_images = total_images - current_image_count
-                        eta_seconds = int(avg_time_per_image * remaining_images)
-                        if eta_seconds >= 60:
-                            eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
-                        else:
-                            eta_text = f"{eta_seconds}s"
-                        self._processing_label.setText(f"ETA: {eta_text}")
-                    else:
-                        self._processing_label.setText("Processing...")
-                    
+                    self._update_progress_label("Preprocessing", start_time, current_image_count, total_images)
                     self._pipeline.preprocess_image(image_data)
                     self._progress_bar.setValue(current_image_count)
                     QApplication.processEvents()
@@ -1155,7 +1146,7 @@ class MainWindow(QMainWindow):
         self._progress_bar.setMaximum(total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
-        self._processing_label.setText(f"Processing {series.group}...")
+        self._processing_label.setText(f"Preprocessing...")
         self._processing_label.show()
         self._set_ui_locked(True)
         QApplication.processEvents()
@@ -1164,20 +1155,7 @@ class MainWindow(QMainWindow):
 
         try:
             for i, image_data in enumerate(series.images):
-                # Calculate ETA
-                elapsed = time.time() - start_time
-                if i > 0 and elapsed > 0:
-                    avg_time_per_image = elapsed / i
-                    remaining_images = total_images - i
-                    eta_seconds = int(avg_time_per_image * remaining_images)
-                    if eta_seconds >= 60:
-                        eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
-                    else:
-                        eta_text = f"{eta_seconds}s"
-                    self._processing_label.setText(f"ETA: {eta_text}")
-                else:
-                    self._processing_label.setText("Processing...")
-
+                self._update_progress_label("Preprocessing", start_time, i + 1, total_images)
                 self._pipeline.preprocess_image(image_data)
                 self._progress_bar.setValue(i + 1)
                 QApplication.processEvents()
@@ -1262,11 +1240,13 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()
 
         try:
+            start_time = time.time()
             # Define progress callback
             def update_progress(current, total):
                 if total > 0:
                     percent = int((current / total) * 100)
                     self._progress_bar.setValue(percent)
+                    self._update_progress_label("Tracking", start_time, current, total)
                 QApplication.processEvents()
 
             stats = self._pipeline.track_and_analyze_series(
@@ -1407,7 +1387,7 @@ class MainWindow(QMainWindow):
             return
         
         # Prepare progress bar (always reset for tracking phase)
-        self._processing_label.setText("Tracking roots...")
+        self._processing_label.setText("Tracking...")
         self._processing_label.show()
         
         # Reset to percentage mode
@@ -1419,11 +1399,13 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()
         
         try:
+            start_time = time.time()
             # Define progress callback
             def update_progress(current, total):
                 if total > 0:
                     percent = int((current / total) * 100)
                     self._progress_bar.setValue(percent)
+                    self._update_progress_label("Tracking", start_time, current, total)
                 QApplication.processEvents()
             
             stats = self._pipeline.track_and_analyze_series(
