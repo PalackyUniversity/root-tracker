@@ -136,6 +136,10 @@ class RootThresholder:
         if user_mask is None:
             return mask
 
+        # Discard mask if dimensions don't match (preprocessing changed the crop)
+        if user_mask.shape[:2] != mask.shape[:2]:
+            return mask
+
         # Remove detections where user_mask is 255
         return cv2.bitwise_and(mask, cv2.bitwise_not(user_mask))
 

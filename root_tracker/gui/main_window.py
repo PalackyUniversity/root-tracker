@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
         self._series_dict: dict[str, ImageSeries] = {}
         self._current_image: ImageData | None = None
         self._current_series: ImageSeries | None = None
+        self._processing: bool = False  # Reentrancy guard for processEvents
         
         self.setWindowTitle("Root Tracker")
         self.setMinimumSize(1200, 800)
@@ -342,10 +343,11 @@ class MainWindow(QMainWindow):
 
     def _on_image_selected(self, image_data: ImageData) -> None:
         """Handle image selection in tree."""
+        step = self._workflow_bar.get_current_step()
+        if self._processing:
+            return
         self._current_image = image_data
         self._current_series = self._image_tree.get_selected_series()
-
-        step = self._workflow_bar.get_current_step()
 
         # Auto-detect barcodes for this group if on LOAD step and auto-preview enabled
         if (step == WorkflowStep.LOAD and
@@ -389,6 +391,8 @@ class MainWindow(QMainWindow):
     
     def _on_group_selected(self, series: ImageSeries) -> None:
         """Handle group selection in tree."""
+        if self._processing:
+            return
         # Reset settings for new group (discard unsaved changes)
         self._settings_panel.reset_for_group()
 
@@ -505,6 +509,11 @@ class MainWindow(QMainWindow):
 
             # Set mask data if in TRACK step
             if step == WorkflowStep.TRACK and self._current_series is not None:
+                # Erase mask if dimensions don't match (preprocessing changed the crop)
+                user_mask = self._current_series.user_mask
+                if user_mask is not None and user_mask.shape[:2] != image.shape[:2]:
+                    self._current_series.user_mask = None
+                    self._current_series.working_mask = None
                 self._image_viewer.set_mask_data(
                     self._current_series.user_mask,
                     self._current_series.working_mask
@@ -566,6 +575,8 @@ class MainWindow(QMainWindow):
             if self._current_image:
                 self._display_image(self._current_image)
             return
+
+        self._processing = True  # Guard before any processEvents() calls
 
         state = self._current_series.pipeline_state
 
@@ -877,6 +888,7 @@ class MainWindow(QMainWindow):
         Args:
             series: ImageSeries that was just processed.
         """
+        self._processing = True  # Guard before any processEvents() calls
         step = self._workflow_bar.get_current_step()
 
         if step == WorkflowStep.PREPROCESS:
@@ -1202,6 +1214,8 @@ class MainWindow(QMainWindow):
         if self._pipeline is None:
             return
 
+        self._processing = True  # Guard before any processEvents() calls
+
         # Step 1: Ensure barcodes are detected
         if not all(img.barcode_detected for img in series.images):
             self._processing_label.setText("Detecting barcodes...")
@@ -1274,6 +1288,7 @@ class MainWindow(QMainWindow):
     
     def _set_ui_locked(self, locked: bool) -> None:
         """Lock/unlock UI during processing."""
+        self._processing = locked
         if locked:
             QApplication.setOverrideCursor(Qt.WaitCursor)
         else:
@@ -1295,6 +1310,7 @@ class MainWindow(QMainWindow):
             
     def _force_unlock_ui(self) -> None:
         """Force unlock UI and reset cursor stack."""
+        self._processing = False
         while QApplication.overrideCursor() is not None:
             QApplication.restoreOverrideCursor()
             
@@ -1413,9 +1429,10 @@ class MainWindow(QMainWindow):
         self._progress_bar.setValue(0)
         self._progress_bar.show()
         
+        self._processing = True
         QApplication.setOverrideCursor(Qt.WaitCursor)
         QApplication.processEvents()
-        
+
         try:
             start_time = time.time()
             # Define progress callback
@@ -1425,12 +1442,12 @@ class MainWindow(QMainWindow):
                     self._progress_bar.setValue(percent)
                     self._update_progress_label("Tracking", start_time, current, total)
                 QApplication.processEvents()
-            
+
             stats = self._pipeline.track_and_analyze_series(
-                self._current_series, 
+                self._current_series,
                 progress_callback=update_progress
             )
-            
+
             # Update pipeline state
             self._current_series.pipeline_state.tracked = True
             self._current_series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
@@ -1443,10 +1460,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
         finally:
-            # Only hide if we showed it (logic slightly complex with auto-run, 
-            # but usually hiding here is safe as auto-run will also hide or rely on this)
-            # Actually, auto-run hides it at end of its block. 
-            # If we hide here, auto-run's hide is redundant which is fine.
             self._processing_label.hide()
             self._progress_bar.hide()
             self._force_unlock_ui()

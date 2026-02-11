@@ -184,10 +184,13 @@ class ImageSeries:
         self.pipeline_state.invalidate_from('track')
 
     def clear_preprocessing_results(self) -> None:
-        """Clear all preprocessing and tracking results."""
+        """Clear all preprocessing and tracking results (including masks)."""
         for img in self.images:
             img.clear_preprocessing_results()
         self.pipeline_state.invalidate_from('preprocess')
+        # Mask was drawn on preprocessed image coords — no longer valid
+        self.user_mask = None
+        self.working_mask = None
 
     def __post_init__(self) -> None:
         """Sort images by date after initialization."""

@@ -390,19 +390,21 @@ class RootTrackingPipeline:
                 mask_longest = np.zeros_like(skeleton_split)
                 conts = []
                 last_len = None
-                
+                visited = set()  # Prevent cycles in segment graph
+
                 # We need to trace back from the bottom point to the top
                 current_bottom = bottom
-                
+
                 while last_len != len(conts):
                     last_len = len(conts)
-                    for uc in upper_corners:
+                    for uc_idx, uc in enumerate(upper_corners):
                         # Find the segment that ends at current_bottom
-                        if 'lower_point' in uc and uc['lower_point'] == current_bottom:
+                        if 'lower_point' in uc and uc['lower_point'] == current_bottom and uc_idx not in visited:
+                            visited.add(uc_idx)
                             # Found the segment, add its contour
                             if uc['contour_index'] < len(segment_contours):
                                 conts.append(segment_contours[uc['contour_index']])
-                                
+
                             # Now find the pair that connects to the top of this segment
                             for p1, p2 in pairs:
                                 if p1 == uc['point']:
