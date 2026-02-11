@@ -6,7 +6,8 @@ Provides pan/zoom functionality using QGraphicsView.
 
 from PySide6.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
-    QWidget, QVBoxLayout, QGraphicsEllipseItem
+    QWidget, QVBoxLayout, QGraphicsEllipseItem, QGraphicsRectItem,
+    QGraphicsSimpleTextItem
 )
 from PySide6.QtCore import Qt, Signal, QPointF
 from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent
@@ -105,6 +106,7 @@ class ImageViewer(QWidget):
 
         self._zoom_factor = 1.0
         self._centroid_items: list[DraggableCentroid] = []
+        self._barcode_items: list[QGraphicsRectItem | QGraphicsSimpleTextItem] = []
 
         # Masking state
         self._mask_tool = MaskTool.NONE
@@ -271,6 +273,74 @@ class ImageViewer(QWidget):
     def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
         """Handle centroid drag - emit signal."""
         self.centroid_moved.emit(index, x, y)
+
+    # ========== Barcode Overlay Methods ==========
+
+    def set_barcode_overlay(
+        self, 
+        rect: tuple[int, int, int, int] | None, 
+        text: str, 
+        is_mismatch: bool,
+        is_missing: bool = False
+    ) -> None:
+        """
+        Display a barcode overlay that remains legible at any zoom.
+        
+        Args:
+            rect: (x, y, w, h) tuple or None.
+            text: Text to display.
+            is_mismatch: True if barcode does NOT match expected (Red).
+            is_missing: True if no barcode was detected at all (Orange).
+        """
+        self.clear_barcode_overlay()
+        
+        if is_missing:
+            # Draw "NO BARCODE DETECTED" warning at top-left
+            color = QColor(255, 140, 0)
+            text_item = QGraphicsSimpleTextItem("⚠️ NO BARCODE DETECTED")
+            text_item.setBrush(QBrush(color))
+            # Position at top-left with some padding
+            text_item.setPos(20, 20)
+            text_item.setFlag(QGraphicsSimpleTextItem.GraphicsItemFlag.ItemIgnoresTransformations)
+            font = text_item.font()
+            font.setBold(True)
+            font.setPointSize(12)
+            text_item.setFont(font)
+            text_item.setZValue(100)  # Ensure warning is on top
+            
+            self._scene.addItem(text_item)
+            self._barcode_items.append(text_item)
+            return
+
+        if rect is None:
+            return
+            
+        x, y, w, h = rect
+        color = QColor(255, 0, 0) if is_mismatch else QColor(0, 255, 0)
+        
+        # 1. (Removed) Rectangle - User requested text only
+        
+        # 2. Text label (ignore transformations for constant size)
+        text_item = QGraphicsSimpleTextItem(text)
+        text_item.setBrush(QBrush(color))
+        # Position above the box
+        # Since we use ItemIgnoresTransformations, the position is in scene coords
+        # but the drawing of text happens at 1:1 screen scale.
+        text_item.setPos(x, y - 20) 
+        text_item.setFlag(QGraphicsSimpleTextItem.GraphicsItemFlag.ItemIgnoresTransformations)
+        text_item.setZValue(50)  # Ensure text is on top of image
+        
+        self._scene.addItem(text_item)
+        self._barcode_items.append(text_item)
+
+    def clear_barcode_overlay(self) -> None:
+        """Remove barcode overlay items."""
+        if hasattr(self, '_barcode_items'):
+            for item in self._barcode_items:
+                self._scene.removeItem(item)
+            self._barcode_items.clear()
+        else:
+            self._barcode_items = []
 
     # ========== Masking Methods ==========
 

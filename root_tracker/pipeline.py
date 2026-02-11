@@ -124,8 +124,10 @@ class RootTrackingPipeline:
             if barcode_text:
                 # Compare with expected barcode (case-insensitive)
                 image_data.barcode_mismatch = barcode_text.lower() != image_data.barcode.lower()
+                image_data.barcode_not_found = False
             else:
                 image_data.barcode_mismatch = False
+                image_data.barcode_not_found = True
             
             return image_data.barcode_mismatch
             
@@ -133,6 +135,7 @@ class RootTrackingPipeline:
             image_data.barcode_read = ""
             image_data.barcode_rect = None
             image_data.barcode_mismatch = False
+            image_data.barcode_not_found = True
             image_data.barcode_detected = True  # Mark as detected even on failure
             return False
     

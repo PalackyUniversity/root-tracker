@@ -54,6 +54,7 @@ class ImageData:
     barcode_read: str = ""
     barcode_rect: tuple[int, int, int, int] | None = None  # (x, y, w, h) bounding box
     barcode_mismatch: bool = False  # True if detected barcode doesn't match expected
+    barcode_not_found: bool = False  # True if detection ran but no barcode found
     barcode_detected: bool = False  # True if barcode detection was attempted
     
     # Processed image arrays
@@ -121,6 +122,9 @@ class ImageData:
             path=self.path,
             barcode=self.barcode,
             barcode_read=self.barcode_read,
+            barcode_mismatch=self.barcode_mismatch,
+            barcode_not_found=self.barcode_not_found,
+            barcode_detected=self.barcode_detected,
             image=self.image.copy() if self.image is not None else None,
             process=self.process.copy() if self.process is not None else None,
             canny=self.canny.copy() if self.canny is not None else None,
@@ -233,9 +237,19 @@ class ImageSeries:
         return self.group.split("/")[-1]
     
     @property
-    def has_barcode_warning(self) -> bool:
+    def has_barcode_error(self) -> bool:
         """Check if any image has a barcode mismatch."""
         return any(img.barcode_mismatch for img in self.images)
+
+    @property
+    def barcode_error_count(self) -> int:
+        """Count number of images with barcode mismatches."""
+        return sum(1 for img in self.images if img.barcode_mismatch)
+
+    @property
+    def has_barcode_warning(self) -> bool:
+        """Check if any image has 'no barcode' warning."""
+        return any(img.barcode_not_found for img in self.images)
 
     @property
     def is_set_aside(self) -> bool:

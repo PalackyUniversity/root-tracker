@@ -454,23 +454,29 @@ class MainWindow(QMainWindow):
             image = cv2.imread(image_data.path)
             
             # No rotation in LOAD step - show raw image
-            pass
+            self._image_viewer.set_image(image)
             
-            # Draw barcode overlay if detected (detection is done at group level)
+            # Draw barcode overlay if detected
             if image_data.barcode_rect is not None:
-                x, y, w, h = image_data.barcode_rect
-                # Green for match, red for mismatch
-                color = (0, 0, 255) if image_data.barcode_mismatch else (0, 255, 0)
-                cv2.rectangle(image, (x, y), (x + w, y + h), color, 3)
-                
-                # Draw detected barcode text
                 label = image_data.barcode_read
                 if image_data.barcode_mismatch:
                     label = f"X {label} (expected: {image_data.barcode})"
-                cv2.putText(
-                    image, label, (x, y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2
+                
+                self._image_viewer.set_barcode_overlay(
+                    image_data.barcode_rect, 
+                    label, 
+                    image_data.barcode_mismatch
                 )
+            elif image_data.barcode_not_found and image_data.barcode_detected:
+                # Show generic warning overlay
+                self._image_viewer.set_barcode_overlay(
+                    None,
+                    "",
+                    is_mismatch=False,
+                    is_missing=True
+                )
+            else:
+                self._image_viewer.clear_barcode_overlay()
             
             self._image_viewer.clear_centroids()
         elif step == WorkflowStep.PREPROCESS:
@@ -479,6 +485,7 @@ class MainWindow(QMainWindow):
                 image = image_data.image
                 # Don't show centroids in Preprocess step (requested)
                 self._image_viewer.clear_centroids()
+                self._image_viewer.clear_barcode_overlay()
             else:
                 # Preview: Rotate and auto-crop (to avoid "flash" of raw image)
                 image = cv2.imread(image_data.path)
@@ -496,6 +503,7 @@ class MainWindow(QMainWindow):
                     pass
                 
                 self._image_viewer.clear_centroids()
+                self._image_viewer.clear_barcode_overlay()
         else:
             # TRACK/EXPORT: prefer annotated image, fall back to preprocessed
             if image_data.image_annotated is not None:
@@ -507,6 +515,7 @@ class MainWindow(QMainWindow):
             else:
                 image = cv2.imread(image_data.path)
             self._image_viewer.clear_centroids()
+            self._image_viewer.clear_barcode_overlay()
 
         if image is not None:
             self._image_viewer.set_image(image)

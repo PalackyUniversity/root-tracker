@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QLabel, QPushButton, QStackedWidget, QMenu
 )
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtGui import QAction, QFont
+from PySide6.QtGui import QAction, QFont, QColor
 
 from ..models import ImageSeries, ImageData
 
@@ -119,10 +119,37 @@ class ImageTree(QWidget):
             if self._filter_aside and is_group_aside:
                 continue
                 
-            # Create group item with count (add warning icon if mismatches exist)
-            warning_prefix = "⚠️ " if series.has_barcode_warning else ""
-            group_item = QTreeWidgetItem([f"{warning_prefix}{group_name} ({len(series.images)})"])
+            # Create group item with status
+            
+            # Determine status
+            prefix = ""
+            color = None
+            tooltip = None
+            
+            if series.has_barcode_error:
+                prefix = "❌ "
+                error_count = series.barcode_error_count
+                suffix = f" (Err: {error_count})"
+                color = Qt.GlobalColor.red
+                tooltip = f"Barcode mismatch in {error_count} image(s)"
+            elif series.has_barcode_warning:
+                prefix = "⚠️ "
+                suffix = ""
+                # Orange-ish color for warning
+                color = QColor(255, 140, 0)
+                tooltip = "Barcode not detected in some images"
+            else:
+                suffix = ""
+            
+            group_text = f"{prefix}{group_name} ({len(series.images)}){suffix}"
+            group_item = QTreeWidgetItem([group_text])
             group_item.setFlags(group_item.flags() | Qt.ItemFlag.ItemIsSelectable)
+            
+            if color:
+                group_item.setForeground(0, color)
+            
+            if tooltip:
+                group_item.setToolTip(0, tooltip)
             
             # Strikethrough if set aside
             if is_group_aside:
@@ -146,7 +173,28 @@ class ImageTree(QWidget):
                     continue
                     
                 date_str = image_data.date.strftime("%Y-%m-%d") if image_data.date else "Unknown"
-                image_item = QTreeWidgetItem([date_str])
+                
+                # Image status
+                img_prefix = ""
+                img_color = None
+                img_tooltip = None
+                
+                if image_data.barcode_mismatch:
+                    img_prefix = "❌ "
+                    img_color = Qt.GlobalColor.red
+                    img_tooltip = f"Barcode mismatch: Read '{image_data.barcode_read}', Expected '{image_data.barcode}'"
+                elif image_data.barcode_not_found and image_data.barcode_detected:
+                    img_prefix = "⚠️ "
+                    img_color = QColor(255, 140, 0)
+                    img_tooltip = "No barcode detected"
+                
+                image_item = QTreeWidgetItem([f"{img_prefix}{date_str}"])
+                
+                if img_color:
+                    image_item.setForeground(0, img_color)
+                
+                if img_tooltip:
+                    image_item.setToolTip(0, img_tooltip)
                 
                 if is_img_aside:
                     font = image_item.font(0)
