@@ -122,7 +122,8 @@ class RootLinker:
         upper_corners: list[dict],
         lower_corners: list[dict],
         plant_positions_x: list[int],
-        plant_positions_y: list[int]
+        plant_positions_y: list[int],
+        previous_colored_samples: dict[int, set] = None
     ) -> tuple[list[tuple], dict[tuple, int], dict[int, set]]:
         """
         Link upper corners to lower corners and assign plant IDs.
@@ -132,6 +133,7 @@ class RootLinker:
             lower_corners: List of lower corner info dicts.
             plant_positions_x: X coordinates of plant centers.
             plant_positions_y: Y coordinates of plant centers.
+            previous_colored_samples: Sample pixels from previous frame for consistency.
             
         Returns:
             Tuple of:
@@ -160,6 +162,44 @@ class RootLinker:
         
         for upper in upper_corners_sorted:
             up_point = upper['point']
+            forced_plant_id = None
+
+            # Consistency check: look for overlap with previous frame
+            if previous_colored_samples and 'contour' in upper:
+                current_pixels = set(map(tuple, upper['contour'][:, 0]))
+                
+                # Check overlap with each plant from previous frame
+                for plant_id, prev_pixels in previous_colored_samples.items():
+                    if not prev_pixels:
+                        continue
+                    
+                    # Compute intersection
+                    # We can assume small overlap is sufficient
+                    intersection_size = len(current_pixels.intersection(prev_pixels))
+                    if intersection_size > 0:
+                        forced_plant_id = plant_id
+                        break
+            
+            # If we found a forced match, we try to link to that plant
+            if forced_plant_id is not None:
+                # Find nearest colored point belonging to this plant
+                plant_points = [p for p, pid in colored.items() if pid == forced_plant_id]
+                if plant_points:
+                    # Find nearest point in that plant's set
+                    best_point = min(plant_points, key=lambda p: abs(p[0] - up_point[0]) + abs(p[1] - up_point[1]))
+
+                    if 'lower_point' in upper:
+                        colored[upper['lower_point']] = forced_plant_id
+                    
+                    pairs.append((up_point, best_point))
+                    
+                    if 'contour' in upper:
+                        pixels = set(map(tuple, upper['contour'][:, 0]))
+                        colored_samples[forced_plant_id] = colored_samples[forced_plant_id].union(pixels)
+                        
+                    continue
+
+            # Standard linking logic (if not forced)
             
             # Find best matching lower corner
             costs = []

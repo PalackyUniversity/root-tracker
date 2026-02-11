@@ -333,9 +333,17 @@ class RootTrackingPipeline:
                     if lower_info['point'] not in [e for e in endpoints]:
                         lower_corners.append(lower_info)
             
+            # Retrieve previous colored samples for consistency
+            previous_colored_samples = None
+            if idx > 0:
+                prev_image = series.images[idx - 1]
+                if hasattr(prev_image, 'colored_samples'):
+                    previous_colored_samples = prev_image.colored_samples
+            
             # Link segments and assign to plants
             pairs, colored, colored_samples = self.linker.link_corners(
-                upper_corners, lower_corners, pos_x_median, pos_y_median
+                upper_corners, lower_corners, pos_x_median, pos_y_median,
+                previous_colored_samples=previous_colored_samples
             )
             
             image_data.colored_samples = colored_samples
