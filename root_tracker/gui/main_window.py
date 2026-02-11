@@ -779,6 +779,8 @@ class MainWindow(QMainWindow):
             self._detect_barcodes_all_groups()
         elif step == WorkflowStep.PREPROCESS:
             self._preprocess_all_groups()
+        elif step == WorkflowStep.TRACK:
+            self._track_all_groups()
     
     def _detect_barcodes_in_group(self, series: 'ImageSeries', continue_to_next_step: bool = False) -> None:
         """
@@ -1099,7 +1101,7 @@ class MainWindow(QMainWindow):
                 1 for series in self._series_dict.values()
                 if series.images and all(img.barcode_detected for img in series.images)
             ) if self._series_dict else 0
-            text = f"{processed}/{total} groups scanned"
+            text = f"{processed}/{total} groups processed"
         else:
             # Count groups with preprocessing done
             processed = sum(
@@ -1414,6 +1416,82 @@ class MainWindow(QMainWindow):
         # Hide groups progress label
         self._groups_progress_label.hide()
     
+    def _track_all_groups(self) -> None:
+        """Track all untracked groups with progress bar."""
+        if self._pipeline is None or not self._series_dict:
+            return
+
+        untracked = [
+            s for s in self._series_dict.values()
+            if not self._pipeline.is_tracking_current(s)
+        ]
+        if not untracked:
+            return
+
+        # Ensure all groups are preprocessed first
+        preprocess_hash = self._config.preprocess_config_hash()
+        need_preprocess = [
+            s for s in untracked
+            if not s.pipeline_state.preprocessed
+            or s.pipeline_state.preprocess_config_hash != preprocess_hash
+        ]
+        if need_preprocess:
+            self._preprocess_all_groups()
+            # Re-evaluate untracked after preprocessing
+            untracked = [
+                s for s in self._series_dict.values()
+                if not self._pipeline.is_tracking_current(s)
+            ]
+            if not untracked:
+                return
+
+        total_images = sum(len(s.images) for s in untracked)
+
+        self._set_ui_locked(True)
+        self._progress_bar.setRange(0, total_images)
+        self._progress_bar.setValue(0)
+        self._progress_bar.show()
+        self._processing_label.show()
+
+        current_image_count = 0
+        start_time = time.time()
+
+        try:
+            for series in untracked:
+                def update_progress(current, total):
+                    nonlocal current_image_count
+                    done = current_image_count + current
+                    self._progress_bar.setValue(done)
+                    self._update_progress_label("Tracking", start_time, done, total_images)
+                    QApplication.processEvents()
+
+                stats = self._pipeline.track_and_analyze_series(
+                    series,
+                    progress_callback=update_progress
+                )
+                current_image_count += len(series.images)
+
+                series.pipeline_state.tracked = True
+                series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
+                series.pipeline_state.last_statistics = stats
+
+                self._update_groups_progress()
+
+            if not self._workflow_bar.is_step_completed(WorkflowStep.TRACK):
+                self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
+
+            if self._current_image:
+                self._display_image(self._current_image)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
+        finally:
+            self._progress_bar.hide()
+            self._processing_label.hide()
+            self._set_ui_locked(False)
+
+        self._image_tree.setFocus()
+
     def _on_track_roots(self) -> None:
         """Run root tracking on current group."""
         if self._pipeline is None or self._current_series is None:
