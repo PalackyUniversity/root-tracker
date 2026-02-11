@@ -100,6 +100,12 @@ class ImageData:
         self.positions_y = []
 
     @property
+    def is_set_aside(self) -> bool:
+        """Check if image is in 'aside' folder."""
+        # Simple check if 'aside' is one of the path components
+        return 'aside' in Path(self.path).parts
+
+    @property
     def filename(self) -> str:
         """Get the filename without path."""
         return Path(self.path).name
@@ -230,6 +236,13 @@ class ImageSeries:
     def has_barcode_warning(self) -> bool:
         """Check if any image has a barcode mismatch."""
         return any(img.barcode_mismatch for img in self.images)
+
+    @property
+    def is_set_aside(self) -> bool:
+        """Check if all images in series are set aside."""
+        # If any image is set aside, the whole group is effectively set aside
+        # (since we move the whole group folder usually)
+        return all(img.is_set_aside for img in self.images) if self.images else False
 
     def has_pending_mask_changes(self) -> bool:
         """Check if there are uncommitted mask edits."""

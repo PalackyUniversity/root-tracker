@@ -77,8 +77,15 @@ class ImageLoader:
         Returns:
             List of image file paths.
         """
-        pattern = os.path.join(self.config.data.input, "*")
-        return glob(pattern)
+        # Main directory
+        main_pattern = os.path.join(self.config.data.input, "*")
+        files = glob(main_pattern)
+        
+        # Aside directory
+        aside_pattern = os.path.join(self.config.data.input, "aside", "*")
+        files.extend(glob(aside_pattern))
+        
+        return files
     
     def create_series(self) -> dict[str, ImageSeries]:
         """

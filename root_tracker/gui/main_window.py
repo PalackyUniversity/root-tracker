@@ -5,6 +5,7 @@ Integrates all components into the main window layout.
 """
 
 import os
+import shutil
 import time
 import cv2
 import numpy as np
@@ -276,6 +277,9 @@ class MainWindow(QMainWindow):
         self._image_tree.image_selected.connect(self._on_image_selected)
         self._image_tree.group_selected.connect(self._on_group_selected)
         self._image_tree.load_requested.connect(self._on_load_images)
+        self._image_tree.set_aside_requested.connect(self._on_set_aside_requested)
+        self._image_tree.unset_aside_requested.connect(self._on_unset_aside_requested)
+        self._image_tree.delete_requested.connect(self._on_delete_requested)
         
         # Settings panel
         self._settings_panel.apply_requested.connect(self._on_apply_settings)
@@ -538,7 +542,11 @@ class MainWindow(QMainWindow):
             self._settings_panel.hide()
         else:
             self._settings_panel.show()
+            self._settings_panel.show()
             self._settings_panel.set_step(step)
+            
+        # Update tree filtering: show aside items ONLY in LOAD step
+        self._image_tree.set_filter_aside(step != WorkflowStep.LOAD)
 
         # Step-specific auto-processing
         if step == WorkflowStep.PREPROCESS:
@@ -781,6 +789,173 @@ class MainWindow(QMainWindow):
             self._preprocess_all_groups()
         elif step == WorkflowStep.TRACK:
             self._track_all_groups()
+    
+    def _on_set_aside_requested(self, item: ImageData | ImageSeries) -> None:
+        """Handle request to set an item aside (move to aside/ folder)."""
+        base_dir = self._config.data.input
+        aside_base = os.path.join(base_dir, "aside")
+        
+        # Collect items to move
+        items_to_move = []
+        if isinstance(item, ImageData):
+            items_to_move.append(item)
+        else:
+            # It's a series - move all images
+            items_to_move.extend(item.images)
+            
+        if not items_to_move:
+            return
+
+        try:
+            for image_data in items_to_move:
+                src_path = image_data.path
+                
+                try:
+                    rel_path = os.path.relpath(src_path, base_dir)
+                except ValueError:
+                     # If file is not in base_dir, maybe it's already in aside or elsewhere?
+                     # But we allow moving FROM base TO aside.
+                     continue
+                     
+                target_path = os.path.join(aside_base, rel_path)
+                
+                # Ensure target directory exists
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                
+                shutil.move(src_path, target_path)
+                image_data.path = target_path
+            
+            # If it was a series, we might want to update the group identifier if it contained path info?
+            # But group is logical, so we leave it.
+            # Actually, if we move ALL images, the series is now effectively "aside".
+            
+            self._image_tree.refresh()
+            
+            # Clear selection if needed
+            self._check_selection_visibility()
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to move item aside:\n{e}")
+
+    def _check_selection_visibility(self) -> None:
+        """Clear selection if the selected item is no longer visible in current step."""
+        step = self._workflow_bar.get_current_step()
+        selected = self._image_tree.get_selected_data()
+        
+        # If we have a selection, checks if it should be hidden
+        if selected and step != WorkflowStep.LOAD:
+            # Check if selected item is now aside
+            # If selected is series, checking it is_set_aside
+            is_aside = False
+            if isinstance(selected, ImageData):
+                is_aside = selected.is_set_aside
+            elif isinstance(selected, ImageSeries):
+                is_aside = selected.is_set_aside
+            
+            if is_aside:
+                self._current_image = None
+                self._current_series = None
+                # Refesh triggers selection restore, but if it's hidden it won't be selected?
+                # ImageTree.refresh tries to restore.
+                # If we want to force clear:
+                self._image_tree.clear_selection()
+                self._image_viewer.clear()
+
+    def _on_unset_aside_requested(self, item: ImageData | ImageSeries) -> None:
+        """Handle request to restore an item from aside."""
+        base_dir = self._config.data.input
+        aside_base = os.path.join(base_dir, "aside")
+        
+        items_to_move = []
+        if isinstance(item, ImageData):
+            items_to_move.append(item)
+        else:
+            items_to_move.extend(item.images)
+            
+        try:
+            for image_data in items_to_move:
+                src_path = image_data.path
+                
+                try:
+                    rel_path = os.path.relpath(src_path, aside_base)
+                except ValueError:
+                    # Not in aside folder?
+                    continue
+                    
+                target_path = os.path.join(base_dir, rel_path)
+                
+                # Ensure target directory exists
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                
+                shutil.move(src_path, target_path)
+                image_data.path = target_path
+
+            self._image_tree.refresh()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to restore item:\n{e}")
+
+    def _on_delete_requested(self, item: ImageData | ImageSeries) -> None:
+        """Handle request to delete an item."""
+        if isinstance(item, ImageData):
+            name = item.filename
+            items_to_delete = [item]
+        else:
+            name = f"Group {item.barcode}"
+            items_to_delete = item.images[:]  # Copy list
+            
+        confirm = QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to permanently delete {name}?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+        
+        if confirm == QMessageBox.StandardButton.Yes:
+            try:
+                for image_data in items_to_delete:
+                    if os.path.exists(image_data.path):
+                        os.remove(image_data.path)
+                    
+                    # update data structures
+                    # If dealing with single image delete
+                    if isinstance(item, ImageData):
+                        # Find series
+                        for series in self._series_dict.values():
+                            if image_data in series.images:
+                                series.images.remove(image_data)
+                                break
+                
+                # If deleted whole series
+                if isinstance(item, ImageSeries):
+                    # Remove from dict
+                    keys_to_remove = [k for k, v in self._series_dict.items() if v is item]
+                    for k in keys_to_remove:
+                        del self._series_dict[k]
+                
+                self._image_tree.refresh()
+                self._current_image = None
+                self._current_series = None
+                self._image_viewer.clear()
+                        
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to delete item:\n{e}")
+
+            return
+
+        # Continue to next step if requested
+        if continue_to_next_step:
+            self._continue_after_barcode_detection(series)
+        else:
+            # Normal completion - hide progress and unlock
+            self._progress_bar.hide()
+            self._processing_label.hide()
+            self._set_ui_locked(False)
+
+            # Restore focus (tree was disabled during processing)
+            self._image_tree.setFocus()
+
+            if self._current_image:
+                self._display_image(self._current_image)
     
     def _detect_barcodes_in_group(self, series: 'ImageSeries', continue_to_next_step: bool = False) -> None:
         """

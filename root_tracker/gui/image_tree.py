@@ -7,9 +7,10 @@ Shows an empty state with load button when no images are loaded.
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem,
-    QLabel, QPushButton, QStackedWidget
+    QLabel, QPushButton, QStackedWidget, QMenu
 )
 from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QAction, QFont
 
 from ..models import ImageSeries, ImageData
 
@@ -34,11 +35,17 @@ class ImageTree(QWidget):
     group_selected = Signal(object)  # ImageSeries
     load_requested = Signal()  # Emitted from empty state button
     
+    # Context menu signals
+    set_aside_requested = Signal(object)  # ImageData or ImageSeries
+    unset_aside_requested = Signal(object)  # ImageData or ImageSeries
+    delete_requested = Signal(object)  # ImageData or ImageSeries
+    
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         
         self._series_dict: dict[str, ImageSeries] = {}
         self._item_to_data: dict[int, ImageData | ImageSeries] = {}
+        self._filter_aside: bool = False  # If True, hide items that are set aside
         
         self._setup_ui()
     
@@ -73,6 +80,10 @@ class ImageTree(QWidget):
         self._tree.itemSelectionChanged.connect(self._on_selection_changed)
         self._tree.setIndentation(20)
         
+        # Enable context menu
+        self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self._tree.customContextMenuRequested.connect(self._show_context_menu)
+        
         self._stack.addWidget(self._tree)  # Index 1: tree
         
         layout.addWidget(self._stack)
@@ -80,6 +91,12 @@ class ImageTree(QWidget):
         # Show empty state by default
         self._stack.setCurrentIndex(0)
     
+    def set_filter_aside(self, filter_aside: bool) -> None:
+        """Set whether to hide items that are set aside."""
+        if self._filter_aside != filter_aside:
+            self._filter_aside = filter_aside
+            self.refresh()
+
     def set_series(self, series_dict: dict[str, ImageSeries]) -> None:
         """
         Populate the tree with image series.
@@ -96,20 +113,53 @@ class ImageTree(QWidget):
             return
         
         for group_name, series in sorted(series_dict.items()):
+            is_group_aside = series.is_set_aside
+            
+            # Skip if we're filtering aside items and this group is aside
+            if self._filter_aside and is_group_aside:
+                continue
+                
             # Create group item with count (add warning icon if mismatches exist)
             warning_prefix = "⚠️ " if series.has_barcode_warning else ""
             group_item = QTreeWidgetItem([f"{warning_prefix}{group_name} ({len(series.images)})"])
             group_item.setFlags(group_item.flags() | Qt.ItemFlag.ItemIsSelectable)
+            
+            # Strikethrough if set aside
+            if is_group_aside:
+                font = group_item.font(0)
+                font.setStrikeOut(True)
+                group_item.setFont(0, font)
+                group_item.setForeground(0, Qt.GlobalColor.gray)
+                
             self._item_to_data[id(group_item)] = series
             
             # Add image children - just show date
             for image_data in series.images:
+                # If group is aside, images are aside.
+                # If group is NOT aside, individual images might still be aside (if we supported individual move, 
+                # but currently we support per-file or per-group. If per-file move makes group mixed, `is_set_aside` on group might be false/complex)
+                # But `is_set_aside` on Series returns True ONLY if all are aside. 
+                # Let's check individual image aside status.
+                is_img_aside = image_data.is_set_aside
+                
+                if self._filter_aside and is_img_aside:
+                    continue
+                    
                 date_str = image_data.date.strftime("%Y-%m-%d") if image_data.date else "Unknown"
                 image_item = QTreeWidgetItem([date_str])
+                
+                if is_img_aside:
+                    font = image_item.font(0)
+                    font.setStrikeOut(True)
+                    image_item.setFont(0, font)
+                    image_item.setForeground(0, Qt.GlobalColor.gray)
+                    
                 self._item_to_data[id(image_item)] = image_data
                 group_item.addChild(image_item)
             
-            self._tree.addTopLevelItem(group_item)
+            # Only add group if it has visible children or if it's the group itself that matched visibility
+            if group_item.childCount() > 0 or (not self._filter_aside and is_group_aside):
+                self._tree.addTopLevelItem(group_item)
         
         # Expand all groups
         self._tree.expandAll()
@@ -238,3 +288,49 @@ class ImageTree(QWidget):
     def setFocus(self) -> None:
         """Set focus to the internal tree widget for keyboard navigation."""
         self._tree.setFocus()
+
+    def clear_selection(self) -> None:
+        """Clear current selection."""
+        self._tree.clearSelection()
+
+    def _show_context_menu(self, position) -> None:
+        """Show context menu for tree items."""
+        item = self._tree.itemAt(position)
+        if item is None:
+            return
+            
+        data = self._item_to_data.get(id(item))
+        if data is None:
+            return
+            
+        menu = QMenu(self)
+        
+        # Determine if item is already set aside
+        is_aside = data.is_set_aside
+        
+        if is_aside:
+            action_text = "Restore from Aside"
+            action_handler = self.unset_aside_requested
+        else:
+            action_text = "Set Aside"
+            action_handler = self.set_aside_requested
+            
+        aside_action = QAction(action_text, self)
+        aside_action.triggered.connect(lambda: action_handler.emit(data))
+        menu.addAction(aside_action)
+        
+        # Detailed tooltip for "Set Aside"
+        if not is_aside:
+            aside_action.setToolTip(
+                "Moves this item to an 'aside' subfolder.\n"
+                "It will be excluded from computation and export.\n"
+                "You can see it in 'Load' tab as crossed out."
+            )
+            
+        menu.addSeparator()
+        
+        delete_action = QAction("Delete", self)
+        delete_action.triggered.connect(lambda: self.delete_requested.emit(data))
+        menu.addAction(delete_action)
+        
+        menu.exec(self._tree.viewport().mapToGlobal(position))
