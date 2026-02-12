@@ -194,15 +194,19 @@ class RootTrackingPipeline:
         image_data.process = self.thresholder.apply_margins(image_data.process)
         image_data.image = self.thresholder.apply_margins(image_data.image)
     
-    def preprocess_series(self, series: ImageSeries) -> None:
+    def preprocess_series(self, series: ImageSeries, progress_callback: callable = None) -> None:
         """
         Preprocess all images in a series.
         
         Args:
             series: ImageSeries to preprocess.
+            progress_callback: Optional callback(current, total) for progress.
         """
-        for image_data in series.images:
+        total = len(series.images)
+        for i, image_data in enumerate(series.images):
             self.preprocess_image(image_data)
+            if progress_callback:
+                progress_callback(i + 1, total)
     
     def register_series(self, series: ImageSeries) -> None:
         """
@@ -601,18 +605,31 @@ def preprocess_and_cache_worker(args: tuple) -> str:
     """Preprocess a series and save to disk cache. Pickle-friendly for multiprocessing.
 
     Args:
-        args: Tuple of (config, series).
+        args: Tuple of (config, series, optional queue).
 
     Returns:
         The series group name.
     """
-    config, series = args
+    if len(args) == 3:
+        config, series, queue = args
+    else:
+        config, series = args
+        queue = None
+
     pipeline = RootTrackingPipeline(config)
+    
+    # Callback to put progress into queue
+    def on_progress(current, total):
+        if queue:
+            # We report 1 unit of progress per image completed to the global counter
+            queue.put(1)
+
     # Detect barcodes if not already done
     for img in series.images:
         if not img.barcode_detected:
             pipeline.detect_barcode_in_image(img)
-    pipeline.preprocess_series(series)
+            
+    pipeline.preprocess_series(series, progress_callback=on_progress)
     pipeline.register_series(series)
     series.pipeline_state.preprocessed = True
     series.pipeline_state.preprocess_config_hash = config.preprocess_config_hash()
@@ -627,13 +644,24 @@ def track_and_cache_worker(args: tuple) -> tuple:
     Handles preprocessing if needed (not yet done or arrays freed).
 
     Args:
-        args: Tuple of (config, series).
+        args: Tuple of (config, series, optional queue).
 
     Returns:
         Tuple of (group_name, stats_dicts, state_dict) with lightweight data only.
     """
-    config, series = args
+    if len(args) == 3:
+        config, series, queue = args
+    else:
+        config, series = args
+        queue = None
+
     pipeline = RootTrackingPipeline(config)
+
+    # Callback to put progress into queue
+    def on_progress(current, total):
+        if queue:
+            # We report 1 unit of progress per image completed to the global counter
+            queue.put(1)
 
     # Detect barcodes if not already done
     for img in series.images:
@@ -654,7 +682,7 @@ def track_and_cache_worker(args: tuple) -> tuple:
         # Preprocessed but arrays freed — reload from cache
         series_cache.load_series(series, config)
 
-    stats = pipeline.track_and_analyze_series(series)
+    stats = pipeline.track_and_analyze_series(series, progress_callback=on_progress)
 
     state.tracked = True
     state.tracking_config_hash = config.tracking_config_hash()

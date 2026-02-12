@@ -6,6 +6,7 @@ Integrates all components into the main window layout.
 
 import os
 import multiprocessing as mp
+from multiprocessing import Manager
 import shutil
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -1050,32 +1051,71 @@ class MainWindow(QMainWindow):
 
     def _update_progress_label(self, start_time: float, current: int, total: int) -> None:
         """
-        Update processing label with ETA only.
+        Update processing label with smoothed ETA.
 
-        Shows nothing until the first item completes and a meaningful
-        estimate is available.  Hides itself when all items are done.
+        Uses a coasting algorithm to count down smoothly between updates,
+        avoiding jumps due to parallel processing batches.
 
         Args:
             start_time: Time when processing started.
             current: Number of items processed so far.
             total: Total number of items to process.
         """
-        if 0 < current < total:
-            elapsed = time.time() - start_time
-            if elapsed > 0:
-                avg_time = elapsed / current
-                remaining = total - current
-                eta_seconds = int(avg_time * remaining)
-                if eta_seconds >= 60:
-                    eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
-                else:
-                    eta_text = f"{eta_seconds}s"
-                self._processing_label.setText(f"ETA: {eta_text}")
-                self._processing_label.show()
-                return
+        if current <= 0 or current >= total:
+            if current >= total:
+                self._processing_label.setText("Finishing up...")
+            else:
+                self._processing_label.setText("Starting...")
+            self._processing_label.show()
+            return
 
-        self._processing_label.setText("")
-        self._processing_label.hide()
+        elapsed = time.time() - start_time
+        
+        # Calculate raw ETA based on average speed
+        avg_time = elapsed / current
+        remaining_items = total - current
+        raw_eta = avg_time * remaining_items
+        
+        # Smooth the ETA
+        # If we have a previous ETA estimate, don't jump wildly.
+        # instead, check if the raw ETA is significantly different.
+        
+        current_time = time.time()
+        
+        if not hasattr(self, '_last_eta_update_time'):
+            # First valid estimate
+            self._last_eta_estimate = raw_eta
+            self._last_eta_update_time = current_time
+        else:
+            time_since_last = current_time - self._last_eta_update_time
+            
+            # Coasting: ideally, the new ETA should be old_eta - time_since_last
+            projected_eta = max(0, self._last_eta_estimate - time_since_last)
+            
+            # Deviation check: is the raw_eta very different from projected?
+            # If within threshold (e.g. 5 seconds or 20%), stick to projected to appear smooth.
+            diff = abs(raw_eta - projected_eta)
+            threshold = max(5.0, projected_eta * 0.2)
+            
+            if diff < threshold:
+                # Coasting feels better
+                self._last_eta_estimate = projected_eta
+            else:
+                # Significant change (speed up or slow down)
+                # Blend it to avoid instant jump
+                self._last_eta_estimate = (projected_eta * 0.7) + (raw_eta * 0.3)
+            
+            self._last_eta_update_time = current_time
+
+        eta_seconds = int(self._last_eta_estimate)
+        
+        if eta_seconds >= 60:
+            eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
+        else:
+            eta_text = f"{eta_seconds}s"
+            
+        self._processing_label.setText(f"ETA: {eta_text}")
+        self._processing_label.show()
 
     def _continue_after_barcode_detection(self, series: 'ImageSeries') -> None:
         """
@@ -1239,23 +1279,47 @@ class MainWindow(QMainWindow):
         # Lock UI
         self._set_ui_locked(True)
 
-        # Progress bar tracks completed groups
-        self._progress_bar.setRange(0, total_groups)
+        # Count total images for progress bar
+        total_images = sum(len(s.images) for s in unprocessed_groups)
+
+        # Progress bar tracks completed images
+        self._progress_bar.setRange(0, total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
 
         start_time = time.time()
-        completed = 0
+        # Reset ETA smoother
+        if hasattr(self, '_last_eta_update_time'):
+            del self._last_eta_update_time
+
+        completed_images = 0
 
         try:
+            # Create a manager and queue for progress updates
+            manager = Manager()
+            progress_queue = manager.Queue()
+
             ctx = mp.get_context('spawn')
             with ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx) as executor:
+                # Pass queue to workers
                 futures = {
-                    executor.submit(preprocess_and_cache_worker, (self._config, s)): s
+                    executor.submit(preprocess_and_cache_worker, (self._config, s, progress_queue)): s
                     for s in unprocessed_groups
                 }
 
                 while futures:
+                    # Check for progress updates from queue
+                    while not progress_queue.empty():
+                        try:
+                            _ = progress_queue.get_nowait()
+                            completed_images += 1
+                            self._progress_bar.setValue(completed_images)
+                            self._update_progress_label(start_time, completed_images, total_images)
+                        except Exception:
+                            pass
+                    
+                    QApplication.processEvents()
+
                     done = [f for f in futures if f.done()]
                     for f in done:
                         series = futures.pop(f)
@@ -1268,16 +1332,15 @@ class MainWindow(QMainWindow):
                         except Exception as e:
                             print(f"Error preprocessing {series.group}: {e}")
 
-                        completed += 1
-                        self._progress_bar.setValue(completed)
+                        # Update groups progress (just for the text label)
                         self._update_groups_progress()
-
-                    # Update ETA every iteration so countdown ticks
-                    self._update_progress_label(start_time, completed, total_groups)
+                    
+                    # Update ETA even if no progress, to handle coasting
+                    if completed_images > 0:
+                        self._update_progress_label(start_time, completed_images, total_images)
 
                     if futures:
-                        QApplication.processEvents()
-                        time.sleep(0.1)
+                        time.sleep(0.05)
 
             # Reload current series from cache if it was in the batch
             if self._current_series in unprocessed_groups:
@@ -1680,6 +1743,7 @@ class MainWindow(QMainWindow):
             return
 
         total_groups = len(untracked)
+        total_images = sum(len(s.images) for s in untracked)
 
         # Prepare: save cache + free arrays so pickling is lightweight
         for series in untracked:
@@ -1688,22 +1752,43 @@ class MainWindow(QMainWindow):
             self._free_series_arrays(series)
 
         self._set_ui_locked(True)
-        self._progress_bar.setRange(0, total_groups)
+        self._progress_bar.setRange(0, total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
 
         start_time = time.time()
-        completed = 0
+        # Reset ETA smoother
+        if hasattr(self, '_last_eta_update_time'):
+            del self._last_eta_update_time
+
+        completed_images = 0
 
         try:
+            # Create a manager and queue for progress updates
+            manager = Manager()
+            progress_queue = manager.Queue()
+
             ctx = mp.get_context('spawn')
             with ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx) as executor:
+                # Pass queue to workers
                 futures = {
-                    executor.submit(track_and_cache_worker, (self._config, s)): s
+                    executor.submit(track_and_cache_worker, (self._config, s, progress_queue)): s
                     for s in untracked
                 }
 
                 while futures:
+                    # Check for progress updates from queue
+                    while not progress_queue.empty():
+                        try:
+                            _ = progress_queue.get_nowait()
+                            completed_images += 1
+                            self._progress_bar.setValue(completed_images)
+                            self._update_progress_label(start_time, completed_images, total_images)
+                        except Exception:
+                            pass
+                    
+                    QApplication.processEvents()
+
                     done = [f for f in futures if f.done()]
                     for f in done:
                         series = futures.pop(f)
@@ -1718,16 +1803,14 @@ class MainWindow(QMainWindow):
                         except Exception as e:
                             print(f"Error tracking {series.group}: {e}")
 
-                        completed += 1
-                        self._progress_bar.setValue(completed)
                         self._update_groups_progress()
 
-                    # Update ETA every iteration so countdown ticks
-                    self._update_progress_label(start_time, completed, total_groups)
+                    # Update ETA even if no progress, to handle coasting
+                    if completed_images > 0:
+                        self._update_progress_label(start_time, completed_images, total_images)
 
                     if futures:
-                        QApplication.processEvents()
-                        time.sleep(0.1)
+                        time.sleep(0.05)
 
             # Reload current series from cache for display
             if self._current_series is not None:
