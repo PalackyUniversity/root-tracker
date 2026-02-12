@@ -608,6 +608,10 @@ def preprocess_and_cache_worker(args: tuple) -> str:
     """
     config, series = args
     pipeline = RootTrackingPipeline(config)
+    # Detect barcodes if not already done
+    for img in series.images:
+        if not img.barcode_detected:
+            pipeline.detect_barcode_in_image(img)
     pipeline.preprocess_series(series)
     pipeline.register_series(series)
     series.pipeline_state.preprocessed = True
@@ -630,6 +634,11 @@ def track_and_cache_worker(args: tuple) -> tuple:
     """
     config, series = args
     pipeline = RootTrackingPipeline(config)
+
+    # Detect barcodes if not already done
+    for img in series.images:
+        if not img.barcode_detected:
+            pipeline.detect_barcode_in_image(img)
 
     preprocess_hash = config.preprocess_config_hash()
     state = series.pipeline_state

@@ -1270,8 +1270,10 @@ class MainWindow(QMainWindow):
 
                         completed += 1
                         self._progress_bar.setValue(completed)
-                        self._update_progress_label(start_time, completed, total_groups)
                         self._update_groups_progress()
+
+                    # Update ETA every iteration so countdown ticks
+                    self._update_progress_label(start_time, completed, total_groups)
 
                     if futures:
                         QApplication.processEvents()
@@ -1718,8 +1720,10 @@ class MainWindow(QMainWindow):
 
                         completed += 1
                         self._progress_bar.setValue(completed)
-                        self._update_progress_label(start_time, completed, total_groups)
                         self._update_groups_progress()
+
+                    # Update ETA every iteration so countdown ticks
+                    self._update_progress_label(start_time, completed, total_groups)
 
                     if futures:
                         QApplication.processEvents()
