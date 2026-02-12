@@ -5,7 +5,11 @@ data:
   output: "result/"                   # Output dir with results for sanity check
   statistics: "statistics_clear.csv"  # Output statistics file
 
-margin: 0.03    # Margin for cropping (left, right, bottom) - range 0-1
+# Margin for cropping (left, right, bottom) - range 0-1
+margin_top: 0.0
+margin_bottom: 0.03
+margin_left: 0.03
+margin_right: 0.03
 rotation: 180
 n_clusters: 6   # Number of plants in one image - if >6 plants, ensure that in variable COLORS are enough colors
 
