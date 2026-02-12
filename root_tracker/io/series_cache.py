@@ -129,6 +129,81 @@ def save_series(series: ImageSeries, config: Config) -> Optional[Path]:
         return None
 
 
+
+def load_series_state(series: ImageSeries, config: Config) -> bool:
+    """
+    Restore a series' metadata and state from a .npz cache file, WITHOUT loading heavy image arrays.
+
+    Used during startup/loading to quickly populate the UI with processed state.
+
+    Args:
+        series: The image series to restore into.
+        config: Configuration object.
+
+    Returns:
+        True if successfully loaded state, False if cache missing/corrupt.
+    """
+    cache_path = get_cache_path(series, config)
+
+    if not cache_path.exists():
+        return False
+
+    try:
+        # Load only metadata
+        # We must load the zip file but we extract only _metadata and user_mask
+        data = np.load(str(cache_path), allow_pickle=False)
+
+        if "_metadata" not in data:
+            data.close()
+            return False
+
+        meta_bytes = data["_metadata"].tobytes()
+        metadata = json.loads(meta_bytes.decode("utf-8"))
+
+        # Restore pipeline state
+        state = series.pipeline_state
+        state.preprocess_config_hash = metadata.get("preprocess_config_hash", "")
+        state.tracking_config_hash = metadata.get("tracking_config_hash", "")
+        state.preprocessed = metadata.get("preprocessed", False)
+        state.tracked = metadata.get("tracked", False)
+
+        # Restore statistics
+        state.last_statistics = metadata.get("statistics", [])
+
+        # Restore per-image metadata
+        images_meta = metadata.get("images", [])
+        for idx, img in enumerate(series.images):
+            if idx < len(images_meta):
+                img_meta = images_meta[idx]
+                for field_name in _SCALAR_FIELDS:
+                    if field_name in img_meta:
+                        setattr(img, field_name, img_meta[field_name])
+                for field_name in _LIST_FIELDS:
+                    if field_name in img_meta:
+                        setattr(img, field_name, list(img_meta[field_name]))
+                for field_name in _BARCODE_FIELDS:
+                    if field_name in img_meta:
+                        val = img_meta[field_name]
+                        if field_name == "barcode_rect" and val is not None:
+                            setattr(img, field_name, tuple(val))
+                        else:
+                            setattr(img, field_name, val)
+
+        # Restore user mask if present (usually small enough to keep in memory)
+        if "user_mask" in data:
+            series.user_mask = data["user_mask"]
+            # Initialize working mask copy
+            series.working_mask = series.user_mask.copy()
+
+        data.close()
+        # logger.debug("Loaded cache state for series %s", series.group)
+        return True
+
+    except Exception as e:
+        logger.warning("Failed to load cache state for series %s: %s", series.group, e)
+        return False
+
+
 def load_series(series: ImageSeries, config: Config) -> bool:
     """
     Restore a series' arrays and metadata from a .npz cache file.

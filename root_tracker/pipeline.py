@@ -92,6 +92,11 @@ class RootTrackingPipeline:
             Dictionary mapping group names to ImageSeries.
         """
         self._series = self.loader.create_series()
+        
+        # Try to load cached state for each series
+        for series in self._series.values():
+            series_cache.load_series_state(series, self.config)
+            
         return self._series
     
     def detect_barcode_in_image(self, image_data: ImageData) -> bool:
