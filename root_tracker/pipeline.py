@@ -17,7 +17,7 @@ from .preprocessing import ImageCropper, GreenAreaDetector, BackgroundRemover
 from .registration import ImageRegistrator
 from .tracking import RootThresholder, RootSkeletonizer, CornerDetector, RootLinker
 from .analysis import StatisticsCalculator
-from .io import ImageLoader, ResultExporter, BarcodeReader
+from .io import ImageLoader, ResultExporter, BarcodeReader, series_cache
 
 
 # Suppress numpy divide warnings (from original code)
@@ -595,3 +595,70 @@ def _process_series_standalone(args: tuple) -> list[PlantStatistics]:
     config, series = args
     pipeline = RootTrackingPipeline(config)
     return pipeline.process_series_wrapper(series)
+
+
+def preprocess_and_cache_worker(args: tuple) -> str:
+    """Preprocess a series and save to disk cache. Pickle-friendly for multiprocessing.
+
+    Args:
+        args: Tuple of (config, series).
+
+    Returns:
+        The series group name.
+    """
+    config, series = args
+    pipeline = RootTrackingPipeline(config)
+    pipeline.preprocess_series(series)
+    pipeline.register_series(series)
+    series.pipeline_state.preprocessed = True
+    series.pipeline_state.preprocess_config_hash = config.preprocess_config_hash()
+    series.pipeline_state.invalidate_from('track')
+    series_cache.save_series(series, config)
+    return series.group
+
+
+def track_and_cache_worker(args: tuple) -> tuple:
+    """Track a series and save to disk cache. Pickle-friendly for multiprocessing.
+
+    Handles preprocessing if needed (not yet done or arrays freed).
+
+    Args:
+        args: Tuple of (config, series).
+
+    Returns:
+        Tuple of (group_name, stats_dicts, state_dict) with lightweight data only.
+    """
+    config, series = args
+    pipeline = RootTrackingPipeline(config)
+
+    preprocess_hash = config.preprocess_config_hash()
+    state = series.pipeline_state
+
+    # Ensure preprocessed
+    if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
+        pipeline.preprocess_series(series)
+        pipeline.register_series(series)
+        state.preprocessed = True
+        state.preprocess_config_hash = preprocess_hash
+        state.invalidate_from('track')
+    elif series.images and series.images[0].image is None:
+        # Preprocessed but arrays freed — reload from cache
+        series_cache.load_series(series, config)
+
+    stats = pipeline.track_and_analyze_series(series)
+
+    state.tracked = True
+    state.tracking_config_hash = config.tracking_config_hash()
+    state.last_statistics = stats
+
+    series_cache.save_series(series, config)
+
+    # Return lightweight results (no numpy arrays)
+    stats_dicts = [s.to_dict() if hasattr(s, 'to_dict') else s for s in stats]
+    state_dict = {
+        'preprocessed': state.preprocessed,
+        'preprocess_config_hash': state.preprocess_config_hash,
+        'tracked': state.tracked,
+        'tracking_config_hash': state.tracking_config_hash,
+    }
+    return series.group, stats_dicts, state_dict

@@ -5,8 +5,10 @@ Integrates all components into the main window layout.
 """
 
 import os
+import multiprocessing as mp
 import shutil
 import time
+from concurrent.futures import ProcessPoolExecutor
 import cv2
 import numpy as np
 from PySide6.QtWidgets import (
@@ -19,8 +21,8 @@ from PySide6.QtGui import QAction, QKeySequence
 
 from ..config import Config
 from ..models import ImageData, ImageSeries
-from ..pipeline import RootTrackingPipeline
-from ..io import ImageLoader, mask_io
+from ..pipeline import RootTrackingPipeline, preprocess_and_cache_worker, track_and_cache_worker
+from ..io import ImageLoader, mask_io, series_cache
 
 from .workflow_bar import WorkflowBar, WorkflowStep
 from .image_tree import ImageTree
@@ -351,6 +353,10 @@ class MainWindow(QMainWindow):
         self._current_image = image_data
         self._current_series = self._image_tree.get_selected_series()
 
+        # Reload from cache if arrays were freed
+        if self._current_series is not None:
+            self._ensure_series_loaded(self._current_series)
+
         # Auto-detect barcodes for this group if on LOAD step and auto-preview enabled
         if (step == WorkflowStep.LOAD and
             self._auto_preview_action.isChecked() and
@@ -404,6 +410,9 @@ class MainWindow(QMainWindow):
         self._current_series = series
         self._current_image = series.images[0] if series.images else None
 
+        # Reload from cache if arrays were freed
+        self._ensure_series_loaded(series)
+
         # Initialize working_mask if needed
         if series.working_mask is None and series.user_mask is not None:
             series.working_mask = series.user_mask.copy()
@@ -444,6 +453,10 @@ class MainWindow(QMainWindow):
     
     def _display_image(self, image_data: ImageData) -> None:
         """Display an image in the viewer."""
+        # Reload from cache if arrays were freed
+        if self._current_series is not None:
+            self._ensure_series_loaded(self._current_series)
+
         # Determine which image to show based on workflow step
         step = self._workflow_bar.get_current_step()
         
@@ -598,7 +611,6 @@ class MainWindow(QMainWindow):
         # Ensure preprocessing is done first
         preprocess_hash = self._config.preprocess_config_hash()
         if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
-            self._processing_label.setText("Preprocessing...")
             self._processing_label.show()
             self._progress_bar.setValue(0)
             self._progress_bar.show()
@@ -618,7 +630,6 @@ class MainWindow(QMainWindow):
 
         # Auto-run tracking if enabled
         if self._auto_preview_action.isChecked():
-            self._processing_label.setText("Tracking...")
             self._processing_label.show()
             self._progress_bar.setValue(0)
             self._progress_bar.show()
@@ -990,7 +1001,6 @@ class MainWindow(QMainWindow):
         self._progress_bar.setMaximum(total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
-        self._processing_label.setText("Detecting barcodes...")
         self._processing_label.show()
 
         start_time = time.time()
@@ -999,11 +1009,11 @@ class MainWindow(QMainWindow):
             current_image_count = 0
             for i, image_data in enumerate(series.images):
                 if not image_data.barcode_detected:
-                    self._update_progress_label("Detecting barcodes", start_time, current_image_count, total_images)
+                    self._update_progress_label(start_time, current_image_count, total_images)
                     self._pipeline.detect_barcode_in_image(image_data)
                     current_image_count += 1
                 else:
-                    self._update_progress_label("Detecting barcodes", start_time, current_image_count, total_images)
+                    self._update_progress_label(start_time, current_image_count, total_images)
                     current_image_count += 1
 
                 self._progress_bar.setValue(current_image_count)
@@ -1038,17 +1048,19 @@ class MainWindow(QMainWindow):
             if self._current_image:
                 self._display_image(self._current_image)
 
-    def _update_progress_label(self, action_name: str, start_time: float, current: int, total: int) -> None:
+    def _update_progress_label(self, start_time: float, current: int, total: int) -> None:
         """
-        Update processing label with action name and ETA.
+        Update processing label with ETA only.
+
+        Shows nothing until the first item completes and a meaningful
+        estimate is available.  Hides itself when all items are done.
 
         Args:
-            action_name: Name of action (e.g., "Detecting barcodes").
             start_time: Time when processing started.
             current: Number of items processed so far.
             total: Total number of items to process.
         """
-        if current > 0:
+        if 0 < current < total:
             elapsed = time.time() - start_time
             if elapsed > 0:
                 avg_time = elapsed / current
@@ -1058,10 +1070,12 @@ class MainWindow(QMainWindow):
                     eta_text = f"{eta_seconds // 60}m {eta_seconds % 60}s"
                 else:
                     eta_text = f"{eta_seconds}s"
-                self._processing_label.setText(f"{action_name}... ETA {eta_text}")
+                self._processing_label.setText(f"ETA: {eta_text}")
+                self._processing_label.show()
                 return
 
-        self._processing_label.setText(f"{action_name}...")
+        self._processing_label.setText("")
+        self._processing_label.hide()
 
     def _continue_after_barcode_detection(self, series: 'ImageSeries') -> None:
         """
@@ -1090,13 +1104,11 @@ class MainWindow(QMainWindow):
             preprocess_hash = self._config.preprocess_config_hash()
             state = series.pipeline_state
             if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
-                self._processing_label.setText("Preprocessing...")
                 QApplication.processEvents()
                 self._preprocess_group(series, force=True, hide_progress=False)
 
             # Check if tracking is needed
             if not self._pipeline.is_tracking_current(series):
-                self._processing_label.setText("Tracking...")
                 self._progress_bar.setValue(0)
                 QApplication.processEvents()
 
@@ -1107,7 +1119,7 @@ class MainWindow(QMainWindow):
                         if total > 0:
                             percent = int((current / total) * 100)
                             self._progress_bar.setValue(percent)
-                            self._update_progress_label("Tracking", start_time, current, total)
+                            self._update_progress_label(start_time, current, total)
                         QApplication.processEvents()
 
                     stats = self._pipeline.track_and_analyze_series(
@@ -1163,20 +1175,19 @@ class MainWindow(QMainWindow):
         self._progress_bar.setMaximum(total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
-        self._processing_label.setText("Detecting barcodes...")
         self._processing_label.show()
-        
+
         current_image_count = 0
         start_time = time.time()
-        
+
         try:
             for series in undetected_groups:
                 for image_data in series.images:
                     if not image_data.barcode_detected:
                         self._pipeline.detect_barcode_in_image(image_data)
-                    
+
                     current_image_count += 1
-                    self._update_progress_label("Detecting barcodes", start_time, current_image_count, total_images)
+                    self._update_progress_label(start_time, current_image_count, total_images)
                     self._progress_bar.setValue(current_image_count)
                     QApplication.processEvents()
                 
@@ -1202,11 +1213,14 @@ class MainWindow(QMainWindow):
             self._display_image(self._current_image)
     
     def _preprocess_all_groups(self, force: bool = False) -> None:
-        """Preprocess all unprocessed groups with progress bar."""
+        """Preprocess all unprocessed groups in parallel using all CPU cores.
+
+        Submits each group to a ProcessPoolExecutor. Workers save results
+        to disk cache. Progress bar tracks completed groups.
+        """
         if self._pipeline is None or not self._series_dict:
             return
-        
-        # Calculate total images across all unprocessed groups (or all if forced)
+
         current_hash = self._config.preprocess_config_hash()
         if force:
             unprocessed_groups = list(self._series_dict.values())
@@ -1219,55 +1233,68 @@ class MainWindow(QMainWindow):
 
         if not unprocessed_groups:
             return
-        
-        total_images = sum(len(s.images) for s in unprocessed_groups)
+
+        total_groups = len(unprocessed_groups)
 
         # Lock UI
         self._set_ui_locked(True)
-        
-        # Setup cumulative progress bar
-        self._progress_bar.setMaximum(total_images)
+
+        # Progress bar tracks completed groups
+        self._progress_bar.setRange(0, total_groups)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
-        self._processing_label.show()
-        
-        current_image_count = 0
+
         start_time = time.time()
-        
+        completed = 0
+
         try:
-            for group_idx, series in enumerate(unprocessed_groups):
-                for i, image_data in enumerate(series.images):
-                    current_image_count += 1
-                    self._update_progress_label("Preprocessing", start_time, current_image_count, total_images)
-                    self._pipeline.preprocess_image(image_data)
-                    self._progress_bar.setValue(current_image_count)
-                    QApplication.processEvents()
-                
-                # Register the series
-                self._pipeline.register_series(series)
+            ctx = mp.get_context('spawn')
+            with ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx) as executor:
+                futures = {
+                    executor.submit(preprocess_and_cache_worker, (self._config, s)): s
+                    for s in unprocessed_groups
+                }
 
-                # Update pipeline state
-                series.pipeline_state.preprocessed = True
-                series.pipeline_state.preprocess_config_hash = self._config.preprocess_config_hash()
-                series.pipeline_state.invalidate_from('track')
+                while futures:
+                    done = [f for f in futures if f.done()]
+                    for f in done:
+                        series = futures.pop(f)
+                        try:
+                            f.result()
+                            # Update pipeline state in main process
+                            series.pipeline_state.preprocessed = True
+                            series.pipeline_state.preprocess_config_hash = current_hash
+                            series.pipeline_state.invalidate_from('track')
+                        except Exception as e:
+                            print(f"Error preprocessing {series.group}: {e}")
 
-                # Update groups progress after each group
-                self._update_groups_progress()
+                        completed += 1
+                        self._progress_bar.setValue(completed)
+                        self._update_progress_label(start_time, completed, total_groups)
+                        self._update_groups_progress()
+
+                    if futures:
+                        QApplication.processEvents()
+                        time.sleep(0.1)
+
+            # Reload current series from cache if it was in the batch
+            if self._current_series in unprocessed_groups:
+                self._ensure_series_loaded(self._current_series)
 
             # Mark step complete
             if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
                 self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
-            
+
             if self._current_image:
                 self._display_image(self._current_image)
-                
+
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
         finally:
             self._progress_bar.hide()
             self._processing_label.hide()
             self._set_ui_locked(False)
-        
+
         # Restore focus to tree
         self._image_tree.setFocus()
     
@@ -1342,7 +1369,6 @@ class MainWindow(QMainWindow):
         self._progress_bar.setMaximum(total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
-        self._processing_label.setText(f"Preprocessing...")
         self._processing_label.show()
         self._set_ui_locked(True)
         QApplication.processEvents()
@@ -1351,7 +1377,7 @@ class MainWindow(QMainWindow):
 
         try:
             for i, image_data in enumerate(series.images):
-                self._update_progress_label("Preprocessing", start_time, i + 1, total_images)
+                self._update_progress_label(start_time, i + 1, total_images)
                 self._pipeline.preprocess_image(image_data)
                 self._progress_bar.setValue(i + 1)
                 QApplication.processEvents()
@@ -1402,7 +1428,6 @@ class MainWindow(QMainWindow):
 
         # Step 1: Ensure barcodes are detected
         if not all(img.barcode_detected for img in series.images):
-            self._processing_label.setText("Detecting barcodes...")
             self._processing_label.show()
             self._progress_bar.setValue(0)
             self._progress_bar.show()
@@ -1413,7 +1438,6 @@ class MainWindow(QMainWindow):
         preprocess_hash = self._config.preprocess_config_hash()
         state = series.pipeline_state
         if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
-            self._processing_label.setText("Preprocessing...")
             self._processing_label.show()
             self._progress_bar.setValue(0)
             self._progress_bar.show()
@@ -1431,7 +1455,6 @@ class MainWindow(QMainWindow):
             return
 
         # Step 4: Run tracking
-        self._processing_label.setText("Tracking...")
         self._processing_label.show()
         self._progress_bar.setValue(0)
         self._progress_bar.show()
@@ -1444,7 +1467,7 @@ class MainWindow(QMainWindow):
                 if total > 0:
                     percent = int((current / total) * 100)
                     self._progress_bar.setValue(percent)
-                    self._update_progress_label("Tracking", start_time, current, total)
+                    self._update_progress_label(start_time, current, total)
                 QApplication.processEvents()
 
             stats = self._pipeline.track_and_analyze_series(
@@ -1507,6 +1530,25 @@ class MainWindow(QMainWindow):
         
         self._update_process_button_states()
     
+    def _ensure_series_loaded(self, series: 'ImageSeries') -> None:
+        """Reload series arrays from disk cache if they were freed."""
+        if series is None:
+            return
+        sample = series.images[0] if series.images else None
+        if sample and sample.image is None and series.pipeline_state.preprocessed:
+            series_cache.load_series(series, self._config)
+
+    @staticmethod
+    def _free_series_arrays(series: 'ImageSeries') -> None:
+        """Free heavy image arrays from a series to reduce RAM usage."""
+        for img in series.images:
+            img.image = None
+            img.process = None
+            img.canny = None
+            img.diff = None
+            img.image_annotated = None
+            img.colored_samples = {}
+
     def _update_process_button_states(self) -> None:
         """Update process button enabled states based on current step and processing status."""
         step = self._workflow_bar.get_current_step()
@@ -1620,7 +1662,11 @@ class MainWindow(QMainWindow):
         self._groups_progress_label.hide()
     
     def _track_all_groups(self) -> None:
-        """Track all untracked groups with progress bar."""
+        """Track all untracked groups in parallel using all CPU cores.
+
+        Saves caches and frees arrays before submitting, so workers
+        reload from disk. Progress bar tracks completed groups.
+        """
         if self._pipeline is None or not self._series_dict:
             return
 
@@ -1631,54 +1677,57 @@ class MainWindow(QMainWindow):
         if not untracked:
             return
 
-        # Ensure all groups are preprocessed first
-        preprocess_hash = self._config.preprocess_config_hash()
-        need_preprocess = [
-            s for s in untracked
-            if not s.pipeline_state.preprocessed
-            or s.pipeline_state.preprocess_config_hash != preprocess_hash
-        ]
-        if need_preprocess:
-            self._preprocess_all_groups()
-            # Re-evaluate untracked after preprocessing
-            untracked = [
-                s for s in self._series_dict.values()
-                if not self._pipeline.is_tracking_current(s)
-            ]
-            if not untracked:
-                return
+        total_groups = len(untracked)
 
-        total_images = sum(len(s.images) for s in untracked)
+        # Prepare: save cache + free arrays so pickling is lightweight
+        for series in untracked:
+            if series.images and series.images[0].image is not None:
+                series_cache.save_series(series, self._config)
+            self._free_series_arrays(series)
 
         self._set_ui_locked(True)
-        self._progress_bar.setRange(0, total_images)
+        self._progress_bar.setRange(0, total_groups)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
-        self._processing_label.show()
 
-        current_image_count = 0
         start_time = time.time()
+        completed = 0
 
         try:
-            for series in untracked:
-                def update_progress(current, total):
-                    nonlocal current_image_count
-                    done = current_image_count + current
-                    self._progress_bar.setValue(done)
-                    self._update_progress_label("Tracking", start_time, done, total_images)
-                    QApplication.processEvents()
+            ctx = mp.get_context('spawn')
+            with ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx) as executor:
+                futures = {
+                    executor.submit(track_and_cache_worker, (self._config, s)): s
+                    for s in untracked
+                }
 
-                stats = self._pipeline.track_and_analyze_series(
-                    series,
-                    progress_callback=update_progress
-                )
-                current_image_count += len(series.images)
+                while futures:
+                    done = [f for f in futures if f.done()]
+                    for f in done:
+                        series = futures.pop(f)
+                        try:
+                            group, stats_dicts, state_dict = f.result()
+                            # Update pipeline state in main process
+                            series.pipeline_state.preprocessed = state_dict['preprocessed']
+                            series.pipeline_state.preprocess_config_hash = state_dict['preprocess_config_hash']
+                            series.pipeline_state.tracked = state_dict['tracked']
+                            series.pipeline_state.tracking_config_hash = state_dict['tracking_config_hash']
+                            series.pipeline_state.last_statistics = stats_dicts
+                        except Exception as e:
+                            print(f"Error tracking {series.group}: {e}")
 
-                series.pipeline_state.tracked = True
-                series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
-                series.pipeline_state.last_statistics = stats
+                        completed += 1
+                        self._progress_bar.setValue(completed)
+                        self._update_progress_label(start_time, completed, total_groups)
+                        self._update_groups_progress()
 
-                self._update_groups_progress()
+                    if futures:
+                        QApplication.processEvents()
+                        time.sleep(0.1)
+
+            # Reload current series from cache for display
+            if self._current_series is not None:
+                self._ensure_series_loaded(self._current_series)
 
             if not self._workflow_bar.is_step_completed(WorkflowStep.TRACK):
                 self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
@@ -1702,14 +1751,13 @@ class MainWindow(QMainWindow):
             return
         
         # Prepare progress bar (always reset for tracking phase)
-        self._processing_label.setText("Tracking...")
         self._processing_label.show()
-        
+
         # Reset to percentage mode
         self._progress_bar.setRange(0, 100)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
-        
+
         self._processing = True
         QApplication.setOverrideCursor(Qt.WaitCursor)
         QApplication.processEvents()
@@ -1721,7 +1769,7 @@ class MainWindow(QMainWindow):
                 if total > 0:
                     percent = int((current / total) * 100)
                     self._progress_bar.setValue(percent)
-                    self._update_progress_label("Tracking", start_time, current, total)
+                    self._update_progress_label(start_time, current, total)
                 QApplication.processEvents()
 
             stats = self._pipeline.track_and_analyze_series(
