@@ -38,25 +38,27 @@ class ExportDialog(QDialog):
         # Form layout for inputs
         form = QFormLayout()
         
-        # Output path
+        # Include images checkbox (before path so toggling can disable path)
+        self._images_check = QCheckBox("Save annotated images")
+        self._images_check.setChecked(self.include_images)
+        self._images_check.toggled.connect(self._on_images_toggled)
+        form.addRow("", self._images_check)
+
+        # Output path (for annotated images)
         path_layout = QHBoxLayout()
         self._path_edit = QLineEdit(self.output_path)
         path_layout.addWidget(self._path_edit)
-        
-        browse_btn = QPushButton("Browse...")
-        browse_btn.clicked.connect(self._browse_folder)
-        path_layout.addWidget(browse_btn)
-        
-        form.addRow("Output folder:", path_layout)
-        
+
+        self._browse_btn = QPushButton("Browse...")
+        self._browse_btn.clicked.connect(self._browse_folder)
+        path_layout.addWidget(self._browse_btn)
+
+        self._path_label = QLabel("Output folder:")
+        form.addRow(self._path_label, path_layout)
+
         # Filename
         self._filename_edit = QLineEdit(self.filename)
         form.addRow("CSV filename:", self._filename_edit)
-        
-        # Include images checkbox
-        self._images_check = QCheckBox("Save annotated images")
-        self._images_check.setChecked(self.include_images)
-        form.addRow("", self._images_check)
         
         layout.addLayout(form)
         
@@ -86,6 +88,12 @@ class ExportDialog(QDialog):
         
         layout.addLayout(btn_layout)
     
+    def _on_images_toggled(self, checked: bool) -> None:
+        """Enable/disable path controls based on annotated images checkbox."""
+        self._path_edit.setEnabled(checked)
+        self._browse_btn.setEnabled(checked)
+        self._path_label.setEnabled(checked)
+
     def _browse_folder(self) -> None:
         """Open folder browser dialog."""
         folder = QFileDialog.getExistingDirectory(

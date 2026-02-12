@@ -285,8 +285,6 @@ class MainWindow(QMainWindow):
         self._settings_panel.apply_requested.connect(self._on_apply_settings)
         self._settings_panel.apply_all_requested.connect(self._on_apply_all_settings)
         self._settings_panel.redetect_requested.connect(self._on_redetect_plants)
-        # self._settings_panel.track_requested.connect(self._on_track_roots)
-        self._settings_panel.export_requested.connect(self._on_export_results)
 
         # Masking signals
         self._settings_panel.mask_tool_changed.connect(self._on_mask_tool_changed)
@@ -505,7 +503,7 @@ class MainWindow(QMainWindow):
                 self._image_viewer.clear_centroids()
                 self._image_viewer.clear_barcode_overlay()
         else:
-            # TRACK/EXPORT: prefer annotated image, fall back to preprocessed
+            # TRACK: prefer annotated image, fall back to preprocessed
             if image_data.image_annotated is not None:
                 image = image_data.image_annotated
             elif image_data.image is not None:
@@ -563,7 +561,7 @@ class MainWindow(QMainWindow):
         elif step == WorkflowStep.TRACK:
             self._handle_enter_track()
         else:
-            # LOAD and EXPORT: just refresh display
+            # LOAD: just refresh display
             if self._current_image:
                 self._display_image(self._current_image)
 
@@ -1134,7 +1132,7 @@ class MainWindow(QMainWindow):
                 self._display_image(self._current_image)
             self._image_tree.setFocus()
         else:
-            # LOAD or EXPORT step - just finish normally
+            # LOAD step - just finish normally
             self._progress_bar.hide()
             self._processing_label.hide()
             self._set_ui_locked(False)
@@ -1570,12 +1568,33 @@ class MainWindow(QMainWindow):
             self._process_group_btn.setEnabled(False)
             self._process_all_btn.setEnabled(False)
         
-        # Next button: enabled unless on Export step or no images
-        on_export = (step == WorkflowStep.EXPORT)
-        self._next_step_btn.setEnabled(not on_export and bool(self._series_dict))
-        
-        # Zoom controls: enabled only when images are loaded
+        # Next/Export button: on Track step becomes green "Export" button
         has_images = bool(self._series_dict)
+        if step == WorkflowStep.TRACK:
+            self._next_step_btn.setText("Export")
+            self._next_step_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #5cb85c;
+                    color: white;
+                    font-weight: bold;
+                    padding: 2px 12px;
+                }
+                QPushButton:hover {
+                    background-color: #449d44;
+                }
+                QPushButton:disabled {
+                    background-color: #88c888;
+                    color: #ccc;
+                }
+            """)
+            self._next_step_btn.setToolTip("Export results to CSV")
+        else:
+            self._next_step_btn.setText("Next")
+            self._next_step_btn.setStyleSheet("")
+            self._next_step_btn.setToolTip("Go to next step")
+        self._next_step_btn.setEnabled(has_images)
+
+        # Zoom controls: enabled only when images are loaded
         self._fit_btn.setEnabled(has_images)
         self._zoom_in_btn.setEnabled(has_images)
         self._zoom_out_btn.setEnabled(has_images)
@@ -1754,9 +1773,7 @@ class MainWindow(QMainWindow):
                         all_stats.extend(stats)
                 
                 csv_path = self._pipeline.export_results(all_stats)
-                
-                self._workflow_bar.mark_step_completed(WorkflowStep.EXPORT)
-                
+
                 QMessageBox.information(
                     self, "Export Complete",
                     f"Results exported to:\n{csv_path}"
@@ -1836,16 +1853,69 @@ class MainWindow(QMainWindow):
             self._on_step_changed(new_step)
     
     def _on_next_step_clicked(self) -> None:
-        """Handle Next button click — advance to next step."""
+        """Handle Next/Export button click."""
         current = self._workflow_bar.get_current_step()
-
-        if current >= WorkflowStep.EXPORT:
-            return
 
         if not self._series_dict:
             QMessageBox.warning(self, "Warning", "Please load images first.")
             return
 
+        if current == WorkflowStep.TRACK:
+            # On Track step, the button is "Export" — track all then export
+            self._track_all_and_export()
+            return
+
+        if current >= WorkflowStep.TRACK:
+            return
+
         new_step = WorkflowStep(current + 1)
         self._workflow_bar.set_current_step(new_step)
         self._on_step_changed(new_step)
+
+    def _track_all_and_export(self) -> None:
+        """Show export dialog first, then track all and export."""
+        if self._pipeline is None:
+            return
+
+        # Ask export options before any computation
+        dialog = ExportDialog(self, self._config.data.output)
+        if dialog.exec() != ExportDialog.DialogCode.Accepted:
+            return
+
+        self._config.data.output = dialog.output_path
+
+        # Track all untracked groups
+        untracked = [
+            s for s in self._series_dict.values()
+            if not self._pipeline.is_tracking_current(s)
+        ]
+        if untracked:
+            self._track_all_groups()
+
+        # Export with the already-chosen options
+        self._processing_label.setText("Exporting...")
+        self._processing_label.show()
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        QApplication.processEvents()
+
+        try:
+            all_stats = []
+            for series in self._series_dict.values():
+                state = series.pipeline_state
+                if state.tracked and state.last_statistics:
+                    all_stats.extend(state.last_statistics)
+                else:
+                    stats = self._pipeline.track_and_analyze_series(series)
+                    all_stats.extend(stats)
+
+            csv_path = self._pipeline.export_results(all_stats)
+
+            QMessageBox.information(
+                self, "Export Complete",
+                f"Results exported to:\n{csv_path}"
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Export failed:\n{e}")
+        finally:
+            self._processing_label.hide()
+            QApplication.restoreOverrideCursor()

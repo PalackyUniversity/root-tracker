@@ -29,14 +29,12 @@ class SettingsPanel(QWidget):
         apply_requested: Emitted when user clicks Apply.
         redetect_requested: Emitted when user clicks Re-detect Plants.
         track_requested: Emitted for Track step action.
-        export_requested: Emitted for Export step action.
     """
-    
+
     apply_requested = Signal()  # Apply settings to current group
     apply_all_requested = Signal()  # Apply settings to all groups
     redetect_requested = Signal()  # Re-run centroid detection
     track_requested = Signal()
-    export_requested = Signal()
 
     # Masking signals
     mask_tool_changed = Signal(str, int)  # tool name, brush size
@@ -136,9 +134,6 @@ class SettingsPanel(QWidget):
         elif step == WorkflowStep.TRACK:
             self._create_track_settings()
             self._buttons_widget.show()
-        elif step == WorkflowStep.EXPORT:
-            self._create_export_settings()
-            self._buttons_widget.hide()
         else:
             self._buttons_widget.hide()
         
@@ -387,33 +382,6 @@ class SettingsPanel(QWidget):
             # Emit tool change to NONE
             self.mask_tool_changed.emit(MaskTool.NONE.value, 0)
     
-    def _create_export_settings(self) -> None:
-        """Create settings for Export step."""
-        group = QGroupBox("Export Settings")
-        layout = QFormLayout(group)
-        
-        self._output_path = QLineEdit(self._config.data.output)
-        layout.addRow("Output folder:", self._output_path)
-        
-        self._settings_layout.addWidget(group)
-        
-        # Export button
-        export_btn = QPushButton("Export to CSV")
-        export_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #5cb85c;
-                color: white;
-                font-weight: bold;
-                padding: 10px;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background-color: #449d44;
-            }
-        """)
-        export_btn.clicked.connect(self.export_requested.emit)
-        self._settings_layout.addWidget(export_btn)
-    
     def _store_original_values(self) -> None:
         """Store current values as original (for dirty detection)."""
         self._original_values = self.get_current_values()
@@ -552,10 +520,6 @@ class SettingsPanel(QWidget):
             if hasattr(self, '_min_contour_area_spin'):
                 values["min_contour_area"] = self._min_contour_area_spin.value()
                 values["min_contour_length"] = self._min_contour_length_spin.value()
-        
-        elif self._current_step == WorkflowStep.EXPORT:
-            if hasattr(self, '_output_path'):
-                values["output"] = self._output_path.text()
         
         return values
     

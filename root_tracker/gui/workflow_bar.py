@@ -17,7 +17,6 @@ class WorkflowStep(IntEnum):
     LOAD = 0
     PREPROCESS = 1
     TRACK = 2
-    EXPORT = 3
 
 
 # Step names without numbers
@@ -25,7 +24,6 @@ STEP_NAMES = {
     WorkflowStep.LOAD: "Load",
     WorkflowStep.PREPROCESS: "Preprocess",
     WorkflowStep.TRACK: "Track",
-    WorkflowStep.EXPORT: "Export",
 }
 
 
@@ -70,7 +68,7 @@ class WorkflowBar(QWidget):
             layout.addWidget(btn)
             
             # Add separator between steps (except last)
-            if step != WorkflowStep.EXPORT:
+            if step != WorkflowStep.TRACK:
                 sep = QLabel("›")
                 sep.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 sep.setStyleSheet("color: #666; font-size: 14px;")
