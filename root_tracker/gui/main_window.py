@@ -15,7 +15,7 @@ import numpy as np
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QSplitter, QMenuBar, QMenu, QStatusBar, QMessageBox,
-    QProgressDialog, QApplication
+    QProgressDialog, QApplication, QFileDialog
 )
 from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtGui import QAction, QKeySequence
@@ -29,7 +29,7 @@ from .workflow_bar import WorkflowBar, WorkflowStep
 from .image_tree import ImageTree
 from .image_viewer import ImageViewer
 from .settings_panel import SettingsPanel
-from .dialogs import LoadDialog, ExportDialog
+from .dialogs import LoadDialog
 from .masking_tools import MaskTool
 
 class MainWindow(QMainWindow):
@@ -57,6 +57,8 @@ class MainWindow(QMainWindow):
         self._current_image: ImageData | None = None
         self._current_series: ImageSeries | None = None
         self._processing: bool = False  # Reentrancy guard for processEvents
+        self._cancel_requested = mp.Event()
+
         
         self.setWindowTitle("Root Tracker")
         self.setMinimumSize(1200, 800)
@@ -210,17 +212,21 @@ class MainWindow(QMainWindow):
         # File menu
         file_menu = menubar.addMenu("&File")
         
-        load_action = QAction("&Load Images...", self)
+        load_action = QAction("&Open Folder...", self)
         load_action.setShortcut(QKeySequence.StandardKey.Open)
         load_action.triggered.connect(self._on_load_images)
         file_menu.addAction(load_action)
         
+        self._clear_cache_action = QAction("&Clear Cache", self)
+        self._clear_cache_action.triggered.connect(self._on_clear_cache)
+        file_menu.addAction(self._clear_cache_action)
+        
         file_menu.addSeparator()
         
-        export_action = QAction("&Export Results...", self)
-        export_action.setShortcut(QKeySequence("Ctrl+E"))
-        export_action.triggered.connect(self._on_export_results)
-        file_menu.addAction(export_action)
+        self._export_action = QAction("&Export Results...", self)
+        self._export_action.setShortcut(QKeySequence("Ctrl+E"))
+        self._export_action.triggered.connect(self._on_export_results)
+        file_menu.addAction(self._export_action)
         
         file_menu.addSeparator()
         
@@ -246,23 +252,29 @@ class MainWindow(QMainWindow):
         zoom_out_action.setShortcut(QKeySequence.StandardKey.ZoomOut)
         zoom_out_action.triggered.connect(self._image_viewer.zoom_out)
         view_menu.addAction(zoom_out_action)
-        
-        # Edit menu with Auto Preview toggle
-        edit_menu = menubar.addMenu("&Edit")
-        
+
+        view_menu.addSeparator()
+
         self._auto_preview_action = QAction("&Auto Preview", self)
         self._auto_preview_action.setCheckable(True)
         self._auto_preview_action.setChecked(True)  # Default on
         self._auto_preview_action.setToolTip("Automatically preview preprocessing when group is selected")
         self._auto_preview_action.toggled.connect(self._on_auto_preview_toggled)
-        edit_menu.addAction(self._auto_preview_action)
+        view_menu.addAction(self._auto_preview_action)
         
-        edit_menu.addSeparator()
-        
-        track_action = QAction("&Track Roots", self)
-        track_action.setShortcut(QKeySequence("Ctrl+T"))
-        track_action.triggered.connect(self._on_track_roots)
-        edit_menu.addAction(track_action)
+        # Process menu
+        process_menu = menubar.addMenu("&Process")
+
+        self._start_prediction_action = QAction("&Start Prediction", self)
+        self._start_prediction_action.setShortcut(QKeySequence("Ctrl+R"))
+        self._start_prediction_action.triggered.connect(self._on_process_all_clicked)
+        process_menu.addAction(self._start_prediction_action)
+
+        self._cancel_prediction_action = QAction("&Cancel Prediction", self)
+        self._cancel_prediction_action.setShortcut(QKeySequence("Ctrl+."))
+        self._cancel_prediction_action.triggered.connect(self._on_cancel_prediction)
+        self._cancel_prediction_action.setEnabled(False) # Default disabled
+        process_menu.addAction(self._cancel_prediction_action)
         
         # Help menu
         help_menu = menubar.addMenu("&Help")
@@ -315,35 +327,46 @@ class MainWindow(QMainWindow):
             self._config.data.filename_template = dialog.filename_template
             self._config.data.date_format = dialog.date_format
             
-            # Create pipeline and load images
-            self._pipeline = RootTrackingPipeline(self._config)
+            self._reload_images()
+
+    def _reload_images(self) -> None:
+        """Reload images from the current input folder."""
+        # Create pipeline and load images
+        self._pipeline = RootTrackingPipeline(self._config)
+        
+        try:
+            self._series_dict = self._pipeline.load_images()
             
-            try:
-                self._series_dict = self._pipeline.load_images()
-                
-                if not self._series_dict:
-                    QMessageBox.warning(
-                        self, "No Images Found",
-                        f"No images found in '{self._config.data.input}' matching template '{self._config.data.filename_template}'.\n\n"
-                        "Check that the folder path and filename template are correct."
-                    )
-                    return
-                
-                # Initialize warning count (barcode detection is lazy - done when viewing)
-                self._warning_count = 0
-                
-                self._image_tree.set_series(self._series_dict)
-                
-                # Select first image
-                self._image_tree.select_first_image()
-                
-                # Mark step as complete but DON'T auto-advance
-                self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
-                
-                # Update groups progress label
-                self._update_groups_progress()
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to load images:\n{e}")
+            if not self._series_dict:
+                QMessageBox.warning(
+                    self, "No Images Found",
+                    f"No images found in '{self._config.data.input}' matching template '{self._config.data.filename_template}'.\n\n"
+                    "Check that the folder path and filename template are correct."
+                )
+                # Clear UI if reload failed to find images
+                self._image_tree.clear()
+                self._update_initial_ui_state()
+                return
+            
+            # Initialize warning count (barcode detection is lazy - done when viewing)
+            self._warning_count = 0
+            
+            self._image_tree.set_series(self._series_dict)
+            
+            # Select first image
+            self._image_tree.select_first_image()
+            
+            # Mark step as complete but DON'T auto-advance
+            self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
+            
+            # Update groups progress label
+            self._update_groups_progress()
+            
+            # Update cache action state
+            self._update_cache_action_state()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load images:\n{e}")
+
     
 
     def _on_image_selected(self, image_data: ImageData) -> None:
@@ -1293,6 +1316,7 @@ class MainWindow(QMainWindow):
             del self._last_eta_update_time
 
         completed_images = 0
+        self._cancel_requested.clear()
 
         try:
             # Create a manager and queue for progress updates
@@ -1308,6 +1332,13 @@ class MainWindow(QMainWindow):
                 }
 
                 while futures:
+                    # Check cancellation
+                    if self._cancel_requested.is_set():
+                        # Cancel remaining futures
+                        for f in futures:
+                            f.cancel()
+                        break
+
                     # Check for progress updates from queue
                     while not progress_queue.empty():
                         try:
@@ -1561,24 +1592,74 @@ class MainWindow(QMainWindow):
     def _set_ui_locked(self, locked: bool) -> None:
         """Lock/unlock UI during processing."""
         self._processing = locked
+        
+        # Disable main interactive elements
+        self._image_tree.setEnabled(not locked)
+        self._settings_panel.setEnabled(not locked)
+        self._workflow_bar.setEnabled(not locked)
+        
+        # Buttons
+        self._process_group_btn.setEnabled(not locked)
+        self._process_all_btn.setEnabled(not locked)
+        self._next_step_btn.setEnabled(not locked)
+
+        # Menu items
+        if hasattr(self, '_export_action'):
+            self._export_action.setEnabled(not locked)
+        if hasattr(self, '_start_prediction_action'):
+            self._start_prediction_action.setEnabled(not locked)
+        if hasattr(self, '_cancel_prediction_action'):
+            self._cancel_prediction_action.setEnabled(locked)
+        
+        # Cursor
         if locked:
-            QApplication.setOverrideCursor(Qt.WaitCursor)
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         else:
             QApplication.restoreOverrideCursor()
 
-        self._workflow_bar.setEnabled(not locked)
-        self._settings_panel.setEnabled(not locked)
-        self._image_tree.setEnabled(not locked)  # Freeze image selection
-        self._fit_btn.setEnabled(not locked)
-        self._zoom_in_btn.setEnabled(not locked)
-        self._zoom_out_btn.setEnabled(not locked)
+    def _on_clear_cache(self) -> None:
+        """Clear the cache directory for the current folder."""
+        if not self._config.data.input:
+            QMessageBox.warning(self, "No Folder Open", "Please open a folder first.")
+            return
+
+        cache_dir = os.path.join(self._config.data.input, ".root_tracker_cache")
+        if not os.path.exists(cache_dir):
+            QMessageBox.information(self, "Cache Empty", "No cache directory found.")
+            return
+
+        reply = QMessageBox.question(
+            self, "Clear Cache",
+            "Are you sure you want to delete all cached data?\n"
+            "This will remove all preprocessing and tracking results.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                shutil.rmtree(cache_dir)
+                # Reload to reflect cleared state
+                self._reload_images()
+                QMessageBox.information(self, "Success", "Cache cleared and reloaded successfully.")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to clear cache:\n{e}")
         
-        if locked:
-            self._process_group_btn.setEnabled(False)
-            self._process_all_btn.setEnabled(False)
-            self._next_step_btn.setEnabled(False)
-        else:
-            self._update_process_button_states()
+        self._update_cache_action_state()
+
+    def _update_cache_action_state(self) -> None:
+        """Enable/disable Clear Cache action based on cache existence."""
+        if not self._config.data.input:
+            self._clear_cache_action.setEnabled(False)
+            return
+            
+        cache_dir = os.path.join(self._config.data.input, ".root_tracker_cache")
+        has_cache = os.path.exists(cache_dir)
+        self._clear_cache_action.setEnabled(has_cache)
+
+    def _on_cancel_prediction(self) -> None:
+        """Request cancellation of current processing."""
+        self._cancel_requested.set()
             
     def _force_unlock_ui(self) -> None:
         """Force unlock UI and reset cursor stack."""
@@ -1618,6 +1699,9 @@ class MainWindow(QMainWindow):
         """Update process button enabled states based on current step and processing status."""
         step = self._workflow_bar.get_current_step()
         
+        can_process_group = False
+        can_process_all = False
+        
         if step == WorkflowStep.LOAD:
             # Check if current group has barcodes detected
             group_done = False
@@ -1633,8 +1717,8 @@ class MainWindow(QMainWindow):
                     if series.images
                 )
             
-            self._process_group_btn.setEnabled(not group_done and self._current_series is not None)
-            self._process_all_btn.setEnabled(not all_done and bool(self._series_dict))
+            can_process_group = not group_done and self._current_series is not None
+            can_process_all = not all_done and bool(self._series_dict)
             
         elif step == WorkflowStep.PREPROCESS:
             # Check if current group is preprocessed
@@ -1650,8 +1734,8 @@ class MainWindow(QMainWindow):
                     for series in self._series_dict.values()
                 )
             
-            self._process_group_btn.setEnabled(not group_done and self._current_series is not None)
-            self._process_all_btn.setEnabled(not all_done and bool(self._series_dict))
+            can_process_group = not group_done and self._current_series is not None
+            can_process_all = not all_done and bool(self._series_dict)
             
         elif step == WorkflowStep.TRACK:
             # Check if current group is tracked
@@ -1667,13 +1751,11 @@ class MainWindow(QMainWindow):
                     for series in self._series_dict.values()
                 )
             
-            self._process_group_btn.setEnabled(not group_done and self._current_series is not None)
-            self._process_all_btn.setEnabled(not all_done and bool(self._series_dict))
+            can_process_group = not group_done and self._current_series is not None
+            can_process_all = not all_done and bool(self._series_dict)
             
-        else:
-            # Other steps - disable both buttons
-            self._process_group_btn.setEnabled(False)
-            self._process_all_btn.setEnabled(False)
+        self._process_group_btn.setEnabled(can_process_group)
+        self._process_all_btn.setEnabled(can_process_all)
         
         # Next/Export button: on Track step becomes green "Export" button
         has_images = bool(self._series_dict)
@@ -1709,6 +1791,19 @@ class MainWindow(QMainWindow):
         
         # Groups progress label: visible only when images are loaded
         self._groups_progress_label.setVisible(has_images)
+        
+        # Menu items state
+        if hasattr(self, '_export_action'):
+            self._export_action.setEnabled(has_images)
+        if hasattr(self, '_start_prediction_action'):
+            self._start_prediction_action.setEnabled(can_process_all)
+            
+        # Ensure cancel is disabled when not processing (safety check)
+        if hasattr(self, '_cancel_prediction_action') and not self._processing:
+            self._cancel_prediction_action.setEnabled(False)
+            
+        # Update cache action state as well (processing might have created cache)
+        self._update_cache_action_state()
     
     def _update_initial_ui_state(self) -> None:
         """Set initial UI state when no images are loaded."""
@@ -1722,6 +1817,16 @@ class MainWindow(QMainWindow):
         self._process_group_btn.setEnabled(False)
         self._process_all_btn.setEnabled(False)
         self._next_step_btn.setEnabled(False)
+        
+        # Disable menu items
+        if hasattr(self, '_clear_cache_action'):
+            self._clear_cache_action.setEnabled(False)
+        if hasattr(self, '_export_action'):
+            self._export_action.setEnabled(False)
+        if hasattr(self, '_start_prediction_action'):
+            self._start_prediction_action.setEnabled(False)
+        if hasattr(self, '_cancel_prediction_action'):
+            self._cancel_prediction_action.setEnabled(False)
         
         # Hide groups progress label
         self._groups_progress_label.hide()
@@ -1762,6 +1867,7 @@ class MainWindow(QMainWindow):
             del self._last_eta_update_time
 
         completed_images = 0
+        self._cancel_requested.clear()
 
         try:
             # Create a manager and queue for progress updates
@@ -1777,6 +1883,13 @@ class MainWindow(QMainWindow):
                 }
 
                 while futures:
+                    # Check cancellation
+                    if self._cancel_requested.is_set():
+                        # Cancel remaining futures
+                        for f in futures:
+                            f.cancel()
+                        break
+
                     # Check for progress updates from queue
                     while not progress_queue.empty():
                         try:
@@ -1881,43 +1994,40 @@ class MainWindow(QMainWindow):
             self._force_unlock_ui()
     
     def _on_export_results(self) -> None:
-        """Export results to CSV."""
-        if self._pipeline is None:
-            QMessageBox.warning(self, "Warning", "No results to export.")
+        """Handle export results action."""
+        if self._pipeline is None or not self._series_dict:
+            QMessageBox.warning(self, "No Data", "No data loaded to export.")
             return
-        
-        dialog = ExportDialog(self, self._config.data.output)
-        
-        if dialog.exec() == ExportDialog.DialogCode.Accepted:
-            self._config.data.output = dialog.output_path
-            
-            self._processing_label.setText("Exporting...")
-            self._processing_label.show()
-            QApplication.setOverrideCursor(Qt.WaitCursor)
-            QApplication.processEvents()
-            
-            try:
-                # Collect statistics (use cached when available)
-                all_stats = []
-                for series in self._series_dict.values():
-                    state = series.pipeline_state
-                    if state.tracked and state.last_statistics:
-                        all_stats.extend(state.last_statistics)
-                    else:
-                        stats = self._pipeline.track_and_analyze_series(series)
-                        all_stats.extend(stats)
-                
-                csv_path = self._pipeline.export_results(all_stats)
 
-                QMessageBox.information(
-                    self, "Export Complete",
-                    f"Results exported to:\n{csv_path}"
-                )
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Export failed:\n{e}")
-            finally:
-                self._processing_label.hide()
-                QApplication.restoreOverrideCursor()
+        # Default filename
+        default_name = "statistics.csv"
+        default_path = os.path.join(self._config.data.input, default_name)
+        
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Results",
+            default_path,
+            "CSV Files (*.csv);;All Files (*)"
+        )
+        
+        if not file_path:
+            return
+
+        try:
+            # Export statistics
+            stats_df = self._pipeline.export_statistics(self._series_dict)
+            stats_df.to_csv(file_path, index=False)
+            
+            QMessageBox.information(
+                self, 
+                "Export Complete",
+                f"Results exported to:\n{file_path}"
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Export failed:\n{e}")
+        finally:
+            self._processing_label.hide()
+            QApplication.restoreOverrideCursor()
     
     def _on_zoom_changed(self, percentage: int) -> None:
         """Handle zoom level change - update bottom bar label."""
@@ -2008,16 +2118,23 @@ class MainWindow(QMainWindow):
         self._on_step_changed(new_step)
 
     def _track_all_and_export(self) -> None:
-        """Show export dialog first, then track all and export."""
-        if self._pipeline is None:
+        """Show export options first, then track all and export."""
+        if self._pipeline is None or not self._series_dict:
             return
 
-        # Ask export options before any computation
-        dialog = ExportDialog(self, self._config.data.output)
-        if dialog.exec() != ExportDialog.DialogCode.Accepted:
-            return
+        # Ask export path before any computation
+        default_name = "statistics.csv"
+        default_path = os.path.join(self._config.data.input, default_name)
+        
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Results",
+            default_path,
+            "CSV Files (*.csv);;All Files (*)"
+        )
 
-        self._config.data.output = dialog.output_path
+        if not file_path:
+            return
 
         # Track all untracked groups
         untracked = [
@@ -2034,20 +2151,14 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()
 
         try:
-            all_stats = []
-            for series in self._series_dict.values():
-                state = series.pipeline_state
-                if state.tracked and state.last_statistics:
-                    all_stats.extend(state.last_statistics)
-                else:
-                    stats = self._pipeline.track_and_analyze_series(series)
-                    all_stats.extend(stats)
-
-            csv_path = self._pipeline.export_results(all_stats)
-
+            # Export statistics
+            stats_df = self._pipeline.export_statistics(self._series_dict)
+            stats_df.to_csv(file_path, index=False)
+            
             QMessageBox.information(
-                self, "Export Complete",
-                f"Results exported to:\n{csv_path}"
+                self, 
+                "Export Complete",
+                f"Results exported to:\n{file_path}"
             )
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Export failed:\n{e}")

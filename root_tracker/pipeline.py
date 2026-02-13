@@ -8,6 +8,7 @@ import os
 import math
 import numpy as np
 import cv2
+import pandas as pd
 from multiprocessing import freeze_support
 from tqdm.contrib.concurrent import process_map
 
@@ -533,6 +534,37 @@ class RootTrackingPipeline:
         """
         self._all_statistics = statistics
         return self.exporter.export_statistics(statistics)
+
+    def export_statistics(self, series_dict: dict[str, ImageSeries]) -> pd.DataFrame:
+        """
+        Collect processing results from all series and return as DataFrame.
+        
+        Args:
+            series_dict: Dictionary of ImageSeries to export.
+            
+        Returns:
+            pandas DataFrame containing all statistics.
+        """
+        all_stats = []
+        for series in series_dict.values():
+            state = series.pipeline_state
+            if state.tracked and state.last_statistics:
+                all_stats.extend(state.last_statistics)
+            else:
+                # If not tracked yet, track it now (synchronously)
+                stats = self.track_and_analyze_series(series)
+                all_stats.extend(stats)
+        
+        # Convert to records
+        records = [
+            stat.to_dict() if hasattr(stat, 'to_dict') else stat
+            for stat in all_stats
+        ]
+        
+        if not records:
+            return pd.DataFrame()
+            
+        return pd.DataFrame.from_records(records)
     
     def process_series_wrapper(self, series: ImageSeries) -> list[PlantStatistics]:
         """
