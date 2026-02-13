@@ -18,6 +18,7 @@ from .registration import ImageRegistrator
 from .tracking import RootThresholder, RootSkeletonizer, CornerDetector, RootLinker
 from .analysis import StatisticsCalculator
 from .io import ImageLoader, ResultExporter, BarcodeReader, series_cache
+from .profiling import ProfileRecords
 
 
 # Suppress numpy divide warnings (from original code)
@@ -63,10 +64,11 @@ class RootTrackingPipeline:
         pipeline.export_results(all_stats)
     """
     
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, profile_records: ProfileRecords | None = None) -> None:
         self.config = config
-        
-        # Initialize components
+        self._profile_records = profile_records
+
+        # Initialize components (pass profile_records for instrumentation)
         self.loader = ImageLoader(config)
         self.cropper = ImageCropper(config)
         self.green_detector = GreenAreaDetector(config)
@@ -79,7 +81,17 @@ class RootTrackingPipeline:
         self.statistics_calc = StatisticsCalculator(config)
         self.exporter = ResultExporter(config)
         self.barcode_reader = BarcodeReader()
-        
+
+        # Share profile_records with components for instrumentation
+        self.cropper._profile_records = self._profile_records
+        self.green_detector._profile_records = self._profile_records
+        self.background_remover._profile_records = self._profile_records
+        self.registrator._profile_records = self._profile_records
+        self.thresholder._profile_records = self._profile_records
+        self.skeletonizer._profile_records = self._profile_records
+        self.corner_detector._profile_records = self._profile_records
+        self.linker._profile_records = self._profile_records
+
         # State
         self._series: dict[str, ImageSeries] = {}
         self._all_statistics: list[PlantStatistics] = []
@@ -606,14 +618,14 @@ def _process_series_standalone(args: tuple) -> list[PlantStatistics]:
     return pipeline.process_series_wrapper(series)
 
 
-def preprocess_and_cache_worker(args: tuple) -> str:
+def preprocess_and_cache_worker(args: tuple) -> tuple:
     """Preprocess a series and save to disk cache. Pickle-friendly for multiprocessing.
 
     Args:
         args: Tuple of (config, series, optional queue).
 
     Returns:
-        The series group name.
+        Tuple of (group_name, profile_records_dict).
     """
     if len(args) == 3:
         config, series, queue = args
@@ -621,8 +633,10 @@ def preprocess_and_cache_worker(args: tuple) -> str:
         config, series = args
         queue = None
 
-    pipeline = RootTrackingPipeline(config)
-    
+    # Create profiling collection
+    profile_records = ProfileRecords()
+    pipeline = RootTrackingPipeline(config, profile_records=profile_records)
+
     # Callback to put progress into queue
     def on_progress(current, total):
         if queue:
@@ -633,14 +647,14 @@ def preprocess_and_cache_worker(args: tuple) -> str:
     for img in series.images:
         if not img.barcode_detected:
             pipeline.detect_barcode_in_image(img)
-            
+
     pipeline.preprocess_series(series, progress_callback=on_progress)
     pipeline.register_series(series)
     series.pipeline_state.preprocessed = True
     series.pipeline_state.preprocess_config_hash = config.preprocess_config_hash()
     series.pipeline_state.invalidate_from('track')
     series_cache.save_series(series, config)
-    return series.group
+    return series.group, profile_records.to_dict()
 
 
 def track_and_cache_worker(args: tuple) -> tuple:
@@ -652,7 +666,7 @@ def track_and_cache_worker(args: tuple) -> tuple:
         args: Tuple of (config, series, optional queue).
 
     Returns:
-        Tuple of (group_name, stats_dicts, state_dict) with lightweight data only.
+        Tuple of (group_name, stats_dicts, state_dict, profile_records_dict) with lightweight data only.
     """
     if len(args) == 3:
         config, series, queue = args
@@ -660,7 +674,9 @@ def track_and_cache_worker(args: tuple) -> tuple:
         config, series = args
         queue = None
 
-    pipeline = RootTrackingPipeline(config)
+    # Create profiling collection
+    profile_records = ProfileRecords()
+    pipeline = RootTrackingPipeline(config, profile_records=profile_records)
 
     # Callback to put progress into queue
     def on_progress(current, total):
@@ -703,4 +719,4 @@ def track_and_cache_worker(args: tuple) -> tuple:
         'tracked': state.tracked,
         'tracking_config_hash': state.tracking_config_hash,
     }
-    return series.group, stats_dicts, state_dict
+    return series.group, stats_dicts, state_dict, profile_records.to_dict()

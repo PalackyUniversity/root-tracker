@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 
 from ..config import Config
+from ..profiling import profile_operation
 
 
 # Rotation mapping for OpenCV
@@ -32,6 +33,7 @@ class ImageCropper:
     def __init__(self, config: Config) -> None:
         self.config = config
     
+    @profile_operation("rotate")
     def rotate(self, image: np.ndarray) -> np.ndarray:
         """
         Rotate image according to configuration.
@@ -51,6 +53,7 @@ class ImageCropper:
         
         return cv2.rotate(image, rotation_code)
     
+    @profile_operation("auto_crop")
     def auto_crop_to_blue_background(self, image: np.ndarray) -> np.ndarray:
         """
         Automatically crop image based on blue background detection.

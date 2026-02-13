@@ -9,6 +9,7 @@ import numpy as np
 import cv2
 
 from ..config import Config
+from ..profiling import profile_operation
 
 
 # Colors for each plant (BGR format)
@@ -117,6 +118,7 @@ class RootLinker:
         
         return cost
     
+    @profile_operation("link_corners")
     def link_corners(
         self,
         upper_corners: list[dict],

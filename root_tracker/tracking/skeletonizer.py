@@ -10,6 +10,7 @@ import numpy as np
 from skimage.morphology import skeletonize
 
 from ..config import Config
+from ..profiling import profile_operation
 
 
 # Kernel for counting neighbors (used to find branch points)
@@ -37,6 +38,7 @@ class RootSkeletonizer:
         self.config = config
         self._min_segment_length = 15  # Minimum pixels for a valid segment
     
+    @profile_operation("skeletonize")
     def skeletonize_mask(self, mask: np.ndarray) -> np.ndarray:
         """
         Create a skeleton from a binary mask.
@@ -70,6 +72,7 @@ class RootSkeletonizer:
         
         return endpoints
     
+    @profile_operation("find_intersections")
     def find_intersections(self, skeleton: np.ndarray) -> np.ndarray:
         """
         Find intersection/branch points in the skeleton.
@@ -95,9 +98,10 @@ class RootSkeletonizer:
         
         return intersections
     
+    @profile_operation("split_intersections")
     def split_at_intersections(
-        self, 
-        skeleton: np.ndarray, 
+        self,
+        skeleton: np.ndarray,
         intersections: np.ndarray
     ) -> tuple[np.ndarray, list]:
         """

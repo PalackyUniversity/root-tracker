@@ -8,6 +8,7 @@ import math
 import numpy as np
 
 from ..config import Config
+from ..profiling import profile_operation
 
 
 # Neighbor offsets for 8-connectivity
@@ -137,9 +138,10 @@ class CornerDetector:
         
         return angle
     
+    @profile_operation("analyze_corners")
     def analyze_contour_corners(
-        self, 
-        contour: np.ndarray, 
+        self,
+        contour: np.ndarray,
         skeleton: np.ndarray
     ) -> tuple[dict | None, dict | None]:
         """

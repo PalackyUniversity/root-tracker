@@ -9,6 +9,7 @@ import numpy as np
 
 from ..config import Config
 from ..models import ImageData
+from ..profiling import profile_operation
 
 
 class ImageRegistrator:
@@ -26,8 +27,9 @@ class ImageRegistrator:
         self.config = config
         self._margin_divisor = 4  # Margin is 1/4 of image dimensions
     
+    @profile_operation("align_to_template")
     def align_to_template(
-        self, 
+        self,
         template_canny: np.ndarray,
         target_image: np.ndarray,
         target_canny: np.ndarray,
@@ -78,6 +80,7 @@ class ImageRegistrator:
         
         return aligned_image, aligned_canny, aligned_process, offset_x, offset_y
     
+    @profile_operation("register_series")
     def register_series(self, images: list[ImageData]) -> None:
         """
         Register all images in a series to the first image.

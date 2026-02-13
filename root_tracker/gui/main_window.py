@@ -24,6 +24,7 @@ from ..config import Config
 from ..models import ImageData, ImageSeries
 from ..pipeline import RootTrackingPipeline, preprocess_and_cache_worker, track_and_cache_worker
 from ..io import ImageLoader, mask_io, series_cache
+from ..profiling import ProfileRecords
 
 from .workflow_bar import WorkflowBar, WorkflowStep
 from .image_tree import ImageTree
@@ -57,6 +58,7 @@ class MainWindow(QMainWindow):
         self._current_image: ImageData | None = None
         self._current_series: ImageSeries | None = None
         self._processing: bool = False  # Reentrancy guard for processEvents
+        self._profile_records = ProfileRecords()  # Always-on profiling
         
         self.setWindowTitle("Root Tracker")
         self.setMinimumSize(1200, 800)
@@ -1317,14 +1319,18 @@ class MainWindow(QMainWindow):
                             self._update_progress_label(start_time, completed_images, total_images)
                         except Exception:
                             pass
-                    
+
                     QApplication.processEvents()
 
                     done = [f for f in futures if f.done()]
                     for f in done:
                         series = futures.pop(f)
                         try:
-                            f.result()
+                            result = f.result()
+                            # Worker returns (group_name, profile_records_dict)
+                            if isinstance(result, tuple) and len(result) == 2:
+                                _, profile_dict = result
+                                self._profile_records.update_from_dict(profile_dict)
                             # Update pipeline state in main process
                             series.pipeline_state.preprocessed = True
                             series.pipeline_state.preprocess_config_hash = current_hash
@@ -1793,7 +1799,14 @@ class MainWindow(QMainWindow):
                     for f in done:
                         series = futures.pop(f)
                         try:
-                            group, stats_dicts, state_dict = f.result()
+                            result = f.result()
+                            # Worker returns (group_name, stats_dicts, state_dict, profile_records_dict)
+                            if isinstance(result, tuple) and len(result) >= 4:
+                                group, stats_dicts, state_dict, profile_dict = result
+                                self._profile_records.update_from_dict(profile_dict)
+                            else:
+                                # Backwards compatibility for old worker signature
+                                group, stats_dicts, state_dict = result[:3]
                             # Update pipeline state in main process
                             series.pipeline_state.preprocessed = state_dict['preprocessed']
                             series.pipeline_state.preprocess_config_hash = state_dict['preprocess_config_hash']
@@ -1916,9 +1929,17 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Export failed:\n{e}")
             finally:
+                # Print profiling report
+                self._profile_records.print_report()
                 self._processing_label.hide()
                 QApplication.restoreOverrideCursor()
-    
+
+    def closeEvent(self, event) -> None:
+        """Handle window close event - print profiling report before closing."""
+        # Print profiling report on application close
+        self._profile_records.print_report()
+        super().closeEvent(event)
+
     def _on_zoom_changed(self, percentage: int) -> None:
         """Handle zoom level change - update bottom bar label."""
         self._zoom_label.setText(f"{percentage}%")

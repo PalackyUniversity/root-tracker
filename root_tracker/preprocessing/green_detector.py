@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 from ..config import Config
+from ..profiling import profile_operation
 
 
 class GreenAreaDetector:
@@ -48,8 +49,9 @@ class GreenAreaDetector:
         
         return green_threshold
     
+    @profile_operation("find_green_contours")
     def find_green_contours(
-        self, 
+        self,
         image: np.ndarray
     ) -> tuple[list, np.ndarray]:
         """
@@ -77,8 +79,9 @@ class GreenAreaDetector:
         
         return valid_contours, green_mask
     
+    @profile_operation("cluster_positions")
     def cluster_plant_positions(
-        self, 
+        self,
         contours: list
     ) -> tuple[list[int], list[int], list[int]]:
         """
@@ -142,9 +145,10 @@ class GreenAreaDetector:
             [d[2] for d in sorted_data]
         )
     
+    @profile_operation("mask_green")
     def mask_green_in_image(
-        self, 
-        image: np.ndarray, 
+        self,
+        image: np.ndarray,
         contours: list
     ) -> np.ndarray:
         """

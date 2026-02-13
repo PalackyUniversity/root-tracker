@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 
 from ..config import Config
+from ..profiling import profile_operation
 
 
 class RootThresholder:
@@ -25,6 +26,7 @@ class RootThresholder:
     def __init__(self, config: Config) -> None:
         self.config = config
     
+    @profile_operation("threshold")
     def threshold(self, image: np.ndarray) -> np.ndarray:
         """
         Apply dual-threshold segmentation to identify roots.
@@ -143,6 +145,7 @@ class RootThresholder:
         # Remove detections where user_mask is 255
         return cv2.bitwise_and(mask, cv2.bitwise_not(user_mask))
 
+    @profile_operation("filter_contours")
     def filter_small_contours(self, mask: np.ndarray) -> tuple[np.ndarray, list]:
         """
         Remove small contours from the mask.
@@ -164,9 +167,10 @@ class RootThresholder:
         
         return result, valid_contours
     
+    @profile_operation("compute_growth")
     def compute_new_growth(
-        self, 
-        diff_image: np.ndarray, 
+        self,
+        diff_image: np.ndarray,
         margins: tuple[int, int, int, int]
     ) -> tuple[int, int]:
         """

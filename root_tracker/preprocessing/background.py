@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 
 from ..config import Config
+from ..profiling import profile_operation
 
 
 class BackgroundRemover:
@@ -26,6 +27,7 @@ class BackgroundRemover:
         self._blur_kernel_size = 101  # Odd number for median blur
         self._smooth_kernel_size = 5
     
+    @profile_operation("remove_gradient")
     def remove_gradient(self, image: np.ndarray) -> np.ndarray:
         """
         Remove background gradient from the image.
@@ -56,10 +58,11 @@ class BackgroundRemover:
         
         return diff
     
+    @profile_operation("canny_edges")
     def compute_canny_edges(
-        self, 
-        image: np.ndarray, 
-        low_threshold: int = 100, 
+        self,
+        image: np.ndarray,
+        low_threshold: int = 100,
         high_threshold: int = 200
     ) -> np.ndarray:
         """
