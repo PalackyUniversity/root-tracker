@@ -253,6 +253,13 @@ class MainWindow(QMainWindow):
         self._auto_preview_action.toggled.connect(self._on_auto_preview_toggled)
         view_menu.addAction(self._auto_preview_action)
         
+        self._detect_barcodes_action = QAction("Detect &Barcodes", self)
+        self._detect_barcodes_action.setCheckable(True)
+        self._detect_barcodes_action.setChecked(self._config.data.detect_barcodes)
+        self._detect_barcodes_action.setToolTip("Automatically detect and verify barcodes in images")
+        self._detect_barcodes_action.toggled.connect(self._on_detect_barcodes_toggled)
+        view_menu.addAction(self._detect_barcodes_action)
+        
         # Process menu
         process_menu = menubar.addMenu("&Process")
 
@@ -304,7 +311,8 @@ class MainWindow(QMainWindow):
             self, 
             self._config.data.input,
             self._config.data.filename_template,
-            self._config.data.date_format
+            self._config.data.date_format,
+            self._config.data.detect_barcodes
         )
         
         if dialog.exec() == LoadDialog.DialogCode.Accepted:
@@ -312,6 +320,7 @@ class MainWindow(QMainWindow):
             self._config.data.input = dialog.input_path
             self._config.data.filename_template = dialog.filename_template
             self._config.data.date_format = dialog.date_format
+            self._config.data.detect_barcodes = dialog.detect_barcodes
             
             self._reload_images()
 
@@ -353,6 +362,10 @@ class MainWindow(QMainWindow):
             self._settings.setValue("last_folder", self._config.data.input)
             self._settings.setValue("filename_template", self._config.data.filename_template)
             self._settings.setValue("date_format", self._config.data.date_format)
+            self._settings.setValue("detect_barcodes", self._config.data.detect_barcodes)
+            
+            # Update menu action to match current setting
+            self._detect_barcodes_action.setChecked(self._config.data.detect_barcodes)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load images:\n{e}")
 
@@ -373,6 +386,7 @@ class MainWindow(QMainWindow):
         # Auto-detect barcodes for this group if on LOAD step and auto-preview enabled
         if (step == WorkflowStep.LOAD and
             self._auto_preview_action.isChecked() and
+            self._config.data.detect_barcodes and
             self._pipeline is not None and
             self._current_series is not None):
             # Only detect if group has undetected barcodes
@@ -385,8 +399,9 @@ class MainWindow(QMainWindow):
             self._auto_preview_action.isChecked() and
             self._pipeline is not None and
             self._current_series is not None):
-            # First ensure barcodes are detected
-            if not all(img.barcode_detected for img in self._current_series.images):
+            # First ensure barcodes are detected (if enabled)
+            if (self._config.data.detect_barcodes and
+                not all(img.barcode_detected for img in self._current_series.images)):
                 self._detect_barcodes_in_group(self._current_series, continue_to_next_step=True)
                 return
             self._preprocess_group(self._current_series)
@@ -397,8 +412,9 @@ class MainWindow(QMainWindow):
             self._auto_preview_action.isChecked() and
             self._pipeline is not None and
             self._current_series is not None):
-            # First ensure barcodes are detected
-            if not all(img.barcode_detected for img in self._current_series.images):
+            # First ensure barcodes are detected (if enabled)
+            if (self._config.data.detect_barcodes and
+                not all(img.barcode_detected for img in self._current_series.images)):
                 self._detect_barcodes_in_group(self._current_series, continue_to_next_step=True)
                 return
             self._auto_process_for_tracking(self._current_series)
@@ -435,6 +451,7 @@ class MainWindow(QMainWindow):
         # Auto-detect barcodes if on LOAD step and auto-preview enabled
         if (step == WorkflowStep.LOAD and
             self._auto_preview_action.isChecked() and
+            self._config.data.detect_barcodes and
             self._pipeline is not None):
             self._detect_barcodes_in_group(series)
 
@@ -445,8 +462,9 @@ class MainWindow(QMainWindow):
         if (step == WorkflowStep.PREPROCESS and
             self._auto_preview_action.isChecked() and
             self._pipeline is not None):
-            # First ensure barcodes are detected
-            if not all(img.barcode_detected for img in series.images):
+            # First ensure barcodes are detected (if enabled)
+            if (self._config.data.detect_barcodes and
+                not all(img.barcode_detected for img in series.images)):
                 self._detect_barcodes_in_group(series, continue_to_next_step=True)
                 return
             self._preprocess_group(series)
@@ -455,8 +473,9 @@ class MainWindow(QMainWindow):
         if (step == WorkflowStep.TRACK and
             self._auto_preview_action.isChecked() and
             self._pipeline is not None):
-            # First ensure barcodes are detected
-            if not all(img.barcode_detected for img in series.images):
+            # First ensure barcodes are detected (if enabled)
+            if (self._config.data.detect_barcodes and
+                not all(img.barcode_detected for img in series.images)):
                 self._detect_barcodes_in_group(series, continue_to_next_step=True)
                 return
             self._auto_process_for_tracking(series)
@@ -827,6 +846,13 @@ class MainWindow(QMainWindow):
         """Handle Auto Preview menu toggle."""
         # Auto Preview controls whether preprocessing happens automatically on group selection
         pass
+    
+    def _on_detect_barcodes_toggled(self, enabled: bool) -> None:
+        """Handle Detect Barcodes menu toggle."""
+        self._config.data.detect_barcodes = enabled
+        # Save to settings for persistence
+        self._settings.setValue("detect_barcodes", enabled)
+        # Note: This will take effect on next image load/reload
     
     def _on_set_aside_requested(self, item: ImageData | ImageSeries) -> None:
         """Handle request to set an item aside (move to aside/ folder)."""
@@ -1460,8 +1486,9 @@ class MainWindow(QMainWindow):
 
         self._processing = True  # Guard before any processEvents() calls
 
-        # Step 1: Ensure barcodes are detected
-        if not all(img.barcode_detected for img in series.images):
+        # Step 1: Ensure barcodes are detected (if enabled)
+        if (self._config.data.detect_barcodes and
+            not all(img.barcode_detected for img in series.images)):
             self._processing_label.show()
             self._progress_bar.setValue(0)
             self._progress_bar.show()
@@ -1984,6 +2011,17 @@ class MainWindow(QMainWindow):
                     saved_format = self._settings.value("date_format", None)
                     if saved_format:
                         self._config.data.date_format = saved_format
+                    
+                    # Restore detect_barcodes if saved
+                    saved_detect = self._settings.value("detect_barcodes", None)
+                    if saved_detect is not None:
+                        # QSettings may return string "true"/"false", convert to bool
+                        if isinstance(saved_detect, str):
+                            self._config.data.detect_barcodes = saved_detect.lower() == "true"
+                        else:
+                            self._config.data.detect_barcodes = bool(saved_detect)
+                        # Update menu action to match loaded setting
+                        self._detect_barcodes_action.setChecked(self._config.data.detect_barcodes)
                     
                     self._reload_images()
             except Exception:

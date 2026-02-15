@@ -4,7 +4,7 @@ Load dialog for selecting input folder.
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QFileDialog, QFormLayout, QComboBox
+    QLineEdit, QPushButton, QFileDialog, QFormLayout, QComboBox, QCheckBox
 )
 from PySide6.QtCore import Qt
 from datetime import datetime
@@ -18,6 +18,7 @@ class LoadDialog(QDialog):
         input_path: Selected input folder path.
         filename_template: Template for parsing filenames.
         date_format: Date format string.
+        detect_barcodes: Enable/disable barcode detection.
     """
     
     def __init__(
@@ -25,13 +26,15 @@ class LoadDialog(QDialog):
         parent=None, 
         initial_path: str = "",
         initial_template: str = "{group}.{date}",
-        initial_date_format: str = "%d-%m-%y"
+        initial_date_format: str = "%d-%m-%y",
+        initial_detect_barcodes: bool = True
     ) -> None:
         super().__init__(parent)
         
         self.input_path = initial_path
-        self.filename_template = initial_template.strip() if initial_template else "{group}.{date}"
-        self.date_format = initial_date_format.strip() if initial_date_format else "%d-%m-%y"
+        self.filename_template = initial_template
+        self.date_format = initial_date_format
+        self.detect_barcodes = initial_detect_barcodes
         
         # Common filename templates with examples
         self._filename_templates = [
@@ -146,6 +149,15 @@ class LoadDialog(QDialog):
         
         layout.addLayout(form)
         
+        # Barcode detection checkbox
+        self._barcode_checkbox = QCheckBox("Detect barcodes in images")
+        self._barcode_checkbox.setChecked(self.detect_barcodes)
+        self._barcode_checkbox.setToolTip(
+            "Automatically detect and verify barcodes in images.\n"
+            "Disable if your images don't have barcodes."
+        )
+        layout.addWidget(self._barcode_checkbox)
+        
         # Help text
         help_label = QLabel(
             "<i>Tip: Images should be organized in folders or have consistent naming.</i>"
@@ -221,5 +233,8 @@ class LoadDialog(QDialog):
                 return
         else:
             self.date_format = current_fmt
+        
+        # Get barcode detection preference
+        self.detect_barcodes = self._barcode_checkbox.isChecked()
         
         self.accept()

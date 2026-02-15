@@ -19,6 +19,7 @@ class DataConfig:
     input: str = "data_in_vitro/"
     output: str = "result/"
     statistics: str = "statistics_in_vitro.csv"
+    detect_barcodes: bool = True  # Enable/disable barcode detection
 
     def resolve_paths(self, base_path: Path) -> None:
         """Resolve relative paths to absolute paths based on base_path."""
