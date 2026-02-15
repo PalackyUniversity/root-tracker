@@ -60,16 +60,24 @@ class ImageTree(QWidget):
         # Empty state widget
         empty_widget = QWidget()
         empty_layout = QVBoxLayout(empty_widget)
-        empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.setContentsMargins(0, 0, 0, 0)
         
+        # Add stretch before to push content down
+        empty_layout.addStretch(1)
+        
+        # Container for centered content
         empty_label = QLabel("No images loaded")
         empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_label.setStyleSheet("color: #888; font-size: 12px; margin-bottom: 10px;")
-        empty_layout.addWidget(empty_label)
+        empty_layout.addWidget(empty_label, 0, Qt.AlignmentFlag.AlignHCenter)
         
         load_btn = QPushButton("Open Folder...")
+        load_btn.setFixedWidth(120)
         load_btn.clicked.connect(self.load_requested.emit)
-        empty_layout.addWidget(load_btn)
+        empty_layout.addWidget(load_btn, 0, Qt.AlignmentFlag.AlignHCenter)
+        
+        # Add stretch after to push content up (centering vertically)
+        empty_layout.addStretch(1)
         
         self._stack.addWidget(empty_widget)  # Index 0: empty state
         

@@ -67,8 +67,9 @@ class MainWindow(QMainWindow):
         self._setup_menu()
         self._connect_signals()
         
-        # Start on Load step with settings panel hidden
+        # Start on Load step with settings panel and image viewer hidden
         self._settings_panel.hide()
+        self._image_viewer.hide()
         
         # Set initial button states (no images loaded yet)
         self._update_initial_ui_state()
@@ -95,7 +96,7 @@ class MainWindow(QMainWindow):
         # Left panel: Image tree only
         self._image_tree = ImageTree()
         self._image_tree.setMinimumWidth(180)
-        self._image_tree.setMaximumWidth(250)
+        # Max width will be set dynamically based on whether images are loaded
         self._splitter.addWidget(self._image_tree)
         
         # Center: Image viewer
@@ -329,8 +330,14 @@ class MainWindow(QMainWindow):
             
             self._image_tree.set_series(self._series_dict)
             
+            # Show image viewer now that we have images
+            self._image_viewer.show()
+            
             # Select first image
             self._image_tree.select_first_image()
+            
+            # Fit image to view after UI updates
+            QTimer.singleShot(0, self._image_viewer.fit_in_view)
             
             # Mark step as complete but DON'T auto-advance
             self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
