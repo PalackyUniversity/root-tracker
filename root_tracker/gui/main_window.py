@@ -13,17 +13,17 @@ from concurrent.futures import ProcessPoolExecutor
 import cv2
 import numpy as np
 from PySide6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QSplitter, QMenuBar, QMenu, QStatusBar, QMessageBox,
-    QProgressDialog, QApplication, QFileDialog
+    QMainWindow, QWidget, QVBoxLayout,
+    QSplitter, QStatusBar, QMessageBox,
+    QApplication, QFileDialog
 )
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QKeySequence
 
 from ..config import Config
 from ..models import ImageData, ImageSeries
 from ..pipeline import RootTrackingPipeline, preprocess_and_cache_worker, track_and_cache_worker
-from ..io import ImageLoader, mask_io, series_cache
+from ..io import mask_io, series_cache
 
 from .workflow_bar import WorkflowBar, WorkflowStep
 from .image_tree import ImageTree
@@ -156,25 +156,6 @@ class MainWindow(QMainWindow):
         self._progress_bar.hide()
         self._status_bar.addPermanentWidget(self._progress_bar)
         
-        self._groups_progress_label = QLabel("0/0 groups processed")
-        self._groups_progress_label.setMinimumWidth(150)
-        self._status_bar.addPermanentWidget(self._groups_progress_label)
-        
-        # Track warning count for groups
-        self._warning_count = 0
-        
-        self._process_group_btn = QPushButton("Process this group")
-        self._process_group_btn.setFixedHeight(26)
-        self._process_group_btn.setToolTip("Process the currently selected group")
-        self._process_group_btn.clicked.connect(self._on_process_group_clicked)
-        self._status_bar.addPermanentWidget(self._process_group_btn)
-        
-        self._process_all_btn = QPushButton("Process all groups")
-        self._process_all_btn.setFixedHeight(26)
-        self._process_all_btn.setToolTip("Process all groups")
-        self._process_all_btn.clicked.connect(self._on_process_all_clicked)
-        self._status_bar.addPermanentWidget(self._process_all_btn)
-        
         # Next step button (rightmost)
         self._next_step_btn = QPushButton("Next")
         self._next_step_btn.setFixedHeight(26)
@@ -268,11 +249,6 @@ class MainWindow(QMainWindow):
         # Process menu
         process_menu = menubar.addMenu("&Process")
 
-        self._start_prediction_action = QAction("&Start Prediction", self)
-        self._start_prediction_action.setShortcut(QKeySequence("Ctrl+R"))
-        self._start_prediction_action.triggered.connect(self._on_process_all_clicked)
-        process_menu.addAction(self._start_prediction_action)
-
         self._cancel_prediction_action = QAction("&Cancel Prediction", self)
         self._cancel_prediction_action.setShortcut(QKeySequence("Ctrl+."))
         self._cancel_prediction_action.triggered.connect(self._on_cancel_prediction)
@@ -351,9 +327,6 @@ class MainWindow(QMainWindow):
                 self._update_initial_ui_state()
                 return
             
-            # Initialize warning count (barcode detection is lazy - done when viewing)
-            self._warning_count = 0
-            
             self._image_tree.set_series(self._series_dict)
             
             # Select first image
@@ -361,9 +334,6 @@ class MainWindow(QMainWindow):
             
             # Mark step as complete but DON'T auto-advance
             self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
-            
-            # Update groups progress label
-            self._update_groups_progress()
             
             # Update cache action state
             self._update_cache_action_state()
@@ -606,7 +576,6 @@ class MainWindow(QMainWindow):
                 self._display_image(self._current_image)
 
         self._update_process_button_states()
-        self._update_groups_progress()
 
     def _handle_enter_preprocess(self) -> None:
         """Handle entering the PREPROCESS step."""
@@ -811,30 +780,6 @@ class MainWindow(QMainWindow):
         # Auto Preview controls whether preprocessing happens automatically on group selection
         pass
     
-    def _on_process_group_clicked(self) -> None:
-        """Handle 'Process group' button click - step aware."""
-        if self._current_series is None or self._pipeline is None:
-            return
-        
-        step = self._workflow_bar.get_current_step()
-        if step == WorkflowStep.LOAD:
-            self._detect_barcodes_in_group(self._current_series)
-        elif step == WorkflowStep.PREPROCESS:
-            self._preprocess_group(self._current_series)
-    
-    def _on_process_all_clicked(self) -> None:
-        """Handle 'Process all groups' button click - step aware."""
-        if self._pipeline is None or not self._series_dict:
-            return
-        
-        step = self._workflow_bar.get_current_step()
-        if step == WorkflowStep.LOAD:
-            self._detect_barcodes_all_groups()
-        elif step == WorkflowStep.PREPROCESS:
-            self._preprocess_all_groups()
-        elif step == WorkflowStep.TRACK:
-            self._track_all_groups()
-    
     def _on_set_aside_requested(self, item: ImageData | ImageSeries) -> None:
         """Handle request to set an item aside (move to aside/ folder)."""
         base_dir = self._config.data.input
@@ -984,23 +929,6 @@ class MainWindow(QMainWindow):
                         
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to delete item:\n{e}")
-
-            return
-
-        # Continue to next step if requested
-        if continue_to_next_step:
-            self._continue_after_barcode_detection(series)
-        else:
-            # Normal completion - hide progress and unlock
-            self._progress_bar.hide()
-            self._processing_label.hide()
-            self._set_ui_locked(False)
-
-            # Restore focus (tree was disabled during processing)
-            self._image_tree.setFocus()
-
-            if self._current_image:
-                self._display_image(self._current_image)
     
     def _detect_barcodes_in_group(self, series: 'ImageSeries', continue_to_next_step: bool = False) -> None:
         """
@@ -1046,9 +974,7 @@ class MainWindow(QMainWindow):
                 self._progress_bar.setValue(current_image_count)
                 QApplication.processEvents()
 
-            # Update warning count and tree (refresh preserves selection)
-            self._recalculate_warning_count()
-            self._update_groups_progress()
+            # Update tree to show warning icons (refresh preserves selection)
             self._image_tree.refresh()
 
         except Exception as e:
@@ -1257,10 +1183,6 @@ class MainWindow(QMainWindow):
                     self._progress_bar.setValue(current_image_count)
                     QApplication.processEvents()
                 
-                # Update warning count after each group
-                self._recalculate_warning_count()
-                self._update_groups_progress()
-            
             # Update tree to show warning icons (refresh preserves selection)
             self._image_tree.refresh()
                 
@@ -1365,9 +1287,6 @@ class MainWindow(QMainWindow):
                             series.pipeline_state.invalidate_from('track')
                         except Exception as e:
                             print(f"Error preprocessing {series.group}: {e}")
-
-                        # Update groups progress (just for the text label)
-                        self._update_groups_progress()
                     
                     # Update ETA even if no progress, to handle coasting
                     if completed_images > 0:
@@ -1397,49 +1316,6 @@ class MainWindow(QMainWindow):
         # Restore focus to tree
         self._image_tree.setFocus()
     
-    def _update_groups_progress(self, warning_text: str = "") -> None:
-        """Update the groups processed label in status bar (step-aware)."""
-        total = len(self._series_dict) if self._series_dict else 0
-
-        step = self._workflow_bar.get_current_step()
-
-        if step == WorkflowStep.LOAD:
-            # Count groups with barcodes detected
-            processed = sum(
-                1 for series in self._series_dict.values()
-                if series.images and all(img.barcode_detected for img in series.images)
-            ) if self._series_dict else 0
-            text = f"{processed}/{total} groups processed"
-        else:
-            # Count groups with preprocessing done
-            processed = sum(
-                1 for series in self._series_dict.values()
-                if series.pipeline_state.preprocessed
-            ) if self._series_dict else 0
-            text = f"{processed}/{total} groups processed"
-
-        if self._warning_count > 0:
-            text += f" ({self._warning_count} warnings)"
-        self._groups_progress_label.setText(text)
-
-    def _recalculate_warning_count(self) -> None:
-        """Recalculate total warning count from all images."""
-        if not self._series_dict:
-            self._warning_count = 0
-            return
-
-        self._warning_count = sum(
-            1 for series in self._series_dict.values()
-            for img in series.images
-            if img.barcode_mismatch
-        )
-
-    def _update_tree_warnings(self) -> None:
-        """Refresh tree to show updated warning icons."""
-        # Only refresh if there's a mismatch in the current series
-        if self._current_series and self._current_series.has_barcode_warning:
-            self._image_tree.refresh()
-
     def _preprocess_group(self, series: 'ImageSeries', force: bool = False, hide_progress: bool = True) -> None:
         """
         Preprocess the given group (series).
@@ -1497,7 +1373,6 @@ class MainWindow(QMainWindow):
             if self._current_image:
                 self._display_image(self._current_image)
 
-            self._update_groups_progress()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
         finally:
@@ -1602,15 +1477,11 @@ class MainWindow(QMainWindow):
         self._workflow_bar.setEnabled(not locked)
         
         # Buttons
-        self._process_group_btn.setEnabled(not locked)
-        self._process_all_btn.setEnabled(not locked)
         self._next_step_btn.setEnabled(not locked)
 
         # Menu items
         if hasattr(self, '_export_action'):
             self._export_action.setEnabled(not locked)
-        if hasattr(self, '_start_prediction_action'):
-            self._start_prediction_action.setEnabled(not locked)
         if hasattr(self, '_cancel_prediction_action'):
             self._cancel_prediction_action.setEnabled(locked)
         
@@ -1699,66 +1570,8 @@ class MainWindow(QMainWindow):
             img.colored_samples = {}
 
     def _update_process_button_states(self) -> None:
-        """Update process button enabled states based on current step and processing status."""
+        """Update UI states based on current step and processing status."""
         step = self._workflow_bar.get_current_step()
-        
-        can_process_group = False
-        can_process_all = False
-        
-        if step == WorkflowStep.LOAD:
-            # Check if current group has barcodes detected
-            group_done = False
-            if self._current_series and self._current_series.images:
-                group_done = all(img.barcode_detected for img in self._current_series.images)
-            
-            # Check if all groups have barcodes detected
-            all_done = False
-            if self._series_dict:
-                all_done = all(
-                    all(img.barcode_detected for img in series.images)
-                    for series in self._series_dict.values()
-                    if series.images
-                )
-            
-            can_process_group = not group_done and self._current_series is not None
-            can_process_all = not all_done and bool(self._series_dict)
-            
-        elif step == WorkflowStep.PREPROCESS:
-            # Check if current group is preprocessed
-            group_done = False
-            if self._current_series:
-                group_done = self._current_series.pipeline_state.preprocessed
-
-            # Check if all groups are preprocessed
-            all_done = False
-            if self._series_dict:
-                all_done = all(
-                    series.pipeline_state.preprocessed
-                    for series in self._series_dict.values()
-                )
-            
-            can_process_group = not group_done and self._current_series is not None
-            can_process_all = not all_done and bool(self._series_dict)
-            
-        elif step == WorkflowStep.TRACK:
-            # Check if current group is tracked
-            group_done = False
-            if self._current_series:
-                group_done = self._pipeline.is_tracking_current(self._current_series)
-
-            # Check if all groups are tracked
-            all_done = False
-            if self._series_dict:
-                all_done = all(
-                    self._pipeline.is_tracking_current(series)
-                    for series in self._series_dict.values()
-                )
-            
-            can_process_group = not group_done and self._current_series is not None
-            can_process_all = not all_done and bool(self._series_dict)
-            
-        self._process_group_btn.setEnabled(can_process_group)
-        self._process_all_btn.setEnabled(can_process_all)
         
         # Next/Export button: on Track step becomes green "Export" button
         has_images = bool(self._series_dict)
@@ -1792,14 +1605,9 @@ class MainWindow(QMainWindow):
         self._zoom_out_btn.setEnabled(has_images)
         self._zoom_label.setEnabled(has_images)
         
-        # Groups progress label: visible only when images are loaded
-        self._groups_progress_label.setVisible(has_images)
-        
         # Menu items state
         if hasattr(self, '_export_action'):
             self._export_action.setEnabled(has_images)
-        if hasattr(self, '_start_prediction_action'):
-            self._start_prediction_action.setEnabled(can_process_all)
             
         # Ensure cancel is disabled when not processing (safety check)
         if hasattr(self, '_cancel_prediction_action') and not self._processing:
@@ -1816,9 +1624,7 @@ class MainWindow(QMainWindow):
         self._zoom_out_btn.setEnabled(False)
         self._zoom_label.setEnabled(False)
         
-        # Disable process buttons
-        self._process_group_btn.setEnabled(False)
-        self._process_all_btn.setEnabled(False)
+        # Disable next button
         self._next_step_btn.setEnabled(False)
         
         # Disable menu items
@@ -1826,13 +1632,8 @@ class MainWindow(QMainWindow):
             self._clear_cache_action.setEnabled(False)
         if hasattr(self, '_export_action'):
             self._export_action.setEnabled(False)
-        if hasattr(self, '_start_prediction_action'):
-            self._start_prediction_action.setEnabled(False)
         if hasattr(self, '_cancel_prediction_action'):
             self._cancel_prediction_action.setEnabled(False)
-        
-        # Hide groups progress label
-        self._groups_progress_label.hide()
     
     def _track_all_groups(self) -> None:
         """Track all untracked groups in parallel using all CPU cores.
@@ -1918,8 +1719,6 @@ class MainWindow(QMainWindow):
                             series.pipeline_state.last_statistics = stats_dicts
                         except Exception as e:
                             print(f"Error tracking {series.group}: {e}")
-
-                        self._update_groups_progress()
 
                     # Update ETA even if no progress, to handle coasting
                     if completed_images > 0:
