@@ -45,13 +45,12 @@ class LoadDialog(QDialog):
         
         # Common date formats with examples
         self._date_formats = [
-            ("%d-%m-%y", "%d-%m-%y (e.g., 25-09-22)"),
-            ("%d-%m-%Y", "%d-%m-%Y (e.g., 25-09-2022)"),
-            ("%m-%d-%y", "%m-%d-%y (e.g., 09-25-22)"),
-            ("%m-%d-%Y", "%m-%d-%Y (e.g., 09-25-2022)"),
             ("%Y-%m-%d", "%Y-%m-%d (e.g., 2022-09-25)"),
-            ("%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S (e.g., 20200128_102340)"),
-            ("%Y%m%d", "%Y%m%d (e.g., 20200128)"),
+            ("%Y%m%d", "%Y%m%d (e.g., 20220925)"),
+            ("%Y-%m-%d_%H-%M-%S", "%Y-%m-%d_%H-%M-%S (e.g., 2022-09-25_14-30-45)"),
+            ("%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S (e.g., 20220925_143045)"),
+            ("%Y-%m-%dT%H-%M-%SZ", "%Y-%m-%dT%H-%M-%SZ (e.g., 2022-09-25T14-30-45Z)"),
+            ("%d-%m-%y", "%d-%m-%y (e.g., 25-09-22)"),
             ("custom", "Custom format..."),
         ]
         
