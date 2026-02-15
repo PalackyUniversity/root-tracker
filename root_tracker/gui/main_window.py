@@ -260,15 +260,6 @@ class MainWindow(QMainWindow):
         self._detect_barcodes_action.toggled.connect(self._on_detect_barcodes_toggled)
         view_menu.addAction(self._detect_barcodes_action)
         
-        # Process menu
-        process_menu = menubar.addMenu("&Process")
-
-        self._cancel_prediction_action = QAction("&Cancel Prediction", self)
-        self._cancel_prediction_action.setShortcut(QKeySequence("Ctrl+."))
-        self._cancel_prediction_action.triggered.connect(self._on_cancel_prediction)
-        self._cancel_prediction_action.setEnabled(False) # Default disabled
-        process_menu.addAction(self._cancel_prediction_action)
-        
         # Help menu
         help_menu = menubar.addMenu("&Help")
         
@@ -1566,8 +1557,25 @@ class MainWindow(QMainWindow):
         self._settings_panel.setEnabled(not locked)
         self._workflow_bar.setEnabled(not locked)
         
-        # Buttons
-        self._next_step_btn.setEnabled(not locked)
+        # Next button: change to Cancel during processing
+        if locked:
+            self._next_step_btn.setText("Cancel")
+            self._next_step_btn.setEnabled(True)
+            self._next_step_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #d9534f;
+                    color: white;
+                    font-weight: bold;
+                    padding: 2px 12px;
+                }
+                QPushButton:hover {
+                    background-color: #c9302c;
+                }
+            """)
+            self._next_step_btn.setToolTip("Cancel current processing")
+        else:
+            # Restore button state based on current step
+            self._update_process_button_states()
         
         # Zoom controls: always enabled when images are loaded (independent of lock state)
         has_images = bool(self._series_dict)
@@ -1578,8 +1586,6 @@ class MainWindow(QMainWindow):
         # Menu items
         if hasattr(self, '_export_action'):
             self._export_action.setEnabled(not locked)
-        if hasattr(self, '_cancel_prediction_action'):
-            self._cancel_prediction_action.setEnabled(locked)
         
         # Cursor - avoid stacking by checking current state
         if locked:
@@ -1711,10 +1717,6 @@ class MainWindow(QMainWindow):
         # Menu items state
         if hasattr(self, '_export_action'):
             self._export_action.setEnabled(has_images)
-            
-        # Ensure cancel is disabled when not processing (safety check)
-        if hasattr(self, '_cancel_prediction_action') and not self._processing:
-            self._cancel_prediction_action.setEnabled(False)
             
         # Update cache action state as well (processing might have created cache)
         self._update_cache_action_state()
@@ -2046,7 +2048,12 @@ class MainWindow(QMainWindow):
             self._on_step_changed(new_step)
     
     def _on_next_step_clicked(self) -> None:
-        """Handle Next/Export button click."""
+        """Handle Next/Export/Cancel button click."""
+        # If processing, cancel it
+        if self._processing:
+            self._on_cancel_prediction()
+            return
+            
         current = self._workflow_bar.get_current_step()
 
         if not self._series_dict:
