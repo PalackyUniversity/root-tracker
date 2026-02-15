@@ -7,7 +7,7 @@ Shows an empty state with load button when no images are loaded.
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem,
-    QLabel, QPushButton, QStackedWidget, QMenu
+    QLabel, QPushButton, QStackedWidget, QMenu, QHBoxLayout
 )
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QAction, QFont, QColor
@@ -46,6 +46,7 @@ class ImageTree(QWidget):
         self._series_dict: dict[str, ImageSeries] = {}
         self._item_to_data: dict[int, ImageData | ImageSeries] = {}
         self._filter_aside: bool = False  # If True, hide items that are set aside
+        self._current_folder: str = ""
         
         self._setup_ui()
     
@@ -53,6 +54,51 @@ class ImageTree(QWidget):
         """Set up the UI components."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        
+        # Header widget with folder name and open button
+        self._header = QWidget()
+        self._header.setStyleSheet("""
+            QWidget {
+                background-color: #2b2b2b;
+                border-bottom: 1px solid #3a3a3a;
+            }
+        """)
+        header_layout = QHBoxLayout(self._header)
+        header_layout.setContentsMargins(8, 6, 8, 6)
+        header_layout.setSpacing(4)
+        
+        self._folder_label = QLabel("No folder")
+        self._folder_label.setStyleSheet("color: #ffffff; font-size: 11px; border: none;")
+        self._folder_label.setWordWrap(False)
+        header_layout.addWidget(self._folder_label, 1)  # stretch to fill
+        
+        self._open_folder_btn = QPushButton("Open...")
+        self._open_folder_btn.setToolTip("Open different folder")
+        self._open_folder_btn.setFixedHeight(24)
+        self._open_folder_btn.clicked.connect(self.load_requested.emit)
+        self._open_folder_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #3a3a3a;
+                border: 1px solid #4a4a4a;
+                border-radius: 3px;
+                padding: 4px 8px;
+                color: #ccc;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #4a4a4a;
+                border: 1px solid #5a5a5a;
+                color: #fff;
+            }
+            QPushButton:pressed {
+                background-color: #2a2a2a;
+            }
+        """)
+        header_layout.addWidget(self._open_folder_btn, 0)
+        
+        self._header.hide()  # Hidden by default until folder is loaded
+        layout.addWidget(self._header)
         
         # Stacked widget for empty state vs tree
         self._stack = QStackedWidget()
@@ -118,9 +164,25 @@ class ImageTree(QWidget):
         
         if not series_dict:
             self._stack.setCurrentIndex(0)  # Show empty state
-            return
-        
-        for group_name, series in sorted(series_dict.items()):
+            self._header.hide()
+        else:
+            self._stack.setCurrentIndex(1)  # Show tree
+            self._header.show()
+            self._populate_tree()
+    
+    def set_folder_path(self, folder_path: str) -> None:
+        """Set the current folder path to display in the header."""
+        import os
+        self._current_folder = folder_path
+        if folder_path:
+            # Show just the folder name, not the full path
+            folder_name = os.path.basename(folder_path.rstrip(os.sep))
+            self._folder_label.setText(folder_name)
+            self._folder_label.setToolTip(folder_path)  # Full path on hover
+    
+    def _populate_tree(self) -> None:
+        """Populate the tree with the current series data."""
+        for group_name, series in sorted(self._series_dict.items()):
             is_group_aside = series.is_set_aside
             
             # Skip if we're filtering aside items and this group is aside

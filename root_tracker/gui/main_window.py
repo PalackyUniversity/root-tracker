@@ -335,6 +335,7 @@ class MainWindow(QMainWindow):
                 return
             
             self._image_tree.set_series(self._series_dict)
+            self._image_tree.set_folder_path(self._config.data.input)
             
             # Show image viewer now that we have images
             self._image_viewer.show()
@@ -589,6 +590,9 @@ class MainWindow(QMainWindow):
             # LOAD: just refresh display
             if self._current_image:
                 self._display_image(self._current_image)
+
+        # Reset zoom to fit when switching steps
+        QTimer.singleShot(0, self._image_viewer.fit_in_view)
 
         self._update_process_button_states()
 
