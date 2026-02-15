@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QSplitter, QStatusBar, QMessageBox,
     QApplication, QFileDialog
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QKeySequence
 
 from ..config import Config
@@ -559,7 +559,6 @@ class MainWindow(QMainWindow):
             self._settings_panel.hide()
         else:
             self._settings_panel.show()
-            self._settings_panel.show()
             self._settings_panel.set_step(step)
             
         # Update tree filtering: show aside items ONLY in LOAD step
@@ -579,25 +578,49 @@ class MainWindow(QMainWindow):
 
     def _handle_enter_preprocess(self) -> None:
         """Handle entering the PREPROCESS step."""
+        # Display current image immediately for smooth transition
+        if self._current_image:
+            self._display_image(self._current_image)
+        
+        # Defer auto-processing until after UI transition completes
         if (self._auto_preview_action.isChecked()
                 and self._current_series is not None
                 and self._pipeline is not None):
             state = self._current_series.pipeline_state
             current_hash = self._config.preprocess_config_hash()
-            if state.preprocessed and state.preprocess_config_hash == current_hash:
-                # Already done and current — just display
-                if self._current_image:
-                    self._display_image(self._current_image)
-            else:
-                self._preprocess_group(self._current_series)
-        elif self._current_image:
-            self._display_image(self._current_image)
+            if not (state.preprocessed and state.preprocess_config_hash == current_hash):
+                # Lock UI immediately for visual feedback
+                self._set_ui_locked(True)
+                # Schedule preprocessing to run after UI updates
+                QTimer.singleShot(0, lambda: self._preprocess_group(self._current_series))
 
     def _handle_enter_track(self) -> None:
         """Handle entering the TRACK step."""
         if self._current_series is None or self._pipeline is None:
             if self._current_image:
                 self._display_image(self._current_image)
+            return
+
+        # Display current image immediately for smooth transition
+        if self._current_image:
+            self._display_image(self._current_image)
+        
+        # Check if processing will be needed
+        state = self._current_series.pipeline_state
+        preprocess_hash = self._config.preprocess_config_hash()
+        needs_preprocessing = not state.preprocessed or state.preprocess_config_hash != preprocess_hash
+        needs_tracking = not self._pipeline.is_tracking_current(self._current_series)
+        
+        # Lock UI immediately if processing will occur
+        if needs_preprocessing or (self._auto_preview_action.isChecked() and needs_tracking):
+            self._set_ui_locked(True)
+        
+        # Defer heavy processing until after UI transition completes
+        QTimer.singleShot(0, self._run_track_step_processing)
+    
+    def _run_track_step_processing(self) -> None:
+        """Execute tracking step processing (called after UI transition)."""
+        if self._current_series is None or self._pipeline is None:
             return
 
         self._processing = True  # Guard before any processEvents() calls
@@ -1512,11 +1535,15 @@ class MainWindow(QMainWindow):
         if hasattr(self, '_cancel_prediction_action'):
             self._cancel_prediction_action.setEnabled(locked)
         
-        # Cursor
+        # Cursor - avoid stacking by checking current state
         if locked:
-            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            # Only set wait cursor if not already overridden
+            if QApplication.overrideCursor() is None:
+                QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         else:
-            QApplication.restoreOverrideCursor()
+            # Restore all cursor overrides (in case of nested locks)
+            while QApplication.overrideCursor() is not None:
+                QApplication.restoreOverrideCursor()
 
     def _on_clear_cache(self) -> None:
         """Clear the cache directory for the current folder."""
