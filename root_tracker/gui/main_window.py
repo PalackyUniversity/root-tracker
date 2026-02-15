@@ -9,7 +9,9 @@ import multiprocessing as mp
 from multiprocessing import Manager
 import shutil
 import time
+import threading
 from concurrent.futures import ProcessPoolExecutor
+from enum import Enum
 import cv2
 import numpy as np
 from PySide6.QtWidgets import (
@@ -17,7 +19,7 @@ from PySide6.QtWidgets import (
     QSplitter, QStatusBar, QMessageBox,
     QApplication, QFileDialog
 )
-from PySide6.QtCore import Qt, QTimer, QSettings
+from PySide6.QtCore import Qt, QTimer, QSettings, QThread, Signal
 from PySide6.QtGui import QAction, QKeySequence
 
 from ..config import Config
@@ -31,6 +33,192 @@ from .image_viewer import ImageViewer
 from .settings_panel import SettingsPanel
 from .dialogs import LoadDialog
 from .masking_tools import MaskTool
+
+
+class ProcessingState(Enum):
+    """Enum representing the current processing state of the application."""
+    IDLE = "idle"
+    BARCODE_DETECTION = "barcode_detection"
+    PREPROCESSING = "preprocessing"
+    TRACKING = "tracking"
+    BATCH_PREPROCESS = "batch_preprocess"
+    BATCH_TRACK = "batch_track"
+
+
+class ProcessingContext:
+    """
+    Context manager for processing operations.
+    
+    Ensures UI is locked during processing and properly unlocked on completion,
+    even if exceptions occur. Handles worker cleanup and state transitions.
+    """
+    
+    def __init__(self, main_window, state: ProcessingState, series=None):
+        self.main_window = main_window
+        self.state = state
+        self.series = series
+        self.next_operation = None  # Set by operations to chain processing
+        self.was_cancelled = False
+        self._worker_started = False
+        
+    def __enter__(self):
+        """Lock UI and set processing state."""
+        self.main_window._state = self.state
+        self.main_window._context = self
+        
+        # Save current step for potential cancel restoration
+        if self.main_window._step_before_processing is None:
+            self.main_window._step_before_processing = self.main_window._workflow_bar.get_current_step()
+        
+        # Lock UI
+        self.main_window._lock_ui()
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Unlock UI and clean up, even if exception occurred."""
+        # Cancel ongoing operations if exception occurred
+        if exc_type is not None:
+            self.was_cancelled = True
+            if self.main_window._worker is not None and self.main_window._worker.isRunning():
+                self.main_window._worker.cancel()
+            if self.main_window._executor is not None:
+                self.main_window._executor.shutdown(wait=False, cancel_futures=True)
+                self.main_window._executor = None
+        
+        # Clear continuation flags if cancelled to prevent restart
+        if self.was_cancelled:
+            if hasattr(self.main_window, '_auto_process_pending_preprocess'):
+                self.main_window._auto_process_pending_preprocess = False
+            if hasattr(self.main_window, '_auto_process_pending_tracking'):
+                self.main_window._auto_process_pending_tracking = False
+        
+        # Clear worker reference
+        if self.main_window._worker is not None:
+            self.main_window._worker = None
+        
+        # Clear executor reference
+        if self.main_window._executor is not None:
+            self.main_window._executor = None
+        
+        # Hide progress indicators
+        self.main_window._progress_bar.hide()
+        self.main_window._processing_label.hide()
+        
+        # Clear cancel flag
+        self.main_window._cancel_requested.clear()
+        
+        # Reset state
+        self.main_window._state = ProcessingState.IDLE
+        self.main_window._context = None
+        
+        # Unlock UI
+        self.main_window._unlock_ui(restore_step=self.was_cancelled)
+        
+        # Restore focus to tree
+        self.main_window._image_tree.setFocus()
+        
+        # Process next operation in chain if not cancelled
+        if not self.was_cancelled and self.next_operation:
+            self.next_operation()
+        
+        # Don't suppress exceptions
+        return False
+
+
+class ProcessWorker(QThread):
+    """Worker thread for processing operations to keep UI responsive."""
+    
+    progress = Signal(int, int)  # current, total
+    finished = Signal(bool, str)  # success, error_msg
+    
+    def __init__(self, pipeline, series, config, operation='preprocess'):
+        super().__init__()
+        self.pipeline = pipeline
+        self.series = series
+        self.config = config
+        self.operation = operation
+        self._cancelled = False
+    
+    def cancel(self):
+        """Request cancellation of the operation."""
+        self._cancelled = True
+    
+    def run(self):
+        """Execute the processing operation in a background thread."""
+        try:
+            if self.operation == 'preprocess':
+                self._run_preprocess()
+            elif self.operation == 'track':
+                self._run_track()
+            elif self.operation == 'barcode':
+                self._run_barcode_detection()
+            
+            if not self._cancelled:
+                self.finished.emit(True, "")
+            else:
+                self.finished.emit(False, "Cancelled")
+        except Exception as e:
+            self.finished.emit(False, str(e))
+    
+    def _run_preprocess(self):
+        """Run preprocessing on the series."""
+        total_images = len(self.series.images)
+        for i, image_data in enumerate(self.series.images):
+            if self._cancelled:
+                break
+            self.pipeline.preprocess_image(image_data)
+            self.progress.emit(i + 1, total_images)
+        
+        if not self._cancelled:
+            # Register the series
+            self.pipeline.register_series(self.series)
+            
+            # Update pipeline state
+            self.series.pipeline_state.preprocessed = True
+            self.series.pipeline_state.preprocess_config_hash = self.config.preprocess_config_hash()
+            self.series.pipeline_state.invalidate_from('track')
+            
+            # Save to cache
+            from ..io import series_cache
+            series_cache.save_series(self.series, self.config)
+    
+    def _run_track(self):
+        """Run tracking on the series."""
+        def progress_callback(current, total):
+            if self._cancelled:
+                raise InterruptedError("Cancelled")
+            self.progress.emit(current, total)
+        
+        stats = self.pipeline.track_and_analyze_series(
+            self.series,
+            progress_callback=progress_callback
+        )
+        
+        if not self._cancelled:
+            # Update pipeline state
+            self.series.pipeline_state.tracked = True
+            self.series.pipeline_state.tracking_config_hash = self.config.tracking_config_hash()
+            self.series.pipeline_state.last_statistics = stats
+            
+            # Save to cache
+            from ..io import series_cache
+            series_cache.save_series(self.series, self.config)
+    
+    def _run_barcode_detection(self):
+        """Run barcode detection on the series."""
+        total_images = len(self.series.images)
+        for i, image_data in enumerate(self.series.images):
+            if self._cancelled:
+                break
+            if not image_data.barcode_detected:
+                self.pipeline.detect_barcode_in_image(image_data)
+            self.progress.emit(i + 1, total_images)
+        
+        if not self._cancelled:
+            # Save to cache
+            from ..io import series_cache
+            series_cache.save_series(self.series, self.config)
+
 
 class MainWindow(QMainWindow):
     """
@@ -59,8 +247,18 @@ class MainWindow(QMainWindow):
         self._series_dict: dict[str, ImageSeries] = {}
         self._current_image: ImageData | None = None
         self._current_series: ImageSeries | None = None
-        self._processing: bool = False  # Reentrancy guard for processEvents
+        
+        # Processing state management (new unified system)
+        self._state: ProcessingState = ProcessingState.IDLE
+        self._context: ProcessingContext | None = None
         self._cancel_requested = mp.Event()
+        self._worker: ProcessWorker | None = None  # Current worker thread
+        self._executor: ProcessPoolExecutor | None = None  # Current batch executor
+        self._step_before_processing: WorkflowStep | None = None  # Track step to restore on cancel
+        
+        # Cache synchronization
+        self._cache_lock = threading.Lock()
+        self._series_in_use: set[str] = set()  # Track series being processed
 
         
         self.setWindowTitle("Root Tracker")
@@ -82,6 +280,25 @@ class MainWindow(QMainWindow):
         
         # Load last folder if available
         self._load_last_folder()
+    
+    def closeEvent(self, event):
+        """Handle application close - cleanup any running workers."""
+        # Cancel any running operations
+        if self._worker is not None:
+            if self._worker.isRunning():
+                self._worker.cancel()
+                # Wait for thread to finish gracefully
+                if not self._worker.wait(2000):  # Wait up to 2 seconds
+                    self._worker.terminate()
+                    self._worker.wait()  # Wait for termination to complete
+            self._worker = None
+        
+        # Shutdown executor if running
+        if self._executor is not None:
+            self._executor.shutdown(wait=False, cancel_futures=True)
+            self._executor = None
+        
+        event.accept()
     
     def _setup_ui(self) -> None:
         """Set up the main UI layout."""
@@ -365,7 +582,7 @@ class MainWindow(QMainWindow):
     def _on_image_selected(self, image_data: ImageData) -> None:
         """Handle image selection in tree."""
         step = self._workflow_bar.get_current_step()
-        if self._processing:
+        if self._state != ProcessingState.IDLE:
             return
         self._current_image = image_data
         self._current_series = self._image_tree.get_selected_series()
@@ -419,7 +636,7 @@ class MainWindow(QMainWindow):
     
     def _on_group_selected(self, series: ImageSeries) -> None:
         """Handle group selection in tree."""
-        if self._processing:
+        if self._state != ProcessingState.IDLE:
             return
         # Reset settings for new group (discard unsaved changes)
         self._settings_panel.reset_for_group()
@@ -571,6 +788,10 @@ class MainWindow(QMainWindow):
     
     def _on_step_changed(self, step: WorkflowStep) -> None:
         """Handle workflow step change."""
+        # Don't allow step changes while processing
+        if self._state != ProcessingState.IDLE:
+            return
+        
         # Validate step prerequisites
         if step > WorkflowStep.LOAD and not self._workflow_bar.is_step_completed(WorkflowStep.LOAD):
             QMessageBox.warning(
@@ -618,8 +839,6 @@ class MainWindow(QMainWindow):
             state = self._current_series.pipeline_state
             current_hash = self._config.preprocess_config_hash()
             if not (state.preprocessed and state.preprocess_config_hash == current_hash):
-                # Lock UI immediately for visual feedback
-                self._set_ui_locked(True)
                 # Schedule preprocessing to run after UI updates
                 QTimer.singleShot(0, lambda: self._preprocess_group(self._current_series))
 
@@ -629,7 +848,7 @@ class MainWindow(QMainWindow):
             if self._current_image:
                 self._display_image(self._current_image)
             return
-
+        
         # Display current image immediately for smooth transition
         if self._current_image:
             self._display_image(self._current_image)
@@ -640,55 +859,26 @@ class MainWindow(QMainWindow):
         needs_preprocessing = not state.preprocessed or state.preprocess_config_hash != preprocess_hash
         needs_tracking = not self._pipeline.is_tracking_current(self._current_series)
         
-        # Lock UI immediately if processing will occur
-        if needs_preprocessing or (self._auto_preview_action.isChecked() and needs_tracking):
-            self._set_ui_locked(True)
-        
         # Defer heavy processing until after UI transition completes
-        QTimer.singleShot(0, self._run_track_step_processing)
+        if needs_preprocessing or (self._auto_preview_action.isChecked() and needs_tracking):
+            QTimer.singleShot(0, self._run_track_step_processing)
     
     def _run_track_step_processing(self) -> None:
         """Execute tracking step processing (called after UI transition)."""
         if self._current_series is None or self._pipeline is None:
             return
 
-        self._processing = True  # Guard before any processEvents() calls
-
-        state = self._current_series.pipeline_state
-
-        # Ensure preprocessing is done first
-        preprocess_hash = self._config.preprocess_config_hash()
-        if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
-            self._processing_label.show()
-            self._progress_bar.setValue(0)
-            self._progress_bar.show()
-            QApplication.processEvents()
-            self._preprocess_group(self._current_series, force=True, hide_progress=False)
-            QApplication.processEvents()
-
         # Check if tracking is already done and current
         if self._pipeline.is_tracking_current(self._current_series):
             # Tracking already done — just display the annotated image
-            self._processing_label.hide()
-            self._progress_bar.hide()
-            self._force_unlock_ui()
             if self._current_image:
                 self._display_image(self._current_image)
             return
 
-        # Auto-run tracking if enabled
+        # Auto-run tracking if enabled, using the proper chain
         if self._auto_preview_action.isChecked():
-            self._processing_label.show()
-            self._progress_bar.setValue(0)
-            self._progress_bar.show()
-            QApplication.processEvents()
-            self._on_track_roots()
-            self._processing_label.hide()
-            self._progress_bar.hide()
+            self._auto_process_for_tracking(self._current_series)
         else:
-            self._force_unlock_ui()
-            self._processing_label.hide()
-            self._progress_bar.hide()
             if self._current_image:
                 self._display_image(self._current_image)
     
@@ -997,77 +1187,43 @@ class MainWindow(QMainWindow):
     
     def _detect_barcodes_in_group(self, series: 'ImageSeries', continue_to_next_step: bool = False) -> None:
         """
-        Detect barcodes for all images in a group with progress bar.
+        Detect barcodes for all images in a group.
 
         Args:
             series: ImageSeries to detect barcodes in.
-            continue_to_next_step: If True, automatically continue to preprocessing/tracking after detection.
+            continue_to_next_step: If True, set up continuation to preprocessing/tracking after detection.
         """
         if self._pipeline is None:
             return
 
+        # Store series for continuation
+        self._processing_series = series
+
         # Check if barcodes already detected for this group
         if all(img.barcode_detected for img in series.images):
-            # Already detected - continue if requested
+            # Already detected - manually trigger continuation if needed
             if continue_to_next_step:
-                self._continue_after_barcode_detection(series)
+                step = self._workflow_bar.get_current_step()
+                if step == WorkflowStep.PREPROCESS:
+                    self._preprocess_group(series)
+                elif step == WorkflowStep.TRACK:
+                    self._auto_process_for_tracking(series)
             return
 
-        # Lock UI
-        self._set_ui_locked(True)
-
-        # Show progress bar
-        total_images = len(series.images)
-        self._progress_bar.setMaximum(total_images)
-        self._progress_bar.setValue(0)
-        self._progress_bar.show()
-        self._processing_label.show()
-
-        start_time = time.time()
-
-        try:
-            current_image_count = 0
-            for i, image_data in enumerate(series.images):
-                if not image_data.barcode_detected:
-                    self._update_progress_label(start_time, current_image_count, total_images)
-                    self._pipeline.detect_barcode_in_image(image_data)
-                    current_image_count += 1
-                else:
-                    self._update_progress_label(start_time, current_image_count, total_images)
-                    current_image_count += 1
-
-                self._progress_bar.setValue(current_image_count)
-                QApplication.processEvents()
-
-            # Update tree to show warning icons (refresh preserves selection)
-            self._image_tree.refresh()
-
-            # Save barcode detection results to cache
-            series_cache.save_series(series, self._config)
-
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Barcode detection failed:\n{e}")
-            self._progress_bar.hide()
-            self._processing_label.hide()
-            self._set_ui_locked(False)
-            return
-        finally:
-            pass  # Don't hide progress/unlock here if continuing to next step
-
-        # Continue to next step if requested
+        # Set up continuation flags for auto-processing chain
         if continue_to_next_step:
-            self._continue_after_barcode_detection(series)
-        else:
-            # Normal completion - hide progress and unlock
-            self._progress_bar.hide()
-            self._processing_label.hide()
-            self._set_ui_locked(False)
+            step = self._workflow_bar.get_current_step()
+            if step == WorkflowStep.PREPROCESS:
+                # After barcode detection, continue to preprocessing only
+                self._auto_process_pending_preprocess = True
+                self._auto_process_pending_tracking = False
+            elif step == WorkflowStep.TRACK:
+                # After barcode detection, continue to preprocessing then tracking
+                self._auto_process_pending_preprocess = True
+                self._auto_process_pending_tracking = True
 
-            # Restore focus (tree was disabled during processing)
-            self._image_tree.setFocus()
-
-            if self._current_image:
-                self._display_image(self._current_image)
+        # Use worker thread for barcode detection
+        self._start_barcode_detection(series)
 
     def _update_progress_label(self, start_time: float, current: int, total: int) -> None:
         """
@@ -1137,83 +1293,7 @@ class MainWindow(QMainWindow):
         self._processing_label.setText(f"ETA: {eta_text}")
         self._processing_label.show()
 
-    def _continue_after_barcode_detection(self, series: 'ImageSeries') -> None:
-        """
-        Continue to next processing step after barcode detection completes.
-
-        Called from _detect_barcodes_in_group when continue_to_next_step=True.
-
-        Args:
-            series: ImageSeries that was just processed.
-        """
-        self._processing = True  # Guard before any processEvents() calls
-        step = self._workflow_bar.get_current_step()
-
-        if step == WorkflowStep.PREPROCESS:
-            # Continue to preprocessing
-            self._preprocess_group(series, hide_progress=True)
-            # Force unlock UI to clear any stacked wait cursors
-            self._force_unlock_ui()
-            # Restore focus and display
-            self._image_tree.setFocus()
-            if self._current_image:
-                self._display_image(self._current_image)
-        elif step == WorkflowStep.TRACK:
-            # Continue with full tracking pipeline (will preprocess if needed, then track)
-            # Check if preprocessing is needed
-            preprocess_hash = self._config.preprocess_config_hash()
-            state = series.pipeline_state
-            if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
-                QApplication.processEvents()
-                self._preprocess_group(series, force=True, hide_progress=False)
-
-            # Check if tracking is needed
-            if not self._pipeline.is_tracking_current(series):
-                self._progress_bar.setValue(0)
-                QApplication.processEvents()
-
-                try:
-                    start_time = time.time()
-                    # Define progress callback
-                    def update_progress(current, total):
-                        if total > 0:
-                            percent = int((current / total) * 100)
-                            self._progress_bar.setValue(percent)
-                            self._update_progress_label(start_time, current, total)
-                        QApplication.processEvents()
-
-                    stats = self._pipeline.track_and_analyze_series(
-                        series,
-                        progress_callback=update_progress
-                    )
-
-                    # Update pipeline state
-                    series.pipeline_state.tracked = True
-                    series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
-                    series.pipeline_state.last_statistics = stats
-
-                    # Save to cache
-                    series_cache.save_series(series, self._config)
-
-                    self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
-                except Exception as e:
-                    QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
-
-            # All done - hide progress and unlock
-            self._processing_label.hide()
-            self._progress_bar.hide()
-            self._force_unlock_ui()
-            if self._current_image:
-                self._display_image(self._current_image)
-            self._image_tree.setFocus()
-        else:
-            # LOAD step - just finish normally
-            self._progress_bar.hide()
-            self._processing_label.hide()
-            self._set_ui_locked(False)
-            if self._current_image:
-                self._display_image(self._current_image)
-            self._image_tree.setFocus()
+    # Removed _continue_after_barcode_detection - replaced by continuation pattern in finish handlers
     
     def _detect_barcodes_all_groups(self) -> None:
         """Detect barcodes for all groups with progress bar."""
@@ -1231,8 +1311,9 @@ class MainWindow(QMainWindow):
         
         total_images = sum(len(s.images) for s in undetected_groups)
         
-        # Lock UI
-        self._set_ui_locked(True)
+        # Create processing context
+        self._context = ProcessingContext(self, ProcessingState.BARCODE_DETECTION)
+        self._context.__enter__()
         
         # Setup cumulative progress bar
         self._progress_bar.setMaximum(total_images)
@@ -1263,22 +1344,22 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Barcode detection failed:\n{e}")
         finally:
-            self._progress_bar.hide()
-            self._processing_label.hide()
-            self._set_ui_locked(False)
-        
-        # Restore focus (tree was disabled during processing)
-        self._image_tree.setFocus()
+            # Exit processing context (handles cleanup)
+            if self._context:
+                self._context.__exit__(None, None, None)
         
         # Display current image if we have one
         if self._current_image:
             self._display_image(self._current_image)
     
-    def _preprocess_all_groups(self, force: bool = False) -> None:
+    def _preprocess_all_groups(self, force: bool = False) -> bool:
         """Preprocess all unprocessed groups in parallel using all CPU cores.
 
         Submits each group to a ProcessPoolExecutor. Workers save results
         to disk cache. Progress bar tracks completed groups.
+        
+        Returns:
+            True if completed successfully, False if cancelled.
         """
         if self._pipeline is None or not self._series_dict:
             return
@@ -1298,11 +1379,12 @@ class MainWindow(QMainWindow):
 
         total_groups = len(unprocessed_groups)
 
-        # Lock UI
-        self._set_ui_locked(True)
-
         # Count total images for progress bar
         total_images = sum(len(s.images) for s in unprocessed_groups)
+
+        # Create processing context for batch operation
+        self._context = ProcessingContext(self, ProcessingState.BATCH_PREPROCESS)
+        self._context.__enter__()
 
         # Progress bar tracks completed images
         self._progress_bar.setRange(0, total_images)
@@ -1323,7 +1405,10 @@ class MainWindow(QMainWindow):
             progress_queue = manager.Queue()
 
             ctx = mp.get_context('spawn')
-            with ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx) as executor:
+            self._executor = ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx)
+            executor = self._executor
+            
+            try:
                 # Pass queue to workers
                 futures = {
                     executor.submit(preprocess_and_cache_worker, (self._config, s, progress_queue)): s
@@ -1333,9 +1418,12 @@ class MainWindow(QMainWindow):
                 while futures:
                     # Check cancellation
                     if self._cancel_requested.is_set():
-                        # Cancel remaining futures
-                        for f in futures:
-                            f.cancel()
+                        # Shutdown executor immediately without waiting
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        self._processing_label.setText("Cancelled")
+                        self._progress_bar.hide()  # Immediately hide to avoid "Finishing up..." flash
+                        QApplication.processEvents()
+                        time.sleep(0.3)
                         break
 
                     # Check for progress updates from queue
@@ -1368,31 +1456,37 @@ class MainWindow(QMainWindow):
 
                     if futures:
                         time.sleep(0.05)
+            finally:
+                self._executor = None
+                executor.shutdown(wait=False)
 
-            # Reload current series from cache if it was in the batch
-            if self._current_series in unprocessed_groups:
-                self._ensure_series_loaded(self._current_series)
+            # Only proceed if not cancelled
+            if not self._cancel_requested.is_set():
+                # Reload current series from cache if it was in the batch
+                if self._current_series in unprocessed_groups:
+                    self._ensure_series_loaded(self._current_series)
 
-            # Mark step complete
-            if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
-                self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
+                # Mark step complete
+                if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
+                    self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
 
-            if self._current_image:
-                self._display_image(self._current_image)
+                if self._current_image:
+                    self._display_image(self._current_image)
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
+           QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
         finally:
-            self._progress_bar.hide()
-            self._processing_label.hide()
-            self._set_ui_locked(False)
+            # Exit processing context (handles cleanup)
+            was_cancelled = self._cancel_requested.is_set()
+            if self._context:
+                self._context.was_cancelled = was_cancelled
+                self._context.__exit__(None, None, None)
 
-        # Restore focus to tree
-        self._image_tree.setFocus()
+        return not was_cancelled
     
     def _preprocess_group(self, series: 'ImageSeries', force: bool = False, hide_progress: bool = True) -> None:
         """
-        Preprocess the given group (series).
+        Preprocess the given group (series) using a worker thread.
 
         Args:
             series: ImageSeries to process.
@@ -1418,56 +1512,118 @@ class MainWindow(QMainWindow):
         self._progress_bar.setMaximum(total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
+        self._processing_label.setText("Preprocessing...")
         self._processing_label.show()
-        self._set_ui_locked(True)
-        QApplication.processEvents()
 
-        start_time = time.time()
+        self._start_time = time.time()
+        self._hide_progress_on_complete = hide_progress
 
-        try:
-            for i, image_data in enumerate(series.images):
-                self._update_progress_label(start_time, i + 1, total_images)
-                self._pipeline.preprocess_image(image_data)
-                self._progress_bar.setValue(i + 1)
-                QApplication.processEvents()
+        # Create and enter processing context
+        self._context = ProcessingContext(self, ProcessingState.PREPROCESSING, series)
+        self._context.__enter__()
 
-            # Register the series
-            self._pipeline.register_series(series)
+        # Create and start worker thread
+        self._worker = ProcessWorker(self._pipeline, series, self._config, 'preprocess')
+        self._worker.progress.connect(self._on_worker_progress)
+        self._worker.finished.connect(self._on_preprocess_finished)
+        self._worker.start()
 
-            # Update pipeline state
-            series.pipeline_state.preprocessed = True
-            series.pipeline_state.preprocess_config_hash = self._config.preprocess_config_hash()
-            # Invalidate tracking since preprocessing changed
-            series.pipeline_state.invalidate_from('track')
+    def _on_worker_progress(self, current: int, total: int) -> None:
+        """Handle progress updates from worker thread."""
+        # Check if we're in percentage mode (tracking) or count mode (preprocessing/barcode)
+        if self._progress_bar.maximum() == 100:
+            # Tracking mode - convert to percentage
+            if total > 0:
+                percent = int((current / total) * 100)
+                self._progress_bar.setValue(percent)
+            self._update_progress_label(self._start_time, current, total)
+        else:
+            # Count mode - use current value directly
+            self._progress_bar.setValue(current)
+            self._update_progress_label(self._start_time, current, total)
 
-            # Save to cache
-            series_cache.save_series(series, self._config)
-
-            # Only mark complete if not already completed
+    def _on_preprocess_finished(self, success: bool, error_msg: str) -> None:
+        """Handle preprocessing completion."""
+        # Determine if we should continue with next operation
+        should_continue_to_tracking = (
+            success and 
+            hasattr(self, '_auto_process_pending_tracking') and 
+            self._auto_process_pending_tracking
+        )
+        
+        if success:
+            # Mark step complete
             if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
                 self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
 
             if self._current_image:
                 self._display_image(self._current_image)
+            
+            # Set up continuation if needed
+            if should_continue_to_tracking:
+                self._auto_process_pending_tracking = False
+                if self._context:
+                    self._context.next_operation = self._continue_auto_track
+        elif error_msg and error_msg != "Cancelled":
+            QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{error_msg}")
+        
+        # Cleanup and exit context (handles UI unlock, progress hide, etc.)
+        if self._context:
+            was_cancelled = (error_msg == "Cancelled")
+            self._context.was_cancelled = was_cancelled
+            self._context.__exit__(None, None, None)
 
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Preprocessing failed:\n{e}")
-        finally:
-            if hide_progress:
-                self._progress_bar.hide()
-                self._processing_label.hide()
-                self._set_ui_locked(False)
-            else:
-                pass
+    def _on_tracking_finished(self, success: bool, error_msg: str) -> None:
+        """Handle tracking completion."""
+        if success:
+            # Mark step complete
+            self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
 
-        # Restore focus to tree
-        self._image_tree.setFocus()
+            if self._current_image:
+                self._display_image(self._current_image)
+        elif error_msg and error_msg != "Cancelled":
+            QMessageBox.critical(self, "Error", f"Tracking failed:\n{error_msg}")
+        
+        # Cleanup and exit context (handles UI unlock, progress hide, etc.)
+        if self._context:
+            was_cancelled = (error_msg == "Cancelled")
+            self._context.was_cancelled = was_cancelled
+            self._context.__exit__(None, None, None)
+
+    def _on_barcode_finished(self, success: bool, error_msg: str) -> None:
+        """Handle barcode detection completion."""
+        # Determine if we should continue with next operation
+        should_continue_to_preprocess = (
+            success and 
+            hasattr(self, '_auto_process_pending_preprocess') and 
+            self._auto_process_pending_preprocess
+        )
+        
+        if success:
+            # Update tree to show warning icons
+            self._image_tree.refresh()
+            
+            # Set up continuation if needed
+            if should_continue_to_preprocess:
+                self._auto_process_pending_preprocess = False
+                # Note: _auto_process_pending_tracking already set correctly in _detect_barcodes_in_group
+                if self._context:
+                    self._context.next_operation = self._continue_auto_preprocess
+        elif error_msg and error_msg != "Cancelled":
+            QMessageBox.critical(self, "Error", f"Barcode detection failed:\n{error_msg}")
+        
+        # Cleanup and exit context (handles UI unlock, progress hide, etc.)
+        if self._context:
+            was_cancelled = (error_msg == "Cancelled")
+            self._context.was_cancelled = was_cancelled
+            self._context.__exit__(None, None, None)
 
     def _auto_process_for_tracking(self, series: 'ImageSeries') -> None:
         """
         Auto-process a series for tracking (barcode detection → preprocessing → tracking).
 
         Called when selecting an image/group in TRACK step with auto-preview enabled.
+        Uses continuation pattern with completion handlers to chain operations.
 
         Args:
             series: ImageSeries to process.
@@ -1475,107 +1631,111 @@ class MainWindow(QMainWindow):
         if self._pipeline is None:
             return
 
-        self._processing = True  # Guard before any processEvents() calls
+        self._processing_series = series  # Store for continuations
+        self._auto_process_pending_preprocess = False
+        self._auto_process_pending_tracking = False
 
-        # Step 1: Ensure barcodes are detected (if enabled)
+        # Step 1: Check if barcodes need detection (if enabled)
         if (self._config.data.detect_barcodes and
             not all(img.barcode_detected for img in series.images)):
-            self._processing_label.show()
-            self._progress_bar.setValue(0)
-            self._progress_bar.show()
-            QApplication.processEvents()
-            self._detect_barcodes_in_group(series)
+            # Need barcode detection, then preprocessing, then tracking
+            self._auto_process_pending_preprocess = True
+            self._auto_process_pending_tracking = True
+            self._start_barcode_detection(series)
+            return
 
-        # Step 2: Ensure preprocessing is done
+        # Step 2: Check if preprocessing is needed
         preprocess_hash = self._config.preprocess_config_hash()
         state = series.pipeline_state
         if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
-            self._processing_label.show()
-            self._progress_bar.setValue(0)
-            self._progress_bar.show()
-            QApplication.processEvents()
+            # Need preprocessing, then tracking
+            self._auto_process_pending_tracking = True
             self._preprocess_group(series, force=True, hide_progress=False)
+            return
 
         # Step 3: Check if tracking is needed
         if self._pipeline.is_tracking_current(series):
             # Already tracked with current config - just display
-            self._processing_label.hide()
-            self._progress_bar.hide()
-            self._force_unlock_ui()
             if self._current_image:
                 self._display_image(self._current_image)
             return
 
         # Step 4: Run tracking
-        self._processing_label.show()
+        self._start_tracking(series)
+
+    def _start_barcode_detection(self, series: 'ImageSeries') -> None:
+        """Start barcode detection in worker thread."""
+        total_images = len(series.images)
+        self._progress_bar.setMaximum(total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
-        QApplication.processEvents()
+        self._processing_label.setText("Detecting barcodes...")
+        self._processing_label.show()
 
-        try:
-            start_time = time.time()
-            # Define progress callback
-            def update_progress(current, total):
-                if total > 0:
-                    percent = int((current / total) * 100)
-                    self._progress_bar.setValue(percent)
-                    self._update_progress_label(start_time, current, total)
-                QApplication.processEvents()
+        self._start_time = time.time()
+        self._hide_progress_on_complete = False
 
-            stats = self._pipeline.track_and_analyze_series(
-                series,
-                progress_callback=update_progress
-            )
+        # Create and enter processing context
+        self._context = ProcessingContext(self, ProcessingState.BARCODE_DETECTION, series)
+        self._context.__enter__()
 
-            # Update pipeline state
-            series.pipeline_state.tracked = True
-            series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
-            series.pipeline_state.last_statistics = stats
+        self._worker = ProcessWorker(self._pipeline, series, self._config, 'barcode')
+        self._worker.progress.connect(self._on_worker_progress)
+        self._worker.finished.connect(self._on_barcode_finished)
+        self._worker.start()
 
-            # Save to cache
-            series_cache.save_series(series, self._config)
+    def _continue_auto_preprocess(self) -> None:
+        """Continue auto-processing with preprocessing step."""
+        if hasattr(self, '_processing_series'):
+            self._preprocess_group(self._processing_series, force=True, hide_progress=False)
 
-            self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
+    def _continue_auto_track(self) -> None:
+        """Continue auto-processing with tracking step."""
+        if hasattr(self, '_processing_series'):
+            self._start_tracking(self._processing_series)
 
-            if self._current_image:
-                self._display_image(self._current_image)
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
-        finally:
-            self._processing_label.hide()
-            self._progress_bar.hide()
-            self._force_unlock_ui()
-            # Restore focus to tree
-            self._image_tree.setFocus()
+    def _start_tracking(self, series: 'ImageSeries') -> None:
+        """Start tracking in worker thread."""
+        self._progress_bar.setRange(0, 100)
+        self._progress_bar.setValue(0)
+        self._progress_bar.show()
+        self._processing_label.setText("Tracking roots...")
+        self._processing_label.show()
+
+        self._start_time = time.time()
+        self._hide_progress_on_complete = True
+
+        # Create and enter processing context
+        self._context = ProcessingContext(self, ProcessingState.TRACKING, series)
+        self._context.__enter__()
+
+        self._worker = ProcessWorker(self._pipeline, series, self._config, 'track')
+        self._worker.progress.connect(self._on_worker_progress)
+        self._worker.finished.connect(self._on_tracking_finished)
+        self._worker.start()
     
-    def _set_ui_locked(self, locked: bool) -> None:
-        """Lock/unlock UI during processing."""
-        self._processing = locked
-        
+    def _lock_ui(self) -> None:
+        """Lock UI during processing. Called by ProcessingContext.__enter__."""
         # Disable main interactive elements
-        self._image_tree.setEnabled(not locked)
-        self._settings_panel.setEnabled(not locked)
-        self._workflow_bar.setEnabled(not locked)
+        self._image_tree.setEnabled(False)
+        self._settings_panel.setEnabled(False)
+        self._workflow_bar.setEnabled(False)
         
         # Next button: change to Cancel during processing
-        if locked:
-            self._next_step_btn.setText("Cancel")
-            self._next_step_btn.setEnabled(True)
-            self._next_step_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #d9534f;
-                    color: white;
-                    font-weight: bold;
-                    padding: 2px 12px;
-                }
-                QPushButton:hover {
-                    background-color: #c9302c;
-                }
-            """)
-            self._next_step_btn.setToolTip("Cancel current processing")
-        else:
-            # Restore button state based on current step
-            self._update_process_button_states()
+        self._next_step_btn.setText("Cancel")
+        self._next_step_btn.setEnabled(True)
+        self._next_step_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #d9534f;
+                color: white;
+                font-weight: bold;
+                padding: 2px 12px;
+            }
+            QPushButton:hover {
+                background-color: #c9302c;
+            }
+        """)
+        self._next_step_btn.setToolTip("Cancel current processing")
         
         # Zoom controls: always enabled when images are loaded (independent of lock state)
         has_images = bool(self._series_dict)
@@ -1585,17 +1745,60 @@ class MainWindow(QMainWindow):
 
         # Menu items
         if hasattr(self, '_export_action'):
-            self._export_action.setEnabled(not locked)
+            self._export_action.setEnabled(False)
         
-        # Cursor - avoid stacking by checking current state
-        if locked:
-            # Only set wait cursor if not already overridden
-            if QApplication.overrideCursor() is None:
-                QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        else:
-            # Restore all cursor overrides (in case of nested locks)
-            while QApplication.overrideCursor() is not None:
-                QApplication.restoreOverrideCursor()
+        # Set wait cursor
+        if QApplication.overrideCursor() is None:
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+    
+    def _unlock_ui(self, restore_step: bool = False) -> None:
+        """Unlock UI after processing. Called by ProcessingContext.__exit__."""
+        # Restore all cursor overrides
+        while QApplication.overrideCursor() is not None:
+            QApplication.restoreOverrideCursor()
+        
+        # Re-enable main interactive elements
+        self._image_tree.setEnabled(True)
+        self._settings_panel.setEnabled(True)
+        self._workflow_bar.setEnabled(True)
+        
+        # Handle step restoration if cancelled
+        if restore_step and self._step_before_processing is not None:
+            # Temporarily disconnect signal to avoid double _on_step_changed call
+            self._workflow_bar.step_changed.disconnect(self._on_step_changed)
+            self._workflow_bar.set_current_step(self._step_before_processing)
+            self._workflow_bar.step_changed.connect(self._on_step_changed)
+            
+            # Update UI panels manually without triggering auto-processing
+            step = self._step_before_processing
+            if step == WorkflowStep.LOAD:
+                self._settings_panel.hide()
+            else:
+                self._settings_panel.show()
+                self._settings_panel.set_step(step)
+            
+            # Update tree filtering
+            self._image_tree.set_filter_aside(step != WorkflowStep.LOAD)
+            
+            # Display current image if available
+            if self._current_image:
+                self._display_image(self._current_image)
+        
+        # Clear saved step
+        self._step_before_processing = None
+        
+        # Restore button state based on current step
+        self._update_process_button_states()
+        
+        # Zoom controls: enabled if images are loaded
+        has_images = bool(self._series_dict)
+        self._fit_btn.setEnabled(has_images)
+        self._zoom_in_btn.setEnabled(has_images)
+        self._zoom_out_btn.setEnabled(has_images)
+        
+        # Menu items
+        if hasattr(self, '_export_action'):
+            self._export_action.setEnabled(True)
 
     def _on_clear_cache(self) -> None:
         """Clear the cache directory for the current folder."""
@@ -1639,37 +1842,40 @@ class MainWindow(QMainWindow):
 
     def _on_cancel_prediction(self) -> None:
         """Request cancellation of current processing."""
+        # Set cancellation flags
         self._cancel_requested.set()
-            
-    def _force_unlock_ui(self) -> None:
-        """Force unlock UI and reset cursor stack."""
-        self._processing = False
-        while QApplication.overrideCursor() is not None:
-            QApplication.restoreOverrideCursor()
-            
-        self._workflow_bar.setEnabled(True)
-        self._settings_panel.setEnabled(True)
-        self._image_tree.setEnabled(True)
+        if self._context:
+            self._context.was_cancelled = True
         
-        # Zoom controls: enabled only if images are loaded
-        has_images = bool(self._series_dict)
-        self._fit_btn.setEnabled(has_images)
-        self._zoom_in_btn.setEnabled(has_images)
-        self._zoom_out_btn.setEnabled(has_images)
+        # Show cancelling status
+        self._progress_bar.hide()
+        self._processing_label.setText("Cancelling...")
+        self._processing_label.show()
+        QApplication.processEvents()
         
-        self._update_process_button_states()
+        # Cancel worker thread if one is running
+        if self._worker is not None and self._worker.isRunning():
+            self._worker.cancel()
+        
+        # Cancel batch executor if one is running
+        if self._executor is not None:
+            self._executor.shutdown(wait=False, cancel_futures=True)
+            
+    # Removed _force_unlock_ui - replaced by unified _unlock_ui
     
     def _ensure_series_loaded(self, series: 'ImageSeries') -> None:
         """Reload series arrays from disk cache if they were freed."""
         if series is None:
             return
-        sample = series.images[0] if series.images else None
-        if sample and sample.image is None and series.pipeline_state.preprocessed:
-            series_cache.load_series(series, self._config)
+        with self._cache_lock:
+            sample = series.images[0] if series.images else None
+            if sample and sample.image is None and series.pipeline_state.preprocessed:
+                series_cache.load_series(series, self._config)
 
     @staticmethod
     def _free_series_arrays(series: 'ImageSeries') -> None:
         """Free heavy image arrays from a series to reduce RAM usage."""
+        # Note: Caller must hold _cache_lock when calling this method
         for img in series.images:
             img.image = None
             img.process = None
@@ -1678,35 +1884,38 @@ class MainWindow(QMainWindow):
             img.image_annotated = None
             img.colored_samples = {}
 
+    # Removed _is_operation_running - replaced by checking _state != ProcessingState.IDLE
+    
     def _update_process_button_states(self) -> None:
         """Update UI states based on current step and processing status."""
         step = self._workflow_bar.get_current_step()
         
-        # Next/Export button: on Track step becomes green "Export" button
+        # Next/Export button: Don't override if any operation is running
         has_images = bool(self._series_dict)
-        if step == WorkflowStep.TRACK:
-            self._next_step_btn.setText("Export")
-            self._next_step_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #5cb85c;
-                    color: white;
-                    font-weight: bold;
-                    padding: 2px 12px;
-                }
-                QPushButton:hover {
-                    background-color: #449d44;
-                }
-                QPushButton:disabled {
-                    background-color: #88c888;
-                    color: #ccc;
-                }
-            """)
-            self._next_step_btn.setToolTip("Export results to CSV")
-        else:
-            self._next_step_btn.setText("Next")
-            self._next_step_btn.setStyleSheet("")
-            self._next_step_btn.setToolTip("Go to next step")
-        self._next_step_btn.setEnabled(has_images)
+        if self._state == ProcessingState.IDLE:
+            if step == WorkflowStep.TRACK:
+                self._next_step_btn.setText("Export")
+                self._next_step_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #5cb85c;
+                        color: white;
+                        font-weight: bold;
+                        padding: 2px 12px;
+                    }
+                    QPushButton:hover {
+                        background-color: #449d44;
+                    }
+                    QPushButton:disabled {
+                        background-color: #88c888;
+                        color: #ccc;
+                    }
+                """)
+                self._next_step_btn.setToolTip("Export results to CSV")
+            else:
+                self._next_step_btn.setText("Next")
+                self._next_step_btn.setStyleSheet("")
+                self._next_step_btn.setToolTip("Go to next step")
+            self._next_step_btn.setEnabled(has_images)
 
         # Zoom controls: enabled only when images are loaded
         self._fit_btn.setEnabled(has_images)
@@ -1740,11 +1949,14 @@ class MainWindow(QMainWindow):
         if hasattr(self, '_cancel_prediction_action'):
             self._cancel_prediction_action.setEnabled(False)
     
-    def _track_all_groups(self) -> None:
+    def _track_all_groups(self) -> bool:
         """Track all untracked groups in parallel using all CPU cores.
 
         Saves caches and frees arrays before submitting, so workers
         reload from disk. Progress bar tracks completed groups.
+        
+        Returns:
+            True if completed successfully, False if cancelled.
         """
         if self._pipeline is None or not self._series_dict:
             return
@@ -1760,12 +1972,16 @@ class MainWindow(QMainWindow):
         total_images = sum(len(s.images) for s in untracked)
 
         # Prepare: save cache + free arrays so pickling is lightweight
-        for series in untracked:
-            if series.images and series.images[0].image is not None:
-                series_cache.save_series(series, self._config)
-            self._free_series_arrays(series)
+        with self._cache_lock:
+            for series in untracked:
+                if series.images and series.images[0].image is not None:
+                    series_cache.save_series(series, self._config)
+                self._free_series_arrays(series)
 
-        self._set_ui_locked(True)
+        # Create processing context for batch operation
+        self._context = ProcessingContext(self, ProcessingState.BATCH_TRACK)
+        self._context.__enter__()
+
         self._progress_bar.setRange(0, total_images)
         self._progress_bar.setValue(0)
         self._progress_bar.show()
@@ -1784,7 +2000,10 @@ class MainWindow(QMainWindow):
             progress_queue = manager.Queue()
 
             ctx = mp.get_context('spawn')
-            with ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx) as executor:
+            self._executor = ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx)
+            executor = self._executor
+            
+            try:
                 # Pass queue to workers
                 futures = {
                     executor.submit(track_and_cache_worker, (self._config, s, progress_queue)): s
@@ -1794,9 +2013,12 @@ class MainWindow(QMainWindow):
                 while futures:
                     # Check cancellation
                     if self._cancel_requested.is_set():
-                        # Cancel remaining futures
-                        for f in futures:
-                            f.cancel()
+                        # Shutdown executor immediately without waiting
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        self._processing_label.setText("Cancelled")
+                        self._progress_bar.hide()  # Immediately hide to avoid "Finishing up..." flash
+                        QApplication.processEvents()
+                        time.sleep(0.3)
                         break
 
                     # Check for progress updates from queue
@@ -1831,77 +2053,41 @@ class MainWindow(QMainWindow):
 
                     if futures:
                         time.sleep(0.05)
+            finally:
+                self._executor = None
+                executor.shutdown(wait=False)
 
-            # Reload current series from cache for display
-            if self._current_series is not None:
-                self._ensure_series_loaded(self._current_series)
+            # Only proceed if not cancelled
+            if not self._cancel_requested.is_set():
+                # Reload current series from cache for display
+                if self._current_series is not None:
+                    self._ensure_series_loaded(self._current_series)
 
-            if not self._workflow_bar.is_step_completed(WorkflowStep.TRACK):
-                self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
+                if not self._workflow_bar.is_step_completed(WorkflowStep.TRACK):
+                    self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
 
-            if self._current_image:
-                self._display_image(self._current_image)
+                if self._current_image:
+                    self._display_image(self._current_image)
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
         finally:
-            self._progress_bar.hide()
-            self._processing_label.hide()
-            self._set_ui_locked(False)
-
-        self._image_tree.setFocus()
+            # Exit processing context (handles cleanup)
+            was_cancelled = self._cancel_requested.is_set()
+            if self._context:
+                self._context.was_cancelled = was_cancelled
+                self._context.__exit__(None, None, None)
+        
+        return not was_cancelled
 
     def _on_track_roots(self) -> None:
-        """Run root tracking on current group."""
+        """Run root tracking on current group using worker thread."""
         if self._pipeline is None or self._current_series is None:
             QMessageBox.warning(self, "Warning", "Please preprocess images first.")
             return
         
-        # Prepare progress bar (always reset for tracking phase)
-        self._processing_label.show()
-
-        # Reset to percentage mode
-        self._progress_bar.setRange(0, 100)
-        self._progress_bar.setValue(0)
-        self._progress_bar.show()
-
-        self._processing = True
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-        QApplication.processEvents()
-
-        try:
-            start_time = time.time()
-            # Define progress callback
-            def update_progress(current, total):
-                if total > 0:
-                    percent = int((current / total) * 100)
-                    self._progress_bar.setValue(percent)
-                    self._update_progress_label(start_time, current, total)
-                QApplication.processEvents()
-
-            stats = self._pipeline.track_and_analyze_series(
-                self._current_series,
-                progress_callback=update_progress
-            )
-
-            # Update pipeline state
-            self._current_series.pipeline_state.tracked = True
-            self._current_series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
-            self._current_series.pipeline_state.last_statistics = stats
-
-            # Save to cache
-            series_cache.save_series(self._current_series, self._config)
-
-            self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
-
-            if self._current_image:
-                self._display_image(self._current_image)
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
-        finally:
-            self._processing_label.hide()
-            self._progress_bar.hide()
-            self._force_unlock_ui()
+        # Delegate to _start_tracking which uses ProcessWorker
+        self._start_tracking(self._current_series)
     
     def _on_export_results(self) -> None:
         """Handle export results action."""
@@ -2050,7 +2236,7 @@ class MainWindow(QMainWindow):
     def _on_next_step_clicked(self) -> None:
         """Handle Next/Export/Cancel button click."""
         # If processing, cancel it
-        if self._processing:
+        if self._state != ProcessingState.IDLE:
             self._on_cancel_prediction()
             return
             
@@ -2068,6 +2254,9 @@ class MainWindow(QMainWindow):
         if current >= WorkflowStep.TRACK:
             return
 
+        # Save current step before navigating (in case we need to cancel back)
+        self._step_before_processing = current
+        
         new_step = WorkflowStep(current + 1)
         self._workflow_bar.set_current_step(new_step)
         self._on_step_changed(new_step)
@@ -2097,18 +2286,38 @@ class MainWindow(QMainWindow):
             if not self._pipeline.is_tracking_current(s)
         ]
         if untracked:
-            self._track_all_groups()
-
-        # Export with the already-chosen options
+            success = self._track_all_groups()
+            
+            # If cancelled, don't proceed to export
+            if not success:
+                return
+        
+        # Export with ProcessingContext
+        self._context = ProcessingContext(self, ProcessingState.IDLE)  # Use IDLE since this is just export
+        self._context.__enter__()
+        
         self._processing_label.setText("Exporting...")
         self._processing_label.show()
-        QApplication.setOverrideCursor(Qt.WaitCursor)
+        self._progress_bar.setRange(0, 0)  # Indeterminate progress
+        self._progress_bar.show()
         QApplication.processEvents()
 
         try:
             # Export statistics
             stats_df = self._pipeline.export_statistics(self._series_dict)
+            
+            # Check if cancelled during export
+            if self._cancel_requested.is_set():
+                self._processing_label.setText("Cancelled")
+                self._progress_bar.hide()
+                QApplication.processEvents()
+                time.sleep(0.3)
+                return
+            
             stats_df.to_csv(file_path, index=False)
+            
+            self._processing_label.hide()
+            self._progress_bar.hide()
             
             QMessageBox.information(
                 self, 
@@ -2116,7 +2325,12 @@ class MainWindow(QMainWindow):
                 f"Results exported to:\n{file_path}"
             )
         except Exception as e:
+            self._processing_label.hide()
+            self._progress_bar.hide()
             QMessageBox.critical(self, "Error", f"Export failed:\n{e}")
         finally:
-            self._processing_label.hide()
-            QApplication.restoreOverrideCursor()
+            # Exit processing context (handles cleanup)
+            was_cancelled = self._cancel_requested.is_set()
+            if self._context:
+                self._context.was_cancelled = was_cancelled
+                self._context.__exit__(None, None, None)
