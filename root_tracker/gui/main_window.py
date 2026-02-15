@@ -329,9 +329,6 @@ class MainWindow(QMainWindow):
                     f"No images found in '{self._config.data.input}' matching template '{self._config.data.filename_template}'.\n\n"
                     "Check that the folder path and filename template are correct."
                 )
-                # Clear UI if reload failed to find images
-                self._image_tree.clear()
-                self._update_initial_ui_state()
                 return
             
             self._image_tree.set_series(self._series_dict)
@@ -352,8 +349,10 @@ class MainWindow(QMainWindow):
             # Update cache action state
             self._update_cache_action_state()
             
-            # Save this folder path for next time
+            # Save this folder path and settings for next time
             self._settings.setValue("last_folder", self._config.data.input)
+            self._settings.setValue("filename_template", self._config.data.filename_template)
+            self._settings.setValue("date_format", self._config.data.date_format)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load images:\n{e}")
 
@@ -1973,7 +1972,19 @@ class MainWindow(QMainWindow):
                 files = os.listdir(last_folder)
                 has_images = any(f.lower().endswith(('.jpg', '.jpeg', '.png')) for f in files)
                 if has_images:
+                    # Restore folder path and settings
                     self._config.data.input = last_folder
+                    
+                    # Restore filename template if saved
+                    saved_template = self._settings.value("filename_template", None)
+                    if saved_template:
+                        self._config.data.filename_template = saved_template
+                    
+                    # Restore date format if saved
+                    saved_format = self._settings.value("date_format", None)
+                    if saved_format:
+                        self._config.data.date_format = saved_format
+                    
                     self._reload_images()
             except Exception:
                 pass  # Silently ignore if we can't load the last folder

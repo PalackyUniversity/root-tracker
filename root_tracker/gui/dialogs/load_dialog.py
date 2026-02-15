@@ -30,8 +30,8 @@ class LoadDialog(QDialog):
         super().__init__(parent)
         
         self.input_path = initial_path
-        self.filename_template = initial_template
-        self.date_format = initial_date_format
+        self.filename_template = initial_template.strip() if initial_template else "{group}.{date}"
+        self.date_format = initial_date_format.strip() if initial_date_format else "%d-%m-%y"
         
         # Common filename templates with examples
         self._filename_templates = [
