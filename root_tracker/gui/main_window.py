@@ -767,6 +767,12 @@ class MainWindow(QMainWindow):
             for image_data in self._current_series.images:
                 self._pipeline.preprocess_image(image_data)
 
+            # Re-register the series with updated centroid positions
+            self._pipeline.register_series(self._current_series)
+
+            # Save to cache (preprocessing results updated with new centroids)
+            series_cache.save_series(self._current_series, self._config)
+
             if self._current_image:
                 self._display_image(self._current_image)
         except Exception as e:
@@ -977,6 +983,9 @@ class MainWindow(QMainWindow):
             # Update tree to show warning icons (refresh preserves selection)
             self._image_tree.refresh()
 
+            # Save barcode detection results to cache
+            series_cache.save_series(series, self._config)
+
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Barcode detection failed:\n{e}")
             self._progress_bar.hide()
@@ -1124,6 +1133,9 @@ class MainWindow(QMainWindow):
                     series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
                     series.pipeline_state.last_statistics = stats
 
+                    # Save to cache
+                    series_cache.save_series(series, self._config)
+
                     self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
                 except Exception as e:
                     QMessageBox.critical(self, "Error", f"Tracking failed:\n{e}")
@@ -1182,6 +1194,9 @@ class MainWindow(QMainWindow):
                     self._update_progress_label(start_time, current_image_count, total_images)
                     self._progress_bar.setValue(current_image_count)
                     QApplication.processEvents()
+                
+                # Save this series to cache after all its barcodes are detected
+                series_cache.save_series(series, self._config)
                 
             # Update tree to show warning icons (refresh preserves selection)
             self._image_tree.refresh()
@@ -1366,6 +1381,9 @@ class MainWindow(QMainWindow):
             # Invalidate tracking since preprocessing changed
             series.pipeline_state.invalidate_from('track')
 
+            # Save to cache
+            series_cache.save_series(series, self._config)
+
             # Only mark complete if not already completed
             if not self._workflow_bar.is_step_completed(WorkflowStep.PREPROCESS):
                 self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
@@ -1453,6 +1471,9 @@ class MainWindow(QMainWindow):
             series.pipeline_state.tracked = True
             series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
             series.pipeline_state.last_statistics = stats
+
+            # Save to cache
+            series_cache.save_series(series, self._config)
 
             self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
 
@@ -1784,6 +1805,9 @@ class MainWindow(QMainWindow):
             self._current_series.pipeline_state.tracking_config_hash = self._config.tracking_config_hash()
             self._current_series.pipeline_state.last_statistics = stats
 
+            # Save to cache
+            series_cache.save_series(self._current_series, self._config)
+
             self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
 
             if self._current_image:
@@ -1880,6 +1904,9 @@ class MainWindow(QMainWindow):
 
         # Clear tracking results
         self._current_series.clear_tracking_results()
+
+        # Save to cache (tracking results are now cleared)
+        series_cache.save_series(self._current_series, self._config)
 
     def _on_about(self) -> None:
         """Show about dialog."""
