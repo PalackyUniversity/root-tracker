@@ -72,6 +72,9 @@ class MainWindow(QMainWindow):
         
         # Set initial button states (no images loaded yet)
         self._update_initial_ui_state()
+        
+        # Start maximized
+        self.showMaximized()
     
     def _setup_ui(self) -> None:
         """Set up the main UI layout."""
