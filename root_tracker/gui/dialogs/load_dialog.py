@@ -33,6 +33,16 @@ class LoadDialog(QDialog):
         self.filename_template = initial_template
         self.date_format = initial_date_format
         
+        # Common filename templates with examples
+        self._filename_templates = [
+            ("{group}.{date}", "{group}.{date} (e.g., RT_25.25-09-22)"),
+            ("{group}_{date}", "{group}_{date} (e.g., RT_25_25-09-22)"),
+            ("{date}_{group}", "{date}_{group} (e.g., 25-09-22_RT_25)"),
+            ("{group}-{date}", "{group}-{date} (e.g., RT_25-25-09-22)"),
+            ("{date}-{group}", "{date}-{group} (e.g., 25-09-22-RT_25)"),
+            ("custom", "Custom template..."),
+        ]
+        
         # Common date formats with examples
         self._date_formats = [
             ("%d-%m-%y", "%d-%m-%y (e.g., 25-09-22)"),
@@ -70,13 +80,39 @@ class LoadDialog(QDialog):
         
         form.addRow("Input folder:", path_layout)
         
-        # Filename template
-        self._template_edit = QLineEdit(self.filename_template)
-        self._template_edit.setToolTip(
+        # Filename template dropdown
+        self._template_combo = QComboBox()
+        for template, display in self._filename_templates:
+            self._template_combo.addItem(display, template)
+        
+        # Find initial selection for template
+        initial_template_index = 0
+        for i, (template, _) in enumerate(self._filename_templates):
+            if template == self.filename_template:
+                initial_template_index = i
+                break
+        else:
+            # Not in list - select custom
+            initial_template_index = len(self._filename_templates) - 1
+        
+        self._template_combo.setCurrentIndex(initial_template_index)
+        self._template_combo.currentIndexChanged.connect(self._on_template_changed)
+        form.addRow("Filename template:", self._template_combo)
+        
+        # Custom template input (hidden by default)
+        self._custom_template_label = QLabel("Custom template:")
+        self._custom_template_edit = QLineEdit(self.filename_template if initial_template_index == len(self._filename_templates) - 1 else "")
+        self._custom_template_edit.setPlaceholderText("e.g., {group}.{date}")
+        self._custom_template_edit.setToolTip(
             "Template for parsing filenames.\n"
             "Use {group} for group name and {date} for date."
         )
-        form.addRow("Filename template:", self._template_edit)
+        form.addRow(self._custom_template_label, self._custom_template_edit)
+        
+        # Show/hide custom template input based on selection
+        is_custom_template = initial_template_index == len(self._filename_templates) - 1
+        self._custom_template_label.setVisible(is_custom_template)
+        self._custom_template_edit.setVisible(is_custom_template)
         
         # Date format dropdown
         self._date_combo = QComboBox()
@@ -98,16 +134,19 @@ class LoadDialog(QDialog):
         form.addRow("Date format:", self._date_combo)
         
         # Custom date format input (hidden by default)
+        self._custom_date_label = QLabel("Custom format:")
         self._custom_date_edit = QLineEdit(self.date_format if initial_index == len(self._date_formats) - 1 else "")
         self._custom_date_edit.setPlaceholderText("e.g., %d-%m-%Y")
         self._custom_date_edit.setToolTip(
             "Python strptime format for dates.\n"
             "Example: %d-%m-%Y for day-month-year"
         )
-        form.addRow("Custom format:", self._custom_date_edit)
+        form.addRow(self._custom_date_label, self._custom_date_edit)
         
         # Show/hide custom input based on selection
-        self._custom_date_edit.setVisible(initial_index == len(self._date_formats) - 1)
+        is_custom_date = initial_index == len(self._date_formats) - 1
+        self._custom_date_label.setVisible(is_custom_date)
+        self._custom_date_edit.setVisible(is_custom_date)
         
         layout.addLayout(form)
         
@@ -141,20 +180,40 @@ class LoadDialog(QDialog):
         if folder:
             self._path_edit.setText(folder)
     
+    def _on_template_changed(self, index: int) -> None:
+        """Handle filename template selection change."""
+        # Show custom input only when "Custom" is selected (last item)
+        is_custom = (index == len(self._filename_templates) - 1)
+        self._custom_template_label.setVisible(is_custom)
+        self._custom_template_edit.setVisible(is_custom)
+        
+        # Adjust dialog size to accommodate custom field
+        self.adjustSize()
+    
     def _on_date_format_changed(self, index: int) -> None:
         """Handle date format selection change."""
         # Show custom input only when "Custom" is selected (last item)
         is_custom = (index == len(self._date_formats) - 1)
+        self._custom_date_label.setVisible(is_custom)
         self._custom_date_edit.setVisible(is_custom)
         
-        # Adjust dialog height to accommodate custom field
-        if is_custom:
-            self.adjustSize()
+        # Adjust dialog size to accommodate custom field
+        self.adjustSize()
     
     def _accept(self) -> None:
         """Accept dialog and store values."""
         self.input_path = self._path_edit.text()
-        self.filename_template = self._template_edit.text()
+        
+        # Get filename template from dropdown or custom field
+        current_template = self._template_combo.currentData()
+        if current_template == "custom":
+            self.filename_template = self._custom_template_edit.text().strip()
+            if not self.filename_template:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.warning(self, "Invalid Input", "Please enter a custom filename template.")
+                return
+        else:
+            self.filename_template = current_template
         
         # Get date format from dropdown or custom field
         current_fmt = self._date_combo.currentData()
