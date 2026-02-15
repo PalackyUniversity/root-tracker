@@ -4,9 +4,10 @@ Load dialog for selecting input folder.
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QFileDialog, QFormLayout
+    QLineEdit, QPushButton, QFileDialog, QFormLayout, QComboBox
 )
 from PySide6.QtCore import Qt
+from datetime import datetime
 
 
 class LoadDialog(QDialog):
@@ -31,6 +32,21 @@ class LoadDialog(QDialog):
         self.input_path = initial_path
         self.filename_template = initial_template
         self.date_format = initial_date_format
+        
+        # Common date formats with examples
+        self._date_formats = [
+            ("%d-%m-%y", "%d-%m-%y (e.g., 25-09-22)"),
+            ("%d-%m-%Y", "%d-%m-%Y (e.g., 25-09-2022)"),
+            ("%m-%d-%y", "%m-%d-%y (e.g., 09-25-22)"),
+            ("%m-%d-%Y", "%m-%d-%Y (e.g., 09-25-2022)"),
+            ("%Y-%m-%d", "%Y-%m-%d (e.g., 2022-09-25)"),
+            ("%d/%m/%y", "%d/%m/%y (e.g., 25/09/22)"),
+            ("%d/%m/%Y", "%d/%m/%Y (e.g., 25/09/2022)"),
+            ("%m/%d/%y", "%m/%d/%y (e.g., 09/25/22)"),
+            ("%m/%d/%Y", "%m/%d/%Y (e.g., 09/25/2022)"),
+            ("%Y/%m/%d", "%Y/%m/%d (e.g., 2022/09/25)"),
+            ("custom", "Custom format..."),
+        ]
         
         self.setWindowTitle("Load Images")
         self.setMinimumWidth(500)
@@ -62,13 +78,36 @@ class LoadDialog(QDialog):
         )
         form.addRow("Filename template:", self._template_edit)
         
-        # Date format
-        self._date_edit = QLineEdit(self.date_format)
-        self._date_edit.setToolTip(
+        # Date format dropdown
+        self._date_combo = QComboBox()
+        for fmt, display in self._date_formats:
+            self._date_combo.addItem(display, fmt)
+        
+        # Find initial selection
+        initial_index = 0
+        for i, (fmt, _) in enumerate(self._date_formats):
+            if fmt == self.date_format:
+                initial_index = i
+                break
+        else:
+            # Not in list - select custom
+            initial_index = len(self._date_formats) - 1
+        
+        self._date_combo.setCurrentIndex(initial_index)
+        self._date_combo.currentIndexChanged.connect(self._on_date_format_changed)
+        form.addRow("Date format:", self._date_combo)
+        
+        # Custom date format input (hidden by default)
+        self._custom_date_edit = QLineEdit(self.date_format if initial_index == len(self._date_formats) - 1 else "")
+        self._custom_date_edit.setPlaceholderText("e.g., %d-%m-%Y")
+        self._custom_date_edit.setToolTip(
             "Python strptime format for dates.\n"
-            "Example: %d-%m-%Y for 01-02-2024"
+            "Example: %d-%m-%Y for day-month-year"
         )
-        form.addRow("Date format:", self._date_edit)
+        form.addRow("Custom format:", self._custom_date_edit)
+        
+        # Show/hide custom input based on selection
+        self._custom_date_edit.setVisible(initial_index == len(self._date_formats) - 1)
         
         layout.addLayout(form)
         
@@ -102,9 +141,30 @@ class LoadDialog(QDialog):
         if folder:
             self._path_edit.setText(folder)
     
+    def _on_date_format_changed(self, index: int) -> None:
+        """Handle date format selection change."""
+        # Show custom input only when "Custom" is selected (last item)
+        is_custom = (index == len(self._date_formats) - 1)
+        self._custom_date_edit.setVisible(is_custom)
+        
+        # Adjust dialog height to accommodate custom field
+        if is_custom:
+            self.adjustSize()
+    
     def _accept(self) -> None:
         """Accept dialog and store values."""
         self.input_path = self._path_edit.text()
         self.filename_template = self._template_edit.text()
-        self.date_format = self._date_edit.text()
+        
+        # Get date format from dropdown or custom field
+        current_fmt = self._date_combo.currentData()
+        if current_fmt == "custom":
+            self.date_format = self._custom_date_edit.text().strip()
+            if not self.date_format:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.warning(self, "Invalid Input", "Please enter a custom date format.")
+                return
+        else:
+            self.date_format = current_fmt
+        
         self.accept()
