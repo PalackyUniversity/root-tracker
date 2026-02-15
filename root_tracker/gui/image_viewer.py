@@ -208,11 +208,13 @@ class ImageViewer(QWidget):
     
     def zoom_in(self) -> None:
         """Zoom in by 20%."""
-        self._set_zoom(self._zoom_factor * 1.2)
+        if self._pixmap_item is not None:
+            self._set_zoom(self._zoom_factor * 1.2)
     
     def zoom_out(self) -> None:
         """Zoom out by 20%."""
-        self._set_zoom(self._zoom_factor / 1.2)
+        if self._pixmap_item is not None:
+            self._set_zoom(self._zoom_factor / 1.2)
     
     def _set_zoom(self, factor: float) -> None:
         """Set zoom to a specific factor."""

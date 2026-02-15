@@ -1499,6 +1499,12 @@ class MainWindow(QMainWindow):
         
         # Buttons
         self._next_step_btn.setEnabled(not locked)
+        
+        # Zoom controls: always enabled when images are loaded (independent of lock state)
+        has_images = bool(self._series_dict)
+        self._fit_btn.setEnabled(has_images)
+        self._zoom_in_btn.setEnabled(has_images)
+        self._zoom_out_btn.setEnabled(has_images)
 
         # Menu items
         if hasattr(self, '_export_action'):
@@ -1565,9 +1571,12 @@ class MainWindow(QMainWindow):
         self._workflow_bar.setEnabled(True)
         self._settings_panel.setEnabled(True)
         self._image_tree.setEnabled(True)
-        self._fit_btn.setEnabled(True)
-        self._zoom_in_btn.setEnabled(True)
-        self._zoom_out_btn.setEnabled(True)
+        
+        # Zoom controls: enabled only if images are loaded
+        has_images = bool(self._series_dict)
+        self._fit_btn.setEnabled(has_images)
+        self._zoom_in_btn.setEnabled(has_images)
+        self._zoom_out_btn.setEnabled(has_images)
         
         self._update_process_button_states()
     
