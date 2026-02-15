@@ -50,6 +50,8 @@ class LoadDialog(QDialog):
             ("%m-%d-%y", "%m-%d-%y (e.g., 09-25-22)"),
             ("%m-%d-%Y", "%m-%d-%Y (e.g., 09-25-2022)"),
             ("%Y-%m-%d", "%Y-%m-%d (e.g., 2022-09-25)"),
+            ("%Y%m%d_%H%M%S", "%Y%m%d_%H%M%S (e.g., 20200128_102340)"),
+            ("%Y%m%d", "%Y%m%d (e.g., 20200128)"),
             ("custom", "Custom format..."),
         ]
         
