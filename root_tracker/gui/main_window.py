@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QSplitter, QStatusBar, QMessageBox,
     QApplication, QFileDialog
 )
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, QSettings
 from PySide6.QtGui import QAction, QKeySequence
 
 from ..config import Config
@@ -51,6 +51,9 @@ class MainWindow(QMainWindow):
             config = Config()
         self._config = config
         
+        # Settings for persisting application state
+        self._settings = QSettings("RootTracker", "RootTracker")
+        
         # Pipeline and data state
         self._pipeline: RootTrackingPipeline | None = None
         self._series_dict: dict[str, ImageSeries] = {}
@@ -76,6 +79,9 @@ class MainWindow(QMainWindow):
         
         # Start maximized
         self.showMaximized()
+        
+        # Load last folder if available
+        self._load_last_folder()
     
     def _setup_ui(self) -> None:
         """Set up the main UI layout."""
@@ -344,6 +350,9 @@ class MainWindow(QMainWindow):
             
             # Update cache action state
             self._update_cache_action_state()
+            
+            # Save this folder path for next time
+            self._settings.setValue("last_folder", self._config.data.input)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load images:\n{e}")
 
@@ -1951,6 +1960,20 @@ class MainWindow(QMainWindow):
         # Save to cache (tracking results are now cleared)
         series_cache.save_series(self._current_series, self._config)
 
+    def _load_last_folder(self) -> None:
+        """Load the last opened folder if it exists."""
+        last_folder = self._settings.value("last_folder", None)
+        if last_folder and os.path.exists(last_folder):
+            # Check if folder contains images
+            try:
+                files = os.listdir(last_folder)
+                has_images = any(f.lower().endswith(('.jpg', '.jpeg', '.png')) for f in files)
+                if has_images:
+                    self._config.data.input = last_folder
+                    self._reload_images()
+            except Exception:
+                pass  # Silently ignore if we can't load the last folder
+    
     def _on_about(self) -> None:
         """Show about dialog."""
         QMessageBox.about(
