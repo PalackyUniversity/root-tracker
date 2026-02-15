@@ -67,7 +67,7 @@ class ImageTree(QWidget):
         empty_label.setStyleSheet("color: #888; font-size: 12px; margin-bottom: 10px;")
         empty_layout.addWidget(empty_label)
         
-        load_btn = QPushButton("📁 Open Folder...")
+        load_btn = QPushButton("Open Folder...")
         load_btn.clicked.connect(self.load_requested.emit)
         empty_layout.addWidget(load_btn)
         
