@@ -272,7 +272,7 @@ class SettingsPanel(QWidget):
         self._mask_tool_group.addButton(self._brush_radio, 1)  # ID = 1
         brush_row.addWidget(self._brush_radio)
         self._brush_size_spin = QSpinBox()
-        self._brush_size_spin.setRange(1, 100)
+        self._brush_size_spin.setRange(1, 999)
         self._brush_size_spin.setValue(100)
         self._brush_size_spin.setSuffix(" px")
         self._brush_size_spin.setFixedWidth(80)
@@ -292,7 +292,7 @@ class SettingsPanel(QWidget):
         self._mask_tool_group.addButton(self._brush_eraser_radio, 3)  # ID = 3
         brush_eraser_row.addWidget(self._brush_eraser_radio)
         self._brush_eraser_size_spin = QSpinBox()
-        self._brush_eraser_size_spin.setRange(1, 100)
+        self._brush_eraser_size_spin.setRange(1, 999)
         self._brush_eraser_size_spin.setValue(100)
         self._brush_eraser_size_spin.setSuffix(" px")
         self._brush_eraser_size_spin.setFixedWidth(80)
