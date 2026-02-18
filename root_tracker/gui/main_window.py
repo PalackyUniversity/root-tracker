@@ -1895,21 +1895,7 @@ class MainWindow(QMainWindow):
         if self._state == ProcessingState.IDLE:
             if step == WorkflowStep.TRACK:
                 self._next_step_btn.setText("Export")
-                self._next_step_btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #5cb85c;
-                        color: white;
-                        font-weight: bold;
-                        padding: 2px 12px;
-                    }
-                    QPushButton:hover {
-                        background-color: #449d44;
-                    }
-                    QPushButton:disabled {
-                        background-color: #88c888;
-                        color: #ccc;
-                    }
-                """)
+                self._next_step_btn.setStyleSheet("")
                 self._next_step_btn.setToolTip("Export results to CSV")
             else:
                 self._next_step_btn.setText("Next")
