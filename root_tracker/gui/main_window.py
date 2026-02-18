@@ -410,7 +410,8 @@ class MainWindow(QMainWindow):
                 vertical-align: middle;
             }
             QMenuBar::item:selected {
-                background: #444;
+                background-color: #4a4a4a;
+                border-radius: 3px;
             }
         """)
         
@@ -419,6 +420,7 @@ class MainWindow(QMainWindow):
         
         # File menu
         file_menu = menubar.addMenu("&File")
+        file_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         load_action = QAction("&Open Folder...", self)
         load_action.setShortcut(QKeySequence.StandardKey.Open)
@@ -445,6 +447,7 @@ class MainWindow(QMainWindow):
         
         # View menu
         view_menu = menubar.addMenu("&View")
+        view_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         fit_action = QAction("&Fit Image", self)
         fit_action.setShortcut(QKeySequence("Ctrl+0"))
@@ -479,6 +482,7 @@ class MainWindow(QMainWindow):
         
         # Help menu
         help_menu = menubar.addMenu("&Help")
+        help_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         about_action = QAction("&About", self)
         about_action.triggered.connect(self._on_about)

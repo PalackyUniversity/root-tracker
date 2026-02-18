@@ -97,6 +97,33 @@ def main() -> None:
         QScrollBar::handle:horizontal:hover { background-color: #5a5a5a; }
         QScrollBar::add-line:horizontal,
         QScrollBar::sub-line:horizontal     { width: 0; border: none; }
+
+        /* ── Menus (menu bar dropdowns + right-click context menus) ── */
+        QMenu {
+            background-color: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 4px;
+            
+            padding: 4px 0px;
+            color: #ccc;
+        }
+        QMenu::item {
+            padding: 5px 14px 5px 14px;
+            border-radius: 3px;
+            margin: 1px 4px;
+        }
+        QMenu::item:selected {
+            background-color: #4a4a4a;
+            color: #fff;
+        }
+        QMenu::item:disabled {
+            color: #555;
+        }
+        QMenu::separator {
+            height: 1px;
+            background-color: #4a4a4a;
+            margin: 4px 8px;
+        }
     """)
     
     # Create and show main window

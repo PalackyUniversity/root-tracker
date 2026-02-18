@@ -422,6 +422,7 @@ class ImageTree(QWidget):
             return
             
         menu = QMenu(self)
+        menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         # Determine if item is already set aside
         is_aside = data.is_set_aside
