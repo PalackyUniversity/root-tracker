@@ -137,6 +137,53 @@ class CornerDetector:
         
         return angle
     
+    def compute_extrapolation_data(
+        self,
+        trace_from_endpoint: list[tuple[int, int]]
+    ) -> tuple[tuple[float, float], tuple[float, float]]:
+        """
+        Compute direction and curvature vectors for curve extrapolation.
+        
+        The direction is a unit vector pointing outward from the endpoint
+        (away from the segment interior). Curvature is scaled to unit-speed
+        parameterization so that extrapolation is:
+            pos(t) = endpoint + direction * t + 0.5 * curvature * t^2
+        where t is in pixels.
+        
+        Args:
+            trace_from_endpoint: Trace starting at endpoint going into
+                the segment interior.
+        
+        Returns:
+            Tuple of (direction, curvature) as (dx,dy) tuples.
+        """
+        # Reverse so it goes interior -> endpoint (outward direction)
+        trace_out = list(reversed(trace_from_endpoint))
+        points = np.array(trace_out, dtype=float)
+        
+        if len(points) < 2:
+            return (0.0, -1.0), (0.0, 0.0)
+        
+        # First derivative: average step direction
+        diffs = np.diff(points, axis=0)
+        d1 = np.mean(diffs, axis=0)
+        mag = np.linalg.norm(d1)
+        
+        if mag > 1e-6:
+            direction = (float(d1[0] / mag), float(d1[1] / mag))
+        else:
+            direction = (0.0, -1.0)
+        
+        # Second derivative (curvature), scaled to unit-speed
+        if len(diffs) >= 2 and mag > 1e-6:
+            ddiffs = np.diff(diffs, axis=0)
+            d2 = np.mean(ddiffs, axis=0)
+            curvature = (float(d2[0] / (mag * mag)), float(d2[1] / (mag * mag)))
+        else:
+            curvature = (0.0, 0.0)
+        
+        return direction, curvature
+    
     def analyze_contour_corners(
         self, 
         contour: np.ndarray, 
@@ -172,14 +219,22 @@ class CornerDetector:
         upper_angle = self.compute_angle(upper_trace[::-1], reverse=False)
         lower_angle = self.compute_angle(lower_trace[::-1], reverse=True)
         
+        # Compute extrapolation data (direction + curvature)
+        upper_dir, upper_curv = self.compute_extrapolation_data(upper_trace)
+        lower_dir, lower_curv = self.compute_extrapolation_data(lower_trace)
+        
         upper_info = {
             'point': upper_point,
             'angle': upper_angle,
+            'direction': upper_dir,
+            'curvature': upper_curv,
         }
         
         lower_info = {
             'point': lower_point,
             'angle': lower_angle,
+            'direction': lower_dir,
+            'curvature': lower_curv,
         }
         
         return upper_info, lower_info

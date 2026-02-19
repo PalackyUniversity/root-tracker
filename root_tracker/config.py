@@ -41,7 +41,7 @@ class GreenConfig:
 @dataclass
 class ThresholdConfig:
     """Configuration for root thresholding."""
-    low: int = 20
+    low: int = 10
     high: int = 30
     min_contour_area: int = 100
     min_contour_length: int = 15

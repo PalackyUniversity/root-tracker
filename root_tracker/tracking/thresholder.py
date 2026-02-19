@@ -74,7 +74,13 @@ class RootThresholder:
                     # Check if enough of the contour passes high threshold
                     high_overlap = cv2.countNonZero(cv2.bitwise_and(thresh_high, temp_mask))
                     total_area = cv2.countNonZero(temp_mask)
-                    if total_area > 0 and high_overlap / total_area > 0.2:
+                    # Keep if either:
+                    # (a) > 20% of the region is bright (clean contour, no background halo), or
+                    # (b) enough absolute bright pixels exist (large contour with background
+                    #     halo from a low threshold — the ratio drops but the root is real).
+                    has_enough_ratio = total_area > 0 and high_overlap / total_area > 0.2
+                    has_enough_abs = high_overlap >= self.config.threshold.min_contour_area
+                    if has_enough_ratio or has_enough_abs:
                         to_draw.append(cnt)
                     else:
                         ignore.append(cnt_n)

@@ -329,7 +329,9 @@ class RootTrackingPipeline:
                 lower_corners.append({
                     'point': (x, y),
                     'angle': 90.0,
-                    'plant_id': i
+                    'plant_id': i,
+                    'direction': (0.0, 1.0),   # Root grows downward from plant
+                    'curvature': (0.0, 0.0),
                 })
             
             for cnt_n, cnt in enumerate(segment_contours):
@@ -346,20 +348,24 @@ class RootTrackingPipeline:
                     if lower_info['point'] not in [e for e in endpoints]:
                         lower_corners.append(lower_info)
             
-            # Retrieve previous colored samples for consistency
-            previous_colored_samples = None
+            # Retrieve previous frame data for temporal consistency
+            previous_upper_assignments = None
+            previous_annotated = None
             if idx > 0:
                 prev_image = series.images[idx - 1]
-                if hasattr(prev_image, 'colored_samples'):
-                    previous_colored_samples = prev_image.colored_samples
-            
+                if hasattr(prev_image, 'upper_assignments'):
+                    previous_upper_assignments = prev_image.upper_assignments
+                if prev_image.image_annotated is not None:
+                    previous_annotated = prev_image.image_annotated
+
             # Link segments and assign to plants
-            pairs, colored, colored_samples = self.linker.link_corners(
+            pairs, colored, colored_samples, upper_assignments = self.linker.link_corners(
                 upper_corners, lower_corners, pos_x_median, pos_y_median,
-                previous_colored_samples=previous_colored_samples
+                previous_upper_assignments=previous_upper_assignments,
+                previous_annotated=previous_annotated,
             )
-            
-            image_data.colored_samples = colored_samples
+
+            image_data.upper_assignments = upper_assignments
             
             # Draw links on image
             for upper, lower in pairs:
@@ -410,6 +416,9 @@ class RootTrackingPipeline:
 
                 while last_len != len(conts):
                     last_len = len(conts)
+                    # Stop if the chain has wandered into another plant's territory.
+                    if current_bottom not in colored_k:
+                        break
                     for uc_idx, uc in enumerate(upper_corners):
                         # Find the segment that ends at current_bottom
                         if 'lower_point' in uc and uc['lower_point'] == current_bottom and uc_idx not in visited:

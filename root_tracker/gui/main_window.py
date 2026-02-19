@@ -184,11 +184,18 @@ class ProcessWorker(QThread):
     
     def _run_track(self):
         """Run tracking on the series."""
+        # If arrays were freed or never loaded (e.g. startup with matching preprocess
+        # hash skips re-preprocessing), reload from cache so tracking has data to work with.
+        if (self.series.images and self.series.images[0].process is None
+                and self.series.pipeline_state.preprocessed):
+            from ..io import series_cache
+            series_cache.load_series(self.series, self.config)
+
         def progress_callback(current, total):
             if self._cancelled:
                 raise InterruptedError("Cancelled")
             self.progress.emit(current, total)
-        
+
         stats = self.pipeline.track_and_analyze_series(
             self.series,
             progress_callback=progress_callback
@@ -874,6 +881,8 @@ class MainWindow(QMainWindow):
 
         # Check if tracking is already done and current
         if self._pipeline.is_tracking_current(self._current_series):
+            # Ensure image arrays (incl. image_annotated) are loaded from cache
+            self._ensure_series_loaded(self._current_series)
             # Tracking already done — just display the annotated image
             if self._current_image:
                 self._display_image(self._current_image)
@@ -1659,6 +1668,8 @@ class MainWindow(QMainWindow):
 
         # Step 3: Check if tracking is needed
         if self._pipeline.is_tracking_current(series):
+            # Ensure image arrays (incl. image_annotated) are loaded from cache
+            self._ensure_series_loaded(series)
             # Already tracked with current config - just display
             if self._current_image:
                 self._display_image(self._current_image)
