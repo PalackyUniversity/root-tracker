@@ -194,11 +194,20 @@ class RootTrackingPipeline:
         # Remove background gradient
         image_data.process = self.background_remover.remove_gradient(cropped)
         image_data.canny = self.background_remover.compute_canny_edges(image_data.process)
-        
-        # Apply margins to the processed image so they are visible in UI
-        # This will black out the edges based on config
-        image_data.process = self.thresholder.apply_margins(image_data.process)
-        image_data.image = self.thresholder.apply_margins(image_data.image)
+
+        # Crop the configured margins off entirely instead of blacking them out,
+        # so the dead border is not carried through registration, tracking, or the
+        # UI preview. Margins are re-derived from the original image on every run
+        # (margin_* are part of preprocess_config_hash), so lowering a margin later
+        # simply keeps more pixels rather than losing them permanently.
+        h, w = image_data.image.shape[:2]
+        top, bottom, left, right = self.cropper.margin_offsets(h, w)
+        row, col = slice(top, h - bottom), slice(left, w - right)
+        image_data.image = image_data.image[row, col].copy()
+        image_data.process = image_data.process[row, col].copy()
+        image_data.canny = image_data.canny[row, col].copy()
+        image_data.positions_x = [x - left for x in image_data.positions_x]
+        image_data.positions_y = [y - top for y in image_data.positions_y]
     
     def preprocess_series(self, series: ImageSeries, progress_callback: callable = None) -> None:
         """
@@ -275,24 +284,17 @@ class RootTrackingPipeline:
                 cv2.putText(annotated, str(i + 1), (x + 10, y - 10),
                            cv2.FONT_HERSHEY_PLAIN, 2, color, 2)
             
-            # Threshold to get root mask
+            # Threshold to get root mask. Margins are already cropped out during
+            # preprocessing, so there is no edge border left to clear here.
             thresh = self.thresholder.threshold(image_data.process)
-            thresh = self.thresholder.apply_margins(thresh)
 
             # Apply user mask if present (series-level mask)
             thresh = self.thresholder.apply_user_mask(thresh, series.user_mask)
 
-            # Handle new growth from difference
+            # Handle new growth from difference (margins already cropped out)
             if image_data.diff is not None:
-                h, w = thresh.shape
-                margins = (
-                    round(self.config.margin_top * h),
-                    round(self.config.margin_bottom * h),
-                    round(self.config.margin_left * w),
-                    round(self.config.margin_right * w)
-                )
                 new_area, new_parts = self.thresholder.compute_new_growth(
-                    image_data.diff, margins
+                    image_data.diff, (0, 0, 0, 0)
                 )
                 image_data.new_area = new_area
                 image_data.new_parts = new_parts

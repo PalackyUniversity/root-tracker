@@ -99,6 +99,24 @@ class ImageCropper:
         
         return cropped[top:bottom]
     
+    def margin_offsets(self, height: int, width: int) -> tuple[int, int, int, int]:
+        """
+        Convert the configured margin fractions to pixel sizes.
+
+        Args:
+            height: Image height in pixels.
+            width: Image width in pixels.
+
+        Returns:
+            Tuple of (top, bottom, left, right) margins in pixels.
+        """
+        return (
+            round(self.config.margin_top * height),
+            round(self.config.margin_bottom * height),
+            round(self.config.margin_left * width),
+            round(self.config.margin_right * width),
+        )
+
     def crop_sides(self, image: np.ndarray) -> np.ndarray:
         """
         Apply side margin cropping (removes box edges).

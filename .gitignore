@@ -162,3 +162,4 @@ cython_debug/
 # Root Tracker data folders
 result/
 data_in_vitro/
+*.csv

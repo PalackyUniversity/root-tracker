@@ -47,6 +47,7 @@ class SettingsPanel(QWidget):
         self._current_step = WorkflowStep.LOAD
         self._original_values: dict = {}  # Stored values at group selection
         self._is_dirty = False
+        self._groups_out_of_sync = False  # True if some other group has different settings
         self._centroids_modified = False  # True if user moved centroids
 
         # Masking tool widgets (created in _create_track_settings)
@@ -395,19 +396,39 @@ class SettingsPanel(QWidget):
     
     def _update_apply_button(self) -> None:
         """Update Apply buttons enabled state."""
+        # "Apply to this group" reflects pending edits to the current group.
         if self._is_dirty:
             self._apply_btn.setEnabled(True)
             self._apply_btn.setToolTip("Apply changes to current group")
-            self._apply_all_btn.setEnabled(True)
-            self._apply_all_btn.setToolTip("Apply changes to ALL groups")
             self._status_indicator.setText("● Modified")
             self._status_indicator.setStyleSheet("color: #f0ad4e; font-size: 11px;")
         else:
             self._apply_btn.setEnabled(False)
             self._apply_btn.setToolTip("No changes to apply")
-            self._apply_all_btn.setEnabled(False)
-            self._apply_all_btn.setToolTip("No changes to apply")
             self._status_indicator.setText("")
+
+        # "Apply to all groups" stays enabled whenever applying would change at
+        # least one group — i.e. there are pending edits, or some other group was
+        # last evaluated with different settings. It is disabled only when every
+        # other group already matches the current settings.
+        apply_all_enabled = self._is_dirty or self._groups_out_of_sync
+        self._apply_all_btn.setEnabled(apply_all_enabled)
+        if apply_all_enabled:
+            self._apply_all_btn.setToolTip("Apply current settings to ALL groups")
+        else:
+            self._apply_all_btn.setToolTip("All groups already use these settings")
+
+    def set_groups_out_of_sync(self, out_of_sync: bool) -> None:
+        """Set whether some other group was last evaluated with different settings.
+
+        Controls the "Apply to all groups" button independently of pending edits:
+        the button stays enabled while any other group is out of sync, so the user
+        can always propagate the current settings to the rest.
+        """
+        if out_of_sync == self._groups_out_of_sync:
+            return
+        self._groups_out_of_sync = out_of_sync
+        self._update_apply_button()
     
     def _mark_clean(self) -> None:
         """Mark settings as clean (no pending changes)."""

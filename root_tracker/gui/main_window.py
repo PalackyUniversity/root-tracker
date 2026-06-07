@@ -961,7 +961,15 @@ class MainWindow(QMainWindow):
                 self._display_image(self._current_image)
 
     def _on_apply_all_settings(self) -> None:
-        """Handle Apply All button - reprocess ALL groups with new settings."""
+        """Handle Apply All button - propagate settings to ALL groups.
+
+        This only changes the parameters and marks every already-evaluated
+        group dirty; it does NOT eagerly recompute all groups. Dirty groups
+        are recomputed lazily when the final "track all and export"
+        computation runs (their stale pipeline state forces a rerun there).
+        Only the currently-viewed group is recomputed now, for immediate
+        visual feedback.
+        """
         if self._pipeline is None or not self._series_dict:
             return
 
@@ -976,12 +984,21 @@ class MainWindow(QMainWindow):
         tracking_changed = (old_tracking_hash != self._config.tracking_config_hash())
 
         if preprocess_changed:
+            # Mark every group dirty (frees arrays + invalidates pipeline state)
+            # so the final all-groups computation reprocesses them.
             for series in self._series_dict.values():
                 series.clear_preprocessing_results()
-            self._preprocess_all_groups(force=True)
+            # Recompute only the current group so the user sees the new result.
+            if self._current_series is not None:
+                self._preprocess_group(self._current_series, force=True)
         elif tracking_changed:
             for series in self._series_dict.values():
                 series.clear_tracking_results()
+            # Retrack only the current group for immediate feedback.
+            if self._auto_preview_action.isChecked() and self._current_series is not None:
+                self._on_track_roots()
+            elif self._current_image:
+                self._display_image(self._current_image)
 
     def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
         """Handle centroid drag - update image data and enable Re-detect."""
@@ -1919,7 +1936,43 @@ class MainWindow(QMainWindow):
             
         # Update cache action state as well (processing might have created cache)
         self._update_cache_action_state()
-    
+
+        # Refresh the "Apply to all groups" button enabled state
+        self._refresh_apply_all_state()
+
+    def _refresh_apply_all_state(self) -> None:
+        """Refresh the settings panel's 'Apply to all groups' button.
+
+        Enabled whenever applying the current settings would change at least one
+        other group; disabled only when every other group already matches the
+        current settings for the active step.
+        """
+        if self._pipeline is None or not self._series_dict:
+            self._settings_panel.set_groups_out_of_sync(False)
+            return
+
+        step = self._workflow_bar.get_current_step()
+        others = [
+            s for s in self._series_dict.values()
+            if s is not self._current_series
+        ]
+
+        if step == WorkflowStep.PREPROCESS:
+            current_hash = self._config.preprocess_config_hash()
+            out_of_sync = any(
+                not (s.pipeline_state.preprocessed
+                     and s.pipeline_state.preprocess_config_hash == current_hash)
+                for s in others
+            )
+        elif step == WorkflowStep.TRACK:
+            out_of_sync = any(
+                not self._pipeline.is_tracking_current(s) for s in others
+            )
+        else:
+            out_of_sync = False
+
+        self._settings_panel.set_groups_out_of_sync(out_of_sync)
+
     def _update_initial_ui_state(self) -> None:
         """Set initial UI state when no images are loaded."""
         # Disable zoom controls
