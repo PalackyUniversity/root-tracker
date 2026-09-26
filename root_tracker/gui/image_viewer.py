@@ -164,7 +164,7 @@ class ImageViewer(QWidget):
     
     def set_crop(self, shape, box):
         self.clear_crop()
-        self._crop_overlay = CropOverlay(shape, box)
+        self._crop_overlay = CropOverlay(shape, box, self._pixmap_item)
         self._crop_overlay.changed.connect(self.crop_changed)
         self._crop_overlay.help_requested.connect(self.editor_help)
         self._scene.addItem(self._crop_overlay)

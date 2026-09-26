@@ -2,7 +2,7 @@
 import math
 import numpy as np
 from PySide6.QtCore import Qt, Signal, QPointF, QRectF
-from PySide6.QtGui import QColor, QPen, QBrush, QPainterPath, QPolygonF, QTransform, QCursor, QPixmap, QPainter
+from PySide6.QtGui import QColor, QPen, QBrush, QPainterPath, QPolygonF, QTransform, QCursor, QPixmap, QPainter, QFontMetricsF
 from PySide6.QtWidgets import QGraphicsObject, QGraphicsRectItem, QGraphicsSimpleTextItem, QGraphicsPathItem
 from ..preprocessing import roi
 
@@ -149,13 +149,66 @@ class CornerRotationZone(QGraphicsPathItem):
         event.accept()
 
 
+class AngleLabel(QGraphicsSimpleTextItem):
+    """Choose text contrast from the actual image underneath the label."""
+
+    def paint(self, painter, option, widget=None):
+        owner = self.parentItem()
+        source = owner.image_item
+        if source is not None:
+            image = source.pixmap().toImage()
+            views = self.scene().views()
+            view = next((v for v in views if v.viewport() is widget), views[0] if views else None)
+            if view is not None:
+                device = self.deviceTransform(view.viewportTransform())
+                inverse, _ = view.viewportTransform().inverted()
+                to_scene = lambda point: inverse.map(device.map(point))
+                background = view.backgroundBrush().color()
+            else:
+                to_scene = lambda point: self.mapToScene(point / owner._scale)
+                background = QColor('#808080')
+            rect = self.boundingRect()
+            crop = owner.shape()
+            luminances = []
+            for y in (.2, .5, .8):
+                for x in (.1, .3, .5, .7, .9):
+                    scene_point = to_scene(QPointF(rect.width() * x, rect.height() * y))
+                    pixel = source.mapFromScene(scene_point)
+                    if 0 <= pixel.x() < image.width() and 0 <= pixel.y() < image.height():
+                        color = image.pixelColor(int(pixel.x()), int(pixel.y()))
+                        shade = 1 if crop.contains(owner.mapFromScene(scene_point)) else 140 / 255
+                    else:
+                        color, shade = background, 1
+                    rgb = [channel * shade / 255 for channel in color.getRgb()[:3]]
+                    linear = [c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4 for c in rgb]
+                    luminances.append(sum(c * weight for c, weight in zip(linear, (.2126, .7152, .0722))))
+            # Equal black/white contrast occurs at relative luminance 0.179.
+            dark_text = float(np.median(luminances)) > .179
+            foreground = QColor('#000000' if dark_text else '#ffffff')
+            outline = QPen(QColor('#ffffff' if dark_text else '#000000'), .75)
+            outline.setCosmetic(True)
+            if self.brush().color() != foreground:
+                self.setBrush(foreground)
+            if self.pen() != outline:
+                self.setPen(outline)
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        text = QPainterPath()
+        text.addText(QPointF(0, QFontMetricsF(self.font()).ascent()), self.font(), self.text())
+        # Fill after outlining so the halo cannot cover the thin glyph strokes.
+        painter.strokePath(text, self.pen())
+        painter.fillPath(text, self.brush())
+        painter.restore()
+
+
 class CropOverlay(QGraphicsObject):
     changed = Signal(object)
     help_requested = Signal(str)
 
-    def __init__(self, image_shape, box):
+    def __init__(self, image_shape, box, image_item=None):
         super().__init__()
         self.image_shape = image_shape
+        self.image_item = image_item
         self.box = tuple(box)
         self._scale = 1.
         self._drag = None
@@ -164,7 +217,7 @@ class CropOverlay(QGraphicsObject):
         self.setCursor(Qt.CursorShape.SizeAllCursor)
         self.handles = {name: CropHandle(self, name) for name in ('nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'rotate')}
         self.rotation_zones = {name: CornerRotationZone(self, name) for name in ('nw', 'ne', 'se', 'sw')}
-        self.label = QGraphicsSimpleTextItem(self)
+        self.label = AngleLabel(self)
         self.label.setFlag(self.GraphicsItemFlag.ItemIgnoresTransformations)
         self.label.setBrush(QColor('#ffffff'))
         self.label.setAcceptedMouseButtons(Qt.MouseButton.NoButton)

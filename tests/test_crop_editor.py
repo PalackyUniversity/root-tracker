@@ -119,5 +119,27 @@ class CropEditorTests(unittest.TestCase):
         self.assertAlmostEqual(item.box[0], .8)
         self.assertAlmostEqual(item.box[1], .8)
 
+    def test_angle_label_adapts_to_background_when_crop_moves(self):
+        from root_tracker.gui.image_viewer import ImageViewer
+        viewer = ImageViewer()
+        self.addCleanup(viewer.close)
+        viewer.resize(800, 600)
+        viewer.show()
+        image = np.zeros((400, 600, 3), np.uint8)
+        image[:, 300:] = 255
+        viewer.set_image(image)
+        viewer.set_crop(image.shape, (.2, .6, .15, .2, 0))
+        self.app.processEvents()
+        viewer.grab()
+        overlay = viewer._crop_overlay
+        self.assertEqual(overlay.label.brush().color().name(), '#ffffff')
+        overlay.box = (.7, .6, .15, .2, 0)
+        overlay._layout_handles()
+        viewer.grab()
+        self.assertEqual(overlay.label.brush().color().name(), '#000000')
+        viewer._set_zoom(2)
+        viewer.grab()
+        self.assertEqual(overlay.label.brush().color().name(), '#000000')
+
 if __name__ == '__main__':
     unittest.main()
