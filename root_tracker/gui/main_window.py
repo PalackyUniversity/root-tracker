@@ -127,8 +127,9 @@ class ProcessingContext:
         # Unlock UI
         self.main_window._unlock_ui(restore_step=self.was_cancelled)
         
-        # Restore focus to tree
-        self.main_window._image_tree.setFocus()
+        # Don't steal focus from an ongoing mask stroke.
+        if not self.main_window._mask_refresh_active:
+            self.main_window._image_tree.setFocus()
         
         # Don't suppress exceptions
         return False
@@ -137,6 +138,7 @@ class ProcessingContext:
 class ProcessWorker(QThread):
     """Worker thread for processing operations to keep UI responsive."""
     
+    image_ready = Signal(object)
     phase = Signal(str)
     progress = Signal(int, int)  # percentage within this operation
     finished = Signal(bool, str)  # success, error_msg
@@ -147,6 +149,7 @@ class ProcessWorker(QThread):
         self.series = series
         self.config = config
         self.operation = operation
+        self.persist_mask = False
         self._cancelled = False
     
     def cancel(self):
@@ -202,6 +205,13 @@ class ProcessWorker(QThread):
     
     def _run_track(self):
         """Run tracking on the series."""
+        if self.persist_mask:
+            mask = self.series.user_mask
+            if mask is not None and np.any(mask):
+                mask_io.save_mask(self.series, self.config)
+            else:
+                mask_io.delete_mask(self.series, self.config)
+
         if self._cancelled:
             return
         self.series.pipeline_state.invalidate_from('track')
@@ -211,9 +221,11 @@ class ProcessWorker(QThread):
                 raise InterruptedError("Cancelled")
             self.progress.emit(int(85 * current / max(1, total)), 100)
         
+        options = {}
+        if self.persist_mask:
+            options = dict(image_callback=self.image_ready.emit, save_images=False)
         stats = self.pipeline.track_and_analyze_series(
-            self.series,
-            progress_callback=progress_callback
+            self.series, progress_callback=progress_callback, **options
         )
         
         if not self._cancelled:
@@ -222,11 +234,16 @@ class ProcessWorker(QThread):
             self.series.pipeline_state.tracking_config_hash = self.config.tracking_config_hash()
             self.series.pipeline_state.last_statistics = stats
             
-            # Save to cache
-            from ..io import series_cache
+            # Keep image encoding and cache writes after the calculated preview.
             self.phase.emit("Saving results")
+            if self.persist_mask:
+                for image in self.series.images:
+                    if self._cancelled:
+                        return
+                    if image.image_annotated is not None:
+                        self.pipeline.exporter.save_image(image.image_annotated, os.path.basename(image.path))
             series_cache.save_series(self.series, self.config)
-    
+
     def _run_barcode_detection(self):
         """Run barcode detection on the series."""
         total_images = len(self.series.images)
@@ -294,6 +311,8 @@ class MainWindow(QMainWindow):
         self._evaluation_timer.setSingleShot(True)
         self._evaluation_timer.timeout.connect(self._evaluate_selected_step)
         self._auto_apply_baselines = {}
+        self._auto_mask_baselines = {}
+        self._mask_refresh_active = False
         self._auto_apply_timer = QTimer(self)
         self._auto_apply_timer.setSingleShot(True)
         self._auto_apply_timer.setInterval(300)
@@ -586,6 +605,8 @@ class MainWindow(QMainWindow):
         self._image_viewer.zoom_changed.connect(self._on_zoom_changed)
         # Image viewer - mask modification
         self._image_viewer.mask_modified.connect(self._on_mask_modified)
+        self._image_viewer.mask_restore_toggled.connect(self._settings_panel.set_temporary_mask_restore)
+        self._image_viewer.mask_diameter_steps.connect(self._settings_panel.adjust_mask_diameter)
     
     def _get_preset_store(self):
         from pathlib import Path
@@ -651,6 +672,7 @@ class MainWindow(QMainWindow):
         for field in fields(Config):
             setattr(self._config, field.name, deepcopy(getattr(config, field.name)))
         self._auto_apply_baselines.clear()
+        self._auto_mask_baselines.clear()
         self._settings_drafts.clear()
         self._mask_drafts.clear()
         self._current_series = self._current_image = None
@@ -706,6 +728,7 @@ class MainWindow(QMainWindow):
             self._settings_panel.finish_color_picker()
             self._roi_editor.reset()
             self._auto_apply_baselines.clear()
+            self._auto_mask_baselines.clear()
             self._auto_apply_timer.stop()
             self._settings_drafts.clear()
             self._mask_drafts.clear()
@@ -1157,6 +1180,7 @@ class MainWindow(QMainWindow):
     def _invalidate_preprocessing(self, series):
         # A same-sized rotated crop still changes mask coordinates.
         series.clear_preprocessing_results()
+        self._auto_mask_baselines.pop(series.group, None)
         self._mask_drafts.discard(series.group)
         mask_io.delete_mask(series, self._config)
 
@@ -1170,27 +1194,32 @@ class MainWindow(QMainWindow):
 
         # Handle mask application in Track step
         mask_changed = False
+        mask_refresh = False
         if step == WorkflowStep.TRACK:
             # Check if mask changed
             mask_changed = self._current_series.has_pending_mask_changes()
             if mask_changed:
+                mask_refresh = evaluate and self._auto_apply_enabled()
                 # Apply mask
-                working_mask = self._image_viewer.get_working_mask()
+                working_mask = self._current_series.working_mask
                 self._current_series.user_mask = working_mask.copy() if working_mask is not None else None
                 self._current_series.working_mask = working_mask.copy() if working_mask is not None else None
 
-                # Save to disk
-                try:
-                    if working_mask is not None and np.any(working_mask > 0):
-                        mask_io.save_mask(self._current_series, self._config)
-                    else:
-                        # All mask erased - delete file
-                        mask_io.delete_mask(self._current_series, self._config)
-                except Exception as e:
-                    QMessageBox.warning(self, "Warning", f"Failed to save mask:\n{e}")
+                # Automatic refreshes persist in the worker, keeping PNG
+                # encoding off the drawing path. Navigation/manual apply saves here.
+                if not mask_refresh:
+                    try:
+                        if working_mask is not None and np.any(working_mask > 0):
+                            mask_io.save_mask(self._current_series, self._config)
+                        else:
+                            # All mask erased - delete file
+                            mask_io.delete_mask(self._current_series, self._config)
+                    except Exception as e:
+                        QMessageBox.warning(self, "Warning", f"Failed to save mask:\n{e}")
 
-                # Clear tracking results (mask changed)
-                self._current_series.clear_tracking_results()
+                # Keep the last annotation visible during an automatic mask
+                # refresh; the live overlay already hides excluded pixels.
+                self._current_series.pipeline_state.invalidate_from('track')
 
         # Snapshot config hashes BEFORE updating
         old_preprocess_hash = self._config.preprocess_config_hash()
@@ -1221,10 +1250,11 @@ class MainWindow(QMainWindow):
             # Tracking params or mask changed — invalidate tracking only and retrack
             if not mask_changed:  # Already cleared above if mask changed
                 self._current_series.clear_tracking_results()
-            if self._current_series is not None:
+            if evaluate and self._current_series is not None:
+                self._mask_refresh_active = mask_refresh
                 self._preserve_tracking_view_for = self._current_image
                 self._on_track_roots()
-            elif self._current_image:
+            elif evaluate and self._current_image:
                 self._display_image(self._current_image, preserve_view=True)
 
         self._restore_settings_draft()
@@ -1320,14 +1350,27 @@ class MainWindow(QMainWindow):
     
     def _auto_apply_enabled(self):
         return (self._auto_preview_action.isChecked() and
-                self._settings_panel._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS))
+                self._settings_panel._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS, WorkflowStep.TRACK))
+
+    def _auto_mask_changed(self):
+        series = self._current_series
+        if (series is None or self._settings_panel._current_step != WorkflowStep.TRACK
+                or series.group not in self._auto_mask_baselines):
+            return False
+        baseline = self._auto_mask_baselines[series.group]
+        mask = series.working_mask
+        if mask is None or baseline is None:
+            other = baseline if mask is None else mask
+            return other is not None and bool(np.any(other))
+        return not np.array_equal(mask, baseline)
 
     def _sync_auto_apply_controls(self):
         panel = self._settings_panel
         key = (self._current_series.group, panel._current_step) if self._current_series else None
         baseline = self._auto_apply_baselines.get(key)
         panel.set_auto_apply_mode(self._auto_apply_enabled(),
-                                  baseline is not None and panel.get_current_values() != baseline)
+                                  (baseline is not None and panel.get_current_values() != baseline)
+                                  or self._auto_mask_changed())
 
     def _apply_auto_settings(self, *, evaluate=True):
         if not self._auto_apply_enabled() or self._current_series is None or self._pipeline is None:
@@ -1338,11 +1381,15 @@ class MainWindow(QMainWindow):
         # Coalesce a drag into one processing run. Color changes already have a
         # live segmentation preview; commit them when the range dialog closes.
         if (self._state != ProcessingState.IDLE or (evaluate and QApplication.mouseButtons() != Qt.MouseButton.NoButton)
-                or panel._color_control._picker is not None):
+                or (panel._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS)
+                    and panel._color_control._picker is not None)):
             self._auto_apply_timer.start()
             return
         key = (self._current_series.group, panel._current_step)
         self._auto_apply_baselines.setdefault(key, deepcopy(panel._original_values))
+        if (panel._current_step == WorkflowStep.TRACK
+                and self._current_series.group not in self._auto_mask_baselines):
+            self._auto_mask_baselines[self._current_series.group] = deepcopy(self._current_series.user_mask)
         self._settings_drafts.pop(key, None)
         panel._store_original_values()
         # Use the regular invalidation/processing path, without closing crop
@@ -1359,6 +1406,15 @@ class MainWindow(QMainWindow):
         if baseline is None:
             return
         panel.finish_color_picker()
+        series = self._current_series
+        if panel._current_step == WorkflowStep.TRACK and series.group in self._auto_mask_baselines:
+            mask = self._auto_mask_baselines[series.group]
+            # An empty array stages removal of an applied mask; None means no draft.
+            if mask is None and series.user_mask is not None:
+                mask = np.zeros_like(series.user_mask)
+            series.working_mask = deepcopy(mask)
+            self._image_viewer.set_mask_data(series.user_mask, series.working_mask)
+            panel._mask_dirty = series.has_pending_mask_changes()
         panel.set_pending_values(deepcopy(baseline))
         self._auto_apply_timer.stop()
         self._apply_auto_settings()
@@ -1957,6 +2013,16 @@ class MainWindow(QMainWindow):
             self._context.was_cancelled = was_cancelled
             self._context.__exit__(None, None, None)
 
+    def _on_tracking_image_ready(self, image):
+        """Show the actual calculated image without waiting for group disk I/O."""
+        viewer = self._image_viewer
+        if (self._mask_refresh_active and image is self._current_image
+                and self._current_series is not None
+                and not self._current_series.has_pending_mask_changes()
+                and not viewer._drawing and viewer._rect_start_point is None):
+            self._display_image(image, preserve_view=True)
+            self._mask_image_published = image
+
     def _on_tracking_finished(self, success: bool, error_msg: str) -> None:
         """Handle tracking completion."""
         preserve_view = self._current_image is getattr(self, '_preserve_tracking_view_for', None)
@@ -1965,7 +2031,13 @@ class MainWindow(QMainWindow):
             # Mark step complete
             self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
 
-            if self._current_image:
+            # A newer stroke must remain visible; don't replace the scene
+            # underneath a brush drag or redraw obsolete mask results.
+            viewer = self._image_viewer
+            newer_mask = self._current_series is not None and self._current_series.has_pending_mask_changes()
+            editing = viewer._drawing or viewer._rect_start_point is not None
+            already_shown = self._mask_refresh_active and self._current_image is getattr(self, '_mask_image_published', None)
+            if self._current_image and not already_shown and not (self._mask_refresh_active and (newer_mask or editing)):
                 self._display_image(self._current_image, preserve_view=preserve_view)
         elif error_msg and error_msg != "Cancelled":
             QMessageBox.critical(self, "Error", f"Tracking failed:\n{error_msg}")
@@ -1975,6 +2047,10 @@ class MainWindow(QMainWindow):
             was_cancelled = not success
             self._context.was_cancelled = was_cancelled
             self._context.__exit__(None, None, None)
+
+        self._mask_refresh_active = False
+        if success and self._current_series is not None and self._current_series.has_pending_mask_changes():
+            self._schedule_mask_refresh()
 
     def _on_barcode_finished(self, success: bool, error_msg: str) -> None:
         """Handle barcode detection completion."""
@@ -2080,6 +2156,7 @@ class MainWindow(QMainWindow):
 
     def _start_tracking(self, series: 'ImageSeries') -> None:
         """Start tracking in worker thread."""
+        self._mask_image_published = None
         self._begin_operation_progress('track')
         self._hide_progress_on_complete = True
 
@@ -2088,6 +2165,8 @@ class MainWindow(QMainWindow):
         self._context.__enter__()
 
         self._worker = ProcessWorker(self._pipeline, series, self._config, 'track')
+        self._worker.persist_mask = self._mask_refresh_active
+        self._worker.image_ready.connect(self._on_tracking_image_ready)
         self._worker.phase.connect(self._on_worker_phase)
         self._worker.progress.connect(self._on_worker_progress)
         self._worker.finished.connect(self._on_tracking_finished)
@@ -2096,10 +2175,12 @@ class MainWindow(QMainWindow):
     def _lock_ui(self) -> None:
         """Lock UI during processing. Called by ProcessingContext.__enter__."""
         self._roi_editor.set_locked(True)
+        allow_mask = self._mask_refresh_active and self._state == ProcessingState.TRACKING
+        self._image_viewer.set_mask_editing_enabled(allow_mask)
         self._refresh_tree_status()
         # Disable main interactive elements
         self._image_tree.setEnabled(False)
-        self._settings_panel.setEnabled(False)
+        self._settings_panel.set_processing(True, allow_mask=allow_mask)
         self._workflow_bar.setEnabled(False)
         
         # Next button: change to Cancel during processing
@@ -2118,7 +2199,7 @@ class MainWindow(QMainWindow):
             self._export_action.setEnabled(False)
         
         # Set wait cursor
-        if QApplication.overrideCursor() is None:
+        if not allow_mask and QApplication.overrideCursor() is None:
             QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
     
     def _unlock_ui(self, restore_step: bool = False) -> None:
@@ -2129,9 +2210,10 @@ class MainWindow(QMainWindow):
         
         # Re-enable main interactive elements
         self._image_tree.setEnabled(True)
-        self._settings_panel.setEnabled(True)
+        self._settings_panel.set_processing(False)
         self._workflow_bar.setEnabled(True)
         self._roi_editor.set_locked(False)
+        self._image_viewer.set_mask_editing_enabled(True)
         
         # Handle step restoration if cancelled
         if restore_step and self._step_before_processing is not None:
@@ -2560,6 +2642,7 @@ class MainWindow(QMainWindow):
 
             self._settings_panel._mask_dirty = self._current_series.has_pending_mask_changes()
             self._settings_panel._on_setting_changed()
+            self._schedule_mask_refresh()
 
     def _on_mask_erase_all(self) -> None:
         """Stage clearing the mask; Apply commits it and Discard restores it."""
@@ -2573,6 +2656,14 @@ class MainWindow(QMainWindow):
         self._image_viewer.set_mask_data(series.user_mask, series.working_mask)
         self._settings_panel._mask_dirty = series.has_pending_mask_changes()
         self._settings_panel._on_setting_changed()
+        self._schedule_mask_refresh()
+
+    def _schedule_mask_refresh(self):
+        if self._auto_apply_enabled():
+            # Strokes notify on release, so there is no ongoing slider/drag to
+            # debounce. Keep the normal delay only when a worker is already busy.
+            self._auto_apply_timer.stop()
+            QTimer.singleShot(0, self._apply_auto_settings)
 
     def _load_last_folder(self) -> None:
         """Load the last opened folder if it exists."""

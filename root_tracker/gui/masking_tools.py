@@ -9,8 +9,8 @@ from typing import Optional
 import numpy as np
 import cv2
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsEllipseItem, QGraphicsRectItem
-from PySide6.QtCore import Qt, QPointF, QRectF
-from PySide6.QtGui import QPen, QBrush, QColor, QImage, QPixmap
+from PySide6.QtCore import Qt, QPoint, QPointF, QRectF
+from PySide6.QtGui import QPen, QBrush, QColor, QImage, QPixmap, QPainter, QPolygon
 
 
 class MaskTool(Enum):
@@ -24,13 +24,7 @@ class MaskTool(Enum):
 
 
 class MaskOverlay:
-    """
-    Manages mask visualization with two layers.
-
-    The overlay shows:
-    - Black (50% opacity): New masked areas in working_mask
-    - Green (50% opacity): Areas where applied_mask is being removed
-    """
+    """Render exclusions with a translucent fill and dashed outline."""
 
     def __init__(self, image_shape: tuple[int, int]) -> None:
         """
@@ -40,6 +34,7 @@ class MaskOverlay:
             image_shape: (height, width) of the image.
         """
         self.image_shape = image_shape
+        self.offset = (0, 0)
         self._applied_mask: Optional[np.ndarray] = None
         self._working_mask: Optional[np.ndarray] = None
 
@@ -54,56 +49,48 @@ class MaskOverlay:
         self._applied_mask = applied_mask
         self._working_mask = working_mask
 
-    def render(self) -> Optional[QPixmap]:
+    def render(self, *, cropped: bool = False) -> Optional[QPixmap]:
         """
         Render the mask overlay as a QPixmap.
 
         Returns:
             QPixmap with colored overlay, or None if no masks.
         """
+        self.offset = (0, 0)
         if self._working_mask is None:
             return None
 
-        height, width = self.image_shape
+        mask = self._working_mask
+        if cropped:
+            # Small edits need a small scene item, not a full-photo RGBA upload.
+            x, y, width, height = cv2.boundingRect(mask)
+            if not width or not height:
+                return None
+            left, top = max(0, x - 2), max(0, y - 2)
+            right, bottom = min(mask.shape[1], x + width + 2), min(mask.shape[0], y + height + 2)
+            self.offset = (left, top)
+            mask = mask[top:bottom, left:right]
+        mask = np.ascontiguousarray(mask)
+        height, width = mask.shape
+        # An indexed image avoids allocating/filling a four-channel NumPy image
+        # for every stroke. Every nonzero brush value is an exclusion.
+        qimage = QImage(mask.data, width, height, mask.strides[0], QImage.Format.Format_Indexed8)
+        qimage.setColorTable([QColor(0, 0, 0, 0).rgba()] + [QColor(0, 0, 0, 230).rgba()] * 255)
+        pixmap = QPixmap.fromImage(qimage)
 
-        # Create RGBA overlay image
-        overlay = np.zeros((height, width, 4), dtype=np.uint8)
-
-        # Show all working_mask areas as black (no green for removed areas)
-        overlay[self._working_mask > 0] = [0, 0, 0, 230]  # Black, 90% opacity
-
-        # Draw white dashed borderline around working_mask areas (both outer and inner contours)
-        if np.any(self._working_mask > 0):
-            # Find all contours (including holes/inner contours)
-            contours, _ = cv2.findContours(self._working_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-
-            # Draw dashed contours
-            for contour in contours:
-                # Draw dashed line by sampling points along the contour
-                dash_length = 10
-                gap_length = 10
-                total_length = dash_length + gap_length
-
-                for i in range(0, len(contour), total_length):
-                    # Draw dash
-                    end_idx = min(i + dash_length, len(contour))
-                    if end_idx > i:
-                        pts = contour[i:end_idx]
-                        for pt_idx in range(len(pts) - 1):
-                            pt1 = tuple(pts[pt_idx][0])
-                            pt2 = tuple(pts[pt_idx + 1][0])
-                            cv2.line(overlay, pt1, pt2, (255, 255, 255, 200), 2)
-
-        # Convert to QImage then QPixmap
-        qimage = QImage(
-            overlay.data,
-            width,
-            height,
-            4 * width,  # bytes per line
-            QImage.Format.Format_RGBA8888
-        )
-
-        return QPixmap.fromImage(qimage)
+        # Approximate only collinear contour points, preserving the mask shape
+        # and holes. Qt draws complete dashed paths in native code.
+        contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        painter = QPainter(pixmap)
+        pen = QPen(QColor(255, 255, 255, 200), 2)
+        pen.setDashPattern([5, 5])
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        for contour in contours:
+            polygon = QPolygon([QPoint(int(x), int(y)) for x, y in contour[:, 0]])
+            painter.drawPolygon(polygon)
+        painter.end()
+        return pixmap
 
 
 class BrushCursor(QGraphicsEllipseItem):
@@ -179,6 +166,11 @@ class BrushStrokePreview(QGraphicsItem):
         self._brush_size = brush_size
         self._is_eraser = is_eraser
         self.setZValue(999)  # Just below brush cursor
+
+    def set_size(self, size: int) -> None:
+        self.prepareGeometryChange()
+        self._brush_size = size
+        self.update()
 
     def add_point(self, point: QPointF) -> None:
         """Add a point to the stroke path."""

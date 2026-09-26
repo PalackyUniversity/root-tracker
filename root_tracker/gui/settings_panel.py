@@ -8,13 +8,13 @@ Settings are applied to the entire group on Apply button click.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QSpinBox, QDoubleSpinBox, QPushButton,
-    QGroupBox, QLineEdit, QComboBox, QCheckBox, QButtonGroup, QRadioButton, QScrollArea, QFrame
+    QGroupBox, QLineEdit, QComboBox, QCheckBox, QScrollArea, QFrame
 )
 from PySide6.QtCore import Signal, Qt
 
 from ..config import Config
 from .workflow_bar import WorkflowStep
-from .masking_tools import MaskTool
+from .mask_controls import MaskControls
 from .color_range import ColorRangeControl
 from .right_checkbox import RightAlignedCheckBox
 
@@ -60,16 +60,7 @@ class SettingsPanel(QWidget):
         self._groups_out_of_sync = False  # True if some other group has different settings
         self._centroids_modified = False  # True if user moved centroids
 
-        # Masking tool widgets (created in _create_track_settings)
-        self._mask_tool_group: QButtonGroup | None = None
-        self._brush_radio: QRadioButton | None = None
-        self._brush_size_spin: QSpinBox | None = None
-        self._brush_eraser_radio: QRadioButton | None = None
-        self._brush_eraser_size_spin: QSpinBox | None = None
-        self._move_radio: QRadioButton | None = None
-        self._rect_radio: QRadioButton | None = None
-        self._rect_eraser_radio: QRadioButton | None = None
-        self._mask_erase_all_btn: QPushButton | None = None
+        self._mask_controls: MaskControls | None = None
 
         self._setup_ui()
         self.set_step(WorkflowStep.LOAD)
@@ -122,7 +113,7 @@ class SettingsPanel(QWidget):
         self._buttons_layout.addWidget(self._discard_btn)
 
         self._auto_reset_btn = QPushButton('Reset')
-        self._auto_reset_btn.setStatusTip('Restore the settings from before automatic edits for this group and step.')
+        self._auto_reset_btn.setStatusTip('Restore the settings and mask from before automatic edits for this group and step.')
         self._auto_reset_btn.clicked.connect(self.reset_auto_requested.emit)
         self._auto_reset_btn.hide()
         apply_layout.addWidget(self._auto_reset_btn)
@@ -130,11 +121,20 @@ class SettingsPanel(QWidget):
 
     
     def set_auto_apply_mode(self, enabled, can_reset=False):
-        enabled = enabled and self._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS)
+        enabled = enabled and self._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS, WorkflowStep.TRACK)
         self._apply_btn.setVisible(not enabled)
         self._discard_btn.setVisible(not enabled)
         self._auto_reset_btn.setVisible(enabled)
         self._auto_reset_btn.setEnabled(can_reset)
+
+    def set_processing(self, processing: bool, *, allow_mask: bool = False) -> None:
+        """Keep mask tools usable during automatic tracking, freezing settings."""
+        self.setEnabled(not processing or allow_mask)
+        self._buttons_widget.setEnabled(not processing)
+        for index in range(self._settings_layout.count()):
+            widget = self._settings_layout.itemAt(index).widget()
+            if widget is not None:
+                widget.setEnabled(not processing or (allow_mask and widget is self._mask_controls))
 
     def finish_color_picker(self):
         control = getattr(self, '_color_control', None)
@@ -149,6 +149,8 @@ class SettingsPanel(QWidget):
     
     def _rebuild_for_step(self, step: WorkflowStep) -> None:
         """Rebuild settings widgets for the given step."""
+        self.deselect_mask_tools()
+        self._mask_controls = None
         # Clear existing settings
         while self._settings_layout.count():
             item = self._settings_layout.takeAt(0)
@@ -181,14 +183,6 @@ class SettingsPanel(QWidget):
             '_reg_margin_spin': 'Search border on each side as a fraction of image size (0.25 = 25%). Larger values allow larger shifts but take longer. Smaller images are padded enough to fit the reference.',
             '_min_contour_area_spin': 'Minimum enclosed root-contour area in square pixels. Increase to reject small specks; too high can remove small roots.',
             '_min_contour_length_spin': 'Minimum number of sampled points in a root contour (not root length in millimetres). Increase to reject short contours; too high can remove fine roots.',
-            '_move_radio': 'Pan the image without changing the exclusion mask. Scroll to zoom.',
-            '_brush_radio': 'Paint areas to exclude from root tracking. Apply settings to use the edited mask for this group.',
-            '_brush_size_spin': 'Diameter of the exclusion brush in image pixels. Larger values cover a wider area.',
-            '_rect_radio': 'Drag a rectangle to exclude that area from root tracking.',
-            '_brush_eraser_radio': 'Erase painted exclusions to include those areas in tracking again.',
-            '_brush_eraser_size_spin': 'Diameter of the mask eraser in image pixels.',
-            '_rect_eraser_radio': 'Drag a rectangle to remove exclusions inside it.',
-            '_mask_erase_all_btn': 'Clear the entire exclusion mask for this group. Apply settings to use the cleared mask.',
             '_redetect_btn': 'Re-run automatic plant detection for this group, replacing manually moved centroid positions.',
         }
         active = self._settings_container.findChildren(QWidget)
@@ -359,114 +353,13 @@ class SettingsPanel(QWidget):
 
         self._settings_layout.addWidget(group)
 
-        # Masking tools group
-        mask_group = QGroupBox("Masking Tools")
-        mask_layout = QVBoxLayout(mask_group)
-
-        # Tool selection (radio buttons)
-        self._mask_tool_group = QButtonGroup(self)
-        self._mask_tool_group.buttonClicked.connect(self._on_mask_tool_selected)
-
-        # Move tool (Default)
-        self._move_radio = QRadioButton("Move")
-        self._move_radio.setChecked(True)
-        self._mask_tool_group.addButton(self._move_radio, 0)  # ID = 0
-        mask_layout.addWidget(self._move_radio)
-
-        # Brush tool
-        brush_row = QHBoxLayout()
-        self._brush_radio = QRadioButton("Brush")
-        self._mask_tool_group.addButton(self._brush_radio, 1)  # ID = 1
-        brush_row.addWidget(self._brush_radio)
-        self._brush_size_spin = QSpinBox()
-        self._brush_size_spin.setRange(1, 999)
-        self._brush_size_spin.setValue(100)
-        self._brush_size_spin.setSuffix(" px")
-        self._brush_size_spin.setFixedWidth(80)
-        self._brush_size_spin.valueChanged.connect(self._on_brush_size_changed)
-        brush_row.addWidget(self._brush_size_spin)
-        brush_row.addStretch()
-        mask_layout.addLayout(brush_row)
-
-        # Rectangle tool
-        self._rect_radio = QRadioButton("Rectangle")
-        self._mask_tool_group.addButton(self._rect_radio, 2)  # ID = 2
-        mask_layout.addWidget(self._rect_radio)
-
-        # Brush eraser tool
-        brush_eraser_row = QHBoxLayout()
-        self._brush_eraser_radio = QRadioButton("Brush Eraser")
-        self._mask_tool_group.addButton(self._brush_eraser_radio, 3)  # ID = 3
-        brush_eraser_row.addWidget(self._brush_eraser_radio)
-        self._brush_eraser_size_spin = QSpinBox()
-        self._brush_eraser_size_spin.setRange(1, 999)
-        self._brush_eraser_size_spin.setValue(100)
-        self._brush_eraser_size_spin.setSuffix(" px")
-        self._brush_eraser_size_spin.setFixedWidth(80)
-        self._brush_eraser_size_spin.valueChanged.connect(self._on_brush_eraser_size_changed)
-        brush_eraser_row.addWidget(self._brush_eraser_size_spin)
-        brush_eraser_row.addStretch()
-        mask_layout.addLayout(brush_eraser_row)
-
-        # Rectangle eraser tool
-        self._rect_eraser_radio = QRadioButton("Rectangle Eraser")
-        self._mask_tool_group.addButton(self._rect_eraser_radio, 4)  # ID = 4
-        mask_layout.addWidget(self._rect_eraser_radio)
-
-        # Erase All button
-        self._mask_erase_all_btn = QPushButton("Erase All")
-        self._mask_erase_all_btn.clicked.connect(self.mask_erase_all_requested.emit)
-        mask_layout.addWidget(self._mask_erase_all_btn)
-
-        self._settings_layout.addWidget(mask_group)
+        self._mask_controls = MaskControls()
+        self._mask_controls.tool_changed.connect(self.mask_tool_changed.emit)
+        self._mask_controls.clear_requested.connect(self.mask_erase_all_requested.emit)
+        self._settings_layout.addWidget(self._mask_controls)
+        self._mask_controls.reset_to_pan()
 
         self._store_original_values()
-
-    def _on_mask_tool_selected(self, button: QRadioButton) -> None:
-        """Handle mask tool selection."""
-        # Determine which tool was selected based on the button
-        if button == self._move_radio:
-            tool = MaskTool.MOVE
-            size = 0
-        elif button == self._brush_radio:
-            tool = MaskTool.BRUSH
-            size = self._brush_size_spin.value()
-        elif button == self._rect_radio:
-            tool = MaskTool.RECTANGLE
-            size = 0
-        elif button == self._brush_eraser_radio:
-            tool = MaskTool.BRUSH_ERASER
-            size = self._brush_eraser_size_spin.value()
-        elif button == self._rect_eraser_radio:
-            tool = MaskTool.RECT_ERASER
-            size = 0
-        else:
-            tool = MaskTool.NONE
-            size = 0
-
-        self.mask_tool_changed.emit(tool.value, size)
-
-    def _on_brush_size_changed(self, size: int) -> None:
-        """Handle brush size change."""
-        # Sync with eraser size
-        if self._brush_eraser_size_spin is not None:
-            self._brush_eraser_size_spin.blockSignals(True)
-            self._brush_eraser_size_spin.setValue(size)
-            self._brush_eraser_size_spin.blockSignals(False)
-
-        if self._brush_radio is not None and self._brush_radio.isChecked():
-            self.mask_tool_changed.emit(MaskTool.BRUSH.value, size)
-
-    def _on_brush_eraser_size_changed(self, size: int) -> None:
-        """Handle brush eraser size change."""
-        # Sync with brush size
-        if self._brush_size_spin is not None:
-            self._brush_size_spin.blockSignals(True)
-            self._brush_size_spin.setValue(size)
-            self._brush_size_spin.blockSignals(False)
-
-        if self._brush_eraser_radio is not None and self._brush_eraser_radio.isChecked():
-            self.mask_tool_changed.emit(MaskTool.BRUSH_ERASER.value, size)
 
     def has_pending_mask_changes(self) -> bool:
         """
@@ -478,17 +371,19 @@ class SettingsPanel(QWidget):
         # This will be called by main_window to check if Apply buttons should be enabled
         return False  # Placeholder - actual check done in main_window
 
+    def set_temporary_mask_restore(self, active):
+        if self._mask_controls is not None:
+            self._mask_controls.set_temporary_restore(active)
+
+    def adjust_mask_diameter(self, steps):
+        if self._mask_controls is not None:
+            self._mask_controls.adjust_diameter(steps)
+
     def deselect_mask_tools(self) -> None:
-        """Deselect all mask tools (go back to pan/zoom mode)."""
-        if self._mask_tool_group is not None:
-            # Uncheck all radio buttons
-            for button in self._mask_tool_group.buttons():
-                button.setAutoExclusive(False)
-                button.setChecked(False)
-                button.setAutoExclusive(True)
-            # Emit tool change to NONE
-            self.mask_tool_changed.emit(MaskTool.NONE.value, 0)
-    
+        """Return to pan mode when the selected group changes."""
+        if self._mask_controls is not None:
+            self._mask_controls.reset_to_pan()
+
     def _store_original_values(self) -> None:
         """Store current values as original (for dirty detection)."""
         self._original_values = self.get_current_values()

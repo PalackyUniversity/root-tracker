@@ -622,7 +622,7 @@ class RoiWorkflowTests(unittest.TestCase):
         self.assertEqual(self.w._config.crop.background_region, 'largest')
         self.assertFalse(panel._auto_reset_btn.isEnabled())
 
-    def test_auto_apply_preprocess_and_track_exclusion(self):
+    def test_auto_apply_preprocess_and_tracking_settings(self):
         self.enter_preprocess()
         self.w._auto_preview_action.setChecked(True)
         panel = self.w._settings_panel
@@ -634,13 +634,15 @@ class RoiWorkflowTests(unittest.TestCase):
         self.assertEqual(panel._color_control.title(), 'Plants')
         self.assertEqual(panel._redetect_btn.text(), 'Reset origins')
         self.w._restore_settings_draft(WorkflowStep.TRACK)
-        self.assertFalse(panel._apply_btn.isHidden())
-        self.assertFalse(panel._discard_btn.isHidden())
-        self.assertTrue(panel._auto_reset_btn.isHidden())
+        self.assertTrue(panel._apply_btn.isHidden())
+        self.assertTrue(panel._discard_btn.isHidden())
+        self.assertFalse(panel._auto_reset_btn.isHidden())
         before = self.w._config.threshold.min_contour_area
         panel._min_contour_area_spin.setValue(before+10)
-        self.w._apply_auto_settings()
-        self.assertEqual(self.w._config.threshold.min_contour_area, before)
+        with patch.object(self.w, '_start_tracking'):
+            self.w._apply_auto_settings()
+        self.assertEqual(self.w._config.threshold.min_contour_area, before+10)
+        self.assertTrue(panel._auto_reset_btn.isEnabled())
 
     def test_auto_apply_reset_survives_group_navigation(self):
         panel = self.w._settings_panel

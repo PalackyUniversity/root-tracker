@@ -105,6 +105,8 @@ class ImageViewer(QWidget):
     color_picked = Signal(int, int)
     color_pick_cancelled = Signal()
     editor_help = Signal(str)
+    mask_restore_toggled = Signal(bool)
+    mask_diameter_steps = Signal(int)
     mask_modified = Signal()  # Emitted when working mask changes
 
     # Zoom limits (10% to 500%)
@@ -123,6 +125,7 @@ class ImageViewer(QWidget):
 
         # Masking state
         self._mask_tool = MaskTool.NONE
+        self._mask_editing_enabled = True
         self._brush_size = 10
         self._applied_mask: np.ndarray | None = None
         self._working_mask: np.ndarray | None = None
@@ -131,6 +134,7 @@ class ImageViewer(QWidget):
 
         # Drawing state
         self._drawing = False
+        self._mask_draw_button = None
         self._last_draw_point: tuple[int, int] | None = None
         self._rect_start_point: QPointF | None = None
 
@@ -445,6 +449,16 @@ class ImageViewer(QWidget):
 
     # ========== Masking Methods ==========
 
+    def set_mask_editing_enabled(self, enabled: bool) -> None:
+        """Prevent mask writes while a worker reads the current group."""
+        self._mask_editing_enabled = enabled
+
+    def _finish_mask_gesture(self):
+        button = self._mask_draw_button
+        self._mask_draw_button = None
+        if button == Qt.MouseButton.RightButton:
+            self.mask_restore_toggled.emit(False)
+
     def set_mask_tool(self, tool: MaskTool, size: int = 10) -> None:
         """
         Activate a masking tool.
@@ -459,6 +473,8 @@ class ImageViewer(QWidget):
         # Update brush cursor size if active
         if self._brush_cursor is not None:
             self._brush_cursor.set_size(size)
+        if self._brush_stroke_preview is not None and tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER):
+            self._brush_stroke_preview.set_size(size)
 
         # Show/hide visual feedback items
         if tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER):
@@ -521,10 +537,11 @@ class ImageViewer(QWidget):
 
     def _update_mask_overlay(self) -> None:
         """Update the mask overlay visualization."""
-        # Remove existing overlay
-        if self._mask_overlay_item is not None:
-            self._scene.removeItem(self._mask_overlay_item)
-            self._mask_overlay_item = None
+        if self._working_mask is None or self._pixmap_item is None:
+            if self._mask_overlay_item is not None:
+                self._scene.removeItem(self._mask_overlay_item)
+                self._mask_overlay_item = None
+            return
 
         # Create new overlay if we have mask data
         if self._working_mask is not None and self._pixmap_item is not None:
@@ -534,12 +551,19 @@ class ImageViewer(QWidget):
 
             # Just show working_mask (brush preview is now a graphics item overlay)
             self._mask_overlay.set_masks(self._applied_mask, self._working_mask)
-            overlay_pixmap = self._mask_overlay.render()
+            overlay_pixmap = self._mask_overlay.render(cropped=True)
 
             if overlay_pixmap is not None:
-                self._mask_overlay_item = QGraphicsPixmapItem(overlay_pixmap)
-                self._mask_overlay_item.setZValue(10)  # Above image, below centroids
-                self._scene.addItem(self._mask_overlay_item)
+                if self._mask_overlay_item is None:
+                    self._mask_overlay_item = QGraphicsPixmapItem(overlay_pixmap)
+                    self._mask_overlay_item.setZValue(10)  # Above image, below centroids
+                    self._scene.addItem(self._mask_overlay_item)
+                else:
+                    self._mask_overlay_item.setPixmap(overlay_pixmap)
+                self._mask_overlay_item.setPos(*self._mask_overlay.offset)
+            elif self._mask_overlay_item is not None:
+                self._scene.removeItem(self._mask_overlay_item)
+                self._mask_overlay_item = None
 
     def _scene_to_image_coords(self, scene_pos: QPointF) -> tuple[int, int] | None:
         """
@@ -621,6 +645,19 @@ class ZoomableGraphicsView(QGraphicsView):
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         """Keep the scene point beneath the cursor fixed at every zoom level."""
+        viewer = self.parent()
+        if (event.modifiers() & Qt.KeyboardModifier.AltModifier
+                and isinstance(viewer, ImageViewer) and viewer._mask_editing_enabled
+                and viewer._mask_tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER)):
+            delta = event.angleDelta().y()
+            remainder = getattr(self, '_diameter_wheel_remainder', 0) + delta
+            steps = int(remainder / 120)
+            self._diameter_wheel_remainder = remainder - steps * 120
+            if steps:
+                viewer.mask_diameter_steps.emit(steps)
+            event.accept()
+            return
+        self._diameter_wheel_remainder = 0
         delta = event.angleDelta().y()
         if not delta:
             event.ignore()
@@ -648,8 +685,15 @@ class ZoomableGraphicsView(QGraphicsView):
             super().mousePressEvent(event)
             return
 
-        # Only handle left button
-        if event.button() != Qt.MouseButton.LeftButton:
+        if viewer._mask_draw_button is not None:
+            event.accept()
+            return
+
+        if event.button() not in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton):
+            super().mousePressEvent(event)
+            return
+
+        if event.button() == Qt.MouseButton.RightButton and viewer._color_picking:
             super().mousePressEvent(event)
             return
 
@@ -658,6 +702,10 @@ class ZoomableGraphicsView(QGraphicsView):
             if coords is not None:
                 viewer.color_picked.emit(*coords)
             event.accept()
+            return
+
+        if not viewer._mask_editing_enabled:
+            super().mousePressEvent(event)
             return
 
         # Check if a masking tool is active
@@ -680,6 +728,10 @@ class ZoomableGraphicsView(QGraphicsView):
         if img_coords is None:
             super().mousePressEvent(event)
             return
+
+        viewer._mask_draw_button = event.button()
+        if event.button() == Qt.MouseButton.RightButton:
+            viewer.mask_restore_toggled.emit(True)
 
         # Handle tool-specific actions
         if viewer._mask_tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER):
@@ -740,7 +792,7 @@ class ZoomableGraphicsView(QGraphicsView):
             super().mouseReleaseEvent(event)
             return
 
-        if event.button() != Qt.MouseButton.LeftButton:
+        if event.button() != viewer._mask_draw_button:
             super().mouseReleaseEvent(event)
             return
 
@@ -796,6 +848,7 @@ class ZoomableGraphicsView(QGraphicsView):
                 viewer._update_mask_overlay()
                 viewer.mask_modified.emit()
 
+            viewer._finish_mask_gesture()
             event.accept()
             return
 
@@ -816,9 +869,11 @@ class ZoomableGraphicsView(QGraphicsView):
                 viewer._rect_preview.hide()
 
             viewer._rect_start_point = None
+            viewer._finish_mask_gesture()
             event.accept()
             return
 
+        viewer._finish_mask_gesture()
         super().mouseReleaseEvent(event)
 
     def keyPressEvent(self, event):

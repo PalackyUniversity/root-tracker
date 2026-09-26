@@ -271,7 +271,7 @@ class ImageSeries:
 
         # No pending changes if user_mask doesn't exist and working_mask is all zeros
         if self.user_mask is None:
-            return np.any(self.working_mask > 0)
+            return bool(np.any(self.working_mask > 0))
 
         # Compare working_mask with user_mask
         return not np.array_equal(self.working_mask, self.user_mask)

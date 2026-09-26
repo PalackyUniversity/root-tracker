@@ -325,7 +325,8 @@ class RootTrackingPipeline:
     def track_and_analyze_series(
         self, 
         series: ImageSeries,
-        progress_callback: callable = None
+        progress_callback: callable = None,
+        *, image_callback: callable = None, save_images: bool = True,
     ) -> list[PlantStatistics]:
         """
         Step 3: Run tracking algorithm and compute statistics.
@@ -340,7 +341,10 @@ class RootTrackingPipeline:
         Args:
             series: ImageSeries to analyze.
             progress_callback: Optional callback(current, total) for progress.
-            
+            image_callback: Called as each image's tracking result is ready.
+            save_images: Write annotations during tracking; interactive callers
+                can defer these writes until all calculated images are published.
+
         Returns:
             List of PlantStatistics objects.
         """
@@ -589,8 +593,11 @@ class RootTrackingPipeline:
             # Store annotated image
             image_data.image_annotated = annotated
 
-            # Save annotated image
-            self.exporter.save_image(image_data.image_annotated, os.path.basename(image_data.path))
+            # Publish calculated pixels before any image encoding or cache I/O.
+            if image_callback:
+                image_callback(image_data)
+            if save_images:
+                self.exporter.save_image(image_data.image_annotated, os.path.basename(image_data.path))
             
             # Update progress (after processing)
             if progress_callback:
