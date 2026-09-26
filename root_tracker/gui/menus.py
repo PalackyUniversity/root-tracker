@@ -16,7 +16,7 @@ _MENU_STYLE = """
         padding: 3px;
     }
     QMenu::item {
-        padding: 5px 24px 5px 30px;
+        padding: 5px 10px 5px 12px;
         border-radius: 4px;
     }
     QMenu::item:selected {
@@ -27,7 +27,7 @@ _MENU_STYLE = """
         width: 16px;
         height: 16px;
         subcontrol-position: center left;
-        left: 6px;
+        left: 4px;
         border: 1px solid MENU_BORDER;
         border-radius: 4px;
         background-color: palette(base);
@@ -68,7 +68,7 @@ class MenuBarPopup(RoundedMenu):
         super().showEvent(event)
         bar = self.parentWidget()
         if isinstance(bar, QMenuBar):
-            # The menu bar items have an 8 px bottom margin for centering.
+            # The menu bar items have a 4 px bottom margin for centering.
             action_rect = bar.actionGeometry(self.menuAction())
-            popup_y = bar.mapToGlobal(QPoint(0, action_rect.bottom() - 7)).y()
+            popup_y = bar.mapToGlobal(QPoint(0, action_rect.bottom() - 3)).y()
             self.move(self.x(), popup_y)

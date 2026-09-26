@@ -40,6 +40,7 @@ def button_stylesheet(palette: QPalette) -> str:
     check_icon = (Path(__file__).parent / "icons" / "check.svg").as_posix()
     arrow_tone = "dark" if light else "light"
     down_icon = (Path(__file__).parent / "icons" / f"chevron-down-{arrow_tone}.svg").as_posix()
+    spin_down_icon = (Path(__file__).parent / "icons" / f"spin-down-{arrow_tone}.svg").as_posix()
     up_icon = (Path(__file__).parent / "icons" / f"chevron-up-{arrow_tone}.svg").as_posix()
     return f"""
         QMenuBar {{ border-bottom: 1px solid {divider}; }}
@@ -123,8 +124,8 @@ def button_stylesheet(palette: QPalette) -> str:
         QAbstractSpinBox::down-button {{ subcontrol-origin: border; subcontrol-position: bottom right; width: 22px; border: none; border-bottom-right-radius: 5px; margin: 1px; }}
         QAbstractSpinBox::up-button:hover, QAbstractSpinBox::down-button:hover {{ background-color: {hover}; }}
         QAbstractSpinBox::up-button:pressed, QAbstractSpinBox::down-button:pressed {{ background-color: {pressed}; }}
-        QAbstractSpinBox::up-arrow {{ image: url("{up_icon}"); width: 10px; height: 10px; }}
-        QAbstractSpinBox::down-arrow {{ image: url("{down_icon}"); width: 10px; height: 10px; }}
+        QAbstractSpinBox::up-arrow {{ image: url("{up_icon}"); width: 12px; height: 12px; position: relative; top: 2px; }}
+        QAbstractSpinBox::down-arrow {{ image: url("{spin_down_icon}"); width: 12px; height: 12px; position: relative; top: -2px; }}
         QCheckBox {{ spacing: 7px; min-height: 22px; }}
         QCheckBox::indicator {{
             width: 16px; height: 16px; border: 1px solid {border};

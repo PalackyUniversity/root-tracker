@@ -487,8 +487,8 @@ class MainWindow(QMainWindow):
             QMenuBar::item {
                 background: transparent;
                 font-size: 14px;
-                padding: 2px 4px;
-                margin: 8px 0px;
+                padding: 6px 8px;
+                margin: 4px 0px;
             }
             QMenuBar::item:selected {
                 background-color: palette(highlight);
