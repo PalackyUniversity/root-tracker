@@ -206,7 +206,7 @@ class RoiEditor(QObject):
     def _analysis_box(canvas, config):
         return ImageCropper(config).analysis_roi(canvas.shape)
 
-    def _present_live_color(self, config, step, preserve_view):
+    def _present_live_color(self, config, step, preserve_view, image_data):
         """Threshold original pixels, but composite only the visible resolution.
 
         Keep crop geometry stationary during the gesture; the ordinary refresh
@@ -237,14 +237,20 @@ class RoiEditor(QObject):
         if box is not None:
             self.viewer.set_crop(canvas.shape, box)
         if step == WorkflowStep.LOAD and config.crop.background_enabled and getattr(self, '_plate_points', None) is not None:
-            self._show_plate_outline()
+            self._show_plate_outline(image_data)
         self.viewer.set_color_picking(False)
         return True
 
-    def _show_plate_outline(self):
+    def _show_plate_outline(self, image_data):
         if self._plate_points is not None:
             points = roi.transform_points(np.asarray(self._plate_points)-.5, self._frame_matrix[:2])+.5
-            self.viewer.set_plate_outline(points)
+            color = '#22c55e'
+            if self.window._config.data.detect_barcodes:
+                if image_data.barcode_mismatch or (image_data.barcode_detected and image_data.barcode_not_found):
+                    color = '#ff9800'
+                elif not image_data.barcode_detected or not image_data.barcode_read:
+                    color = '#9ca3af'  # Not checked yet; do not imply success.
+            self.viewer.set_plate_outline(points, color=color)
 
     def load_preview_label_position(self, rectangle):
         # Transform the original label anchor, not the axis-aligned/clipped
@@ -282,7 +288,7 @@ class RoiEditor(QObject):
         scope = (id(image_data), step)
         if (control._picker is not None and not control.pick_button.isChecked() and control.preview.isChecked() and
                 self._canvas is not None and getattr(self, '_displayed_scope', None) == scope):
-            return self._present_live_color(config, step, preserve_view)
+            return self._present_live_color(config, step, preserve_view, image_data)
         self.viewer.clear_crop()
         applied = self.window._config
         draft_analysis = (step == WorkflowStep.PREPROCESS and
@@ -366,7 +372,7 @@ class RoiEditor(QObject):
         if step == WorkflowStep.LOAD:
             self._plate_points = self._source_plate_points
             if config.crop.background_enabled:
-                self._show_plate_outline()
+                self._show_plate_outline(image_data)
         self._prefetch_timer.start()
         self._displayed_scope = scope
         self.viewer.set_color_picking(control.pick_button.isChecked() and not self._locked)

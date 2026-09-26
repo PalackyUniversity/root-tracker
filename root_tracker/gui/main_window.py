@@ -5,6 +5,7 @@ Integrates all components into the main window layout.
 """
 
 import os
+from copy import deepcopy
 import math
 import multiprocessing as mp
 from multiprocessing import Manager
@@ -265,6 +266,14 @@ class MainWindow(QMainWindow):
         # Pipeline and data state
         self._pipeline: RootTrackingPipeline | None = None
         self._series_dict: dict[str, ImageSeries] = {}
+        self._evaluation_timer = QTimer(self)
+        self._evaluation_timer.setSingleShot(True)
+        self._evaluation_timer.timeout.connect(self._evaluate_selected_step)
+        self._auto_apply_baselines = {}
+        self._auto_apply_timer = QTimer(self)
+        self._auto_apply_timer.setSingleShot(True)
+        self._auto_apply_timer.setInterval(300)
+        self._auto_apply_timer.timeout.connect(self._apply_auto_settings)
         self._settings_drafts = {}
         self._mask_drafts = set()
         self._restoring_settings = False
@@ -310,6 +319,8 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """Handle application close - cleanup any running workers."""
         self._settings_panel.finish_color_picker()
+        self._auto_apply_timer.stop()
+        self._evaluation_timer.stop()
         self._roi_editor.close()
         # Cancel any running operations
         if self._worker is not None:
@@ -489,10 +500,10 @@ class MainWindow(QMainWindow):
 
         view_menu.addSeparator()
 
-        self._auto_preview_action = QAction("&Auto Preview", self)
+        self._auto_preview_action = QAction("&Auto-apply settings", self)
         self._auto_preview_action.setCheckable(True)
         self._auto_preview_action.setChecked(True)  # Default on
-        self._auto_preview_action.setStatusTip("Automatically run any missing barcode, preprocessing or tracking work for the selected group and current step.")
+        self._auto_preview_action.setStatusTip("Apply edits automatically in Load and Preprocess. Reset restores settings from before automatic edits. Tracking settings use Apply.")
         self._auto_preview_action.toggled.connect(self._on_auto_preview_toggled)
         view_menu.addAction(self._auto_preview_action)
         
@@ -527,6 +538,8 @@ class MainWindow(QMainWindow):
         # Settings panel
         self._settings_panel.dirty_changed.connect(self._on_settings_dirty_changed)
         self._settings_panel.discard_requested.connect(self._discard_settings_changes)
+        self._settings_panel.reset_auto_requested.connect(self._reset_auto_settings)
+        self._sync_auto_apply_controls()
         self._settings_panel.apply_requested.connect(self._on_apply_settings)
         self._settings_panel.apply_all_requested.connect(self._on_apply_all_settings)
         self._settings_panel.redetect_requested.connect(self._on_redetect_plants)
@@ -570,6 +583,8 @@ class MainWindow(QMainWindow):
             self._series_dict = self._pipeline.load_images()
             self._settings_panel.finish_color_picker()
             self._roi_editor.reset()
+            self._auto_apply_baselines.clear()
+            self._auto_apply_timer.stop()
             self._settings_drafts.clear()
             self._mask_drafts.clear()
             self._current_series = None
@@ -633,7 +648,6 @@ class MainWindow(QMainWindow):
 
         # Auto-detect barcodes for this group if on LOAD step and auto-preview enabled
         if (step == WorkflowStep.LOAD and
-            self._auto_preview_action.isChecked() and
             self._config.data.detect_barcodes and
             self._pipeline is not None and
             self._current_series is not None):
@@ -647,7 +661,6 @@ class MainWindow(QMainWindow):
 
         # Auto-preprocess if enabled and on PREPROCESS step
         if (step == WorkflowStep.PREPROCESS and
-            self._auto_preview_action.isChecked() and
             self._pipeline is not None and
             self._current_series is not None):
             # First ensure barcodes are detected (if enabled)
@@ -660,7 +673,6 @@ class MainWindow(QMainWindow):
 
         # Auto-process if enabled and on TRACK step
         if (step == WorkflowStep.TRACK and
-            self._auto_preview_action.isChecked() and
             self._pipeline is not None and
             self._current_series is not None):
             # First ensure barcodes are detected (if enabled)
@@ -701,7 +713,6 @@ class MainWindow(QMainWindow):
 
         # Auto-detect barcodes if on LOAD step and auto-preview enabled
         if (step == WorkflowStep.LOAD and
-            self._auto_preview_action.isChecked() and
             self._config.data.detect_barcodes and
             self._pipeline is not None):
             self._detect_barcodes_in_group(series)
@@ -711,7 +722,6 @@ class MainWindow(QMainWindow):
 
         # Auto-preprocess if enabled and on PREPROCESS step
         if (step == WorkflowStep.PREPROCESS and
-            self._auto_preview_action.isChecked() and
             self._pipeline is not None):
             # First ensure barcodes are detected (if enabled)
             if (self._config.data.detect_barcodes and
@@ -722,7 +732,6 @@ class MainWindow(QMainWindow):
 
         # Auto-process if enabled and on TRACK step
         if (step == WorkflowStep.TRACK and
-            self._auto_preview_action.isChecked() and
             self._pipeline is not None):
             # First ensure barcodes are detected (if enabled)
             if (self._config.data.detect_barcodes and
@@ -847,6 +856,7 @@ class MainWindow(QMainWindow):
             return
 
         self._settings_panel.finish_color_picker()
+        self._apply_auto_settings(evaluate=False)
         self._roi_editor.reset()
         self._save_settings_draft()
         self._restore_settings_draft(step)
@@ -871,6 +881,15 @@ class MainWindow(QMainWindow):
 
         self._update_process_button_states()
 
+    def _evaluate_selected_step(self):
+        if self._state != ProcessingState.IDLE or self._current_series is None or self._pipeline is None:
+            return
+        step = self._workflow_bar.get_current_step()
+        if step == WorkflowStep.PREPROCESS:
+            self._preprocess_group(self._current_series)
+        elif step == WorkflowStep.TRACK:
+            self._run_track_step_processing()
+
     def _handle_enter_preprocess(self) -> None:
         """Handle entering the PREPROCESS step."""
         # Display current image immediately for smooth transition
@@ -878,14 +897,13 @@ class MainWindow(QMainWindow):
             self._display_image(self._current_image)
         
         # Defer auto-processing until after UI transition completes
-        if (self._auto_preview_action.isChecked()
-                and self._current_series is not None
+        if (self._current_series is not None
                 and self._pipeline is not None):
             state = self._current_series.pipeline_state
             current_hash = self._config.preprocess_config_hash()
             if not (state.preprocessed and state.preprocess_config_hash == current_hash):
                 # Schedule preprocessing to run after UI updates
-                QTimer.singleShot(0, lambda: self._preprocess_group(self._current_series))
+                self._evaluation_timer.start(0)
 
     def _handle_enter_track(self) -> None:
         """Handle entering the TRACK step."""
@@ -905,8 +923,8 @@ class MainWindow(QMainWindow):
         needs_tracking = not self._pipeline.is_tracking_current(self._current_series)
         
         # Defer heavy processing until after UI transition completes
-        if needs_preprocessing or (self._auto_preview_action.isChecked() and needs_tracking):
-            QTimer.singleShot(0, self._run_track_step_processing)
+        if needs_preprocessing or needs_tracking:
+            self._evaluation_timer.start(0)
     
     def _run_track_step_processing(self) -> None:
         """Execute tracking step processing (called after UI transition)."""
@@ -921,11 +939,7 @@ class MainWindow(QMainWindow):
             return
 
         # Auto-run tracking if enabled, using the proper chain
-        if self._auto_preview_action.isChecked():
-            self._auto_process_for_tracking(self._current_series)
-        else:
-            if self._current_image:
-                self._display_image(self._current_image)
+        self._auto_process_for_tracking(self._current_series)
     
     def _save_settings_draft(self):
         if self._restoring_settings or self._current_series is None:
@@ -953,6 +967,9 @@ class MainWindow(QMainWindow):
             return
         self._save_settings_draft()
         self._refresh_pending_settings()
+        self._sync_auto_apply_controls()
+        if dirty and self._auto_apply_enabled():
+            self._auto_apply_timer.start()
 
     def _restore_settings_draft(self, step=None):
         panel = self._settings_panel
@@ -971,9 +988,13 @@ class MainWindow(QMainWindow):
         self._save_settings_draft()
         self._refresh_pending_settings()
         self._roi_editor.schedule()
+        self._sync_auto_apply_controls()
+        if panel._is_dirty and self._auto_apply_enabled():
+            self._auto_apply_timer.start()
 
     def _activate_group_settings(self, series):
         self._settings_panel.finish_color_picker()
+        self._apply_auto_settings(evaluate=False)
         self._save_settings_draft()
         self._current_series = series
         self._restore_settings_draft()
@@ -1017,13 +1038,13 @@ class MainWindow(QMainWindow):
         self._mask_drafts.discard(series.group)
         mask_io.delete_mask(series, self._config)
 
-    def _on_apply_settings(self) -> None:
+    def _on_apply_settings(self, *, evaluate=True) -> None:
         """Handle Apply button - reprocess current group with new settings and apply mask."""
         if self._pipeline is None or self._current_series is None:
             QMessageBox.warning(self, "Warning", "Please load images first.")
             return
 
-        step = self._workflow_bar.get_current_step()
+        step = self._settings_panel._current_step
 
         # Handle mask application in Track step
         mask_changed = False
@@ -1067,7 +1088,9 @@ class MainWindow(QMainWindow):
                 self._invalidate_preprocessing(series)
             if not any(series is self._current_series for series in self._series_dict.values()):
                 self._invalidate_preprocessing(self._current_series)
-            if step == WorkflowStep.LOAD:
+            if not evaluate:
+                pass  # The newly selected group/step will evaluate these settings.
+            elif step == WorkflowStep.LOAD:
                 if self._current_image:
                     self._display_image(self._current_image, preserve_view=True)
             else:
@@ -1076,7 +1099,7 @@ class MainWindow(QMainWindow):
             # Tracking params or mask changed — invalidate tracking only and retrack
             if not mask_changed:  # Already cleared above if mask changed
                 self._current_series.clear_tracking_results()
-            if self._auto_preview_action.isChecked():
+            if self._current_series is not None:
                 self._preserve_tracking_view_for = self._current_image
                 self._on_track_roots()
             elif self._current_image:
@@ -1125,7 +1148,7 @@ class MainWindow(QMainWindow):
             for series in self._series_dict.values():
                 series.clear_tracking_results()
             # Retrack only the current group for immediate feedback.
-            if self._auto_preview_action.isChecked() and self._current_series is not None:
+            if self._current_series is not None:
                 self._preserve_tracking_view_for = self._current_image
                 self._on_track_roots()
             elif self._current_image:
@@ -1159,13 +1182,7 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()
         
         try:
-            # Re-run preprocessing on current group
-            self._current_series.clear_tracking_results()
-            for image_data in self._current_series.images:
-                self._pipeline.preprocess_image(image_data)
-
-            # Re-register the series with updated centroid positions
-            self._pipeline.register_series(self._current_series)
+            self._pipeline.redetect_centroids(self._current_series)
 
             # Save to cache (preprocessing results updated with new centroids)
             series_cache.save_series(self._current_series, self._config)
@@ -1179,11 +1196,58 @@ class MainWindow(QMainWindow):
             self._processing_label.hide()
             QApplication.restoreOverrideCursor()
     
+    def _auto_apply_enabled(self):
+        return (self._auto_preview_action.isChecked() and
+                self._settings_panel._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS))
+
+    def _sync_auto_apply_controls(self):
+        panel = self._settings_panel
+        key = (self._current_series.group, panel._current_step) if self._current_series else None
+        baseline = self._auto_apply_baselines.get(key)
+        panel.set_auto_apply_mode(self._auto_apply_enabled(),
+                                  baseline is not None and panel.get_current_values() != baseline)
+
+    def _apply_auto_settings(self, *, evaluate=True):
+        if not self._auto_apply_enabled() or self._current_series is None or self._pipeline is None:
+            return
+        panel = self._settings_panel
+        if not panel._is_dirty:
+            return
+        # Coalesce a drag into one processing run. Color changes already have a
+        # live segmentation preview; commit them when the range dialog closes.
+        if (self._state != ProcessingState.IDLE or (evaluate and QApplication.mouseButtons() != Qt.MouseButton.NoButton)
+                or panel._color_control._picker is not None):
+            self._auto_apply_timer.start()
+            return
+        key = (self._current_series.group, panel._current_step)
+        self._auto_apply_baselines.setdefault(key, deepcopy(panel._original_values))
+        self._settings_drafts.pop(key, None)
+        panel._store_original_values()
+        # Use the regular invalidation/processing path, without closing crop
+        # editing or switching off segmentation during automatic application.
+        self._on_apply_settings(evaluate=evaluate)
+        self._sync_auto_apply_controls()
+
+    def _reset_auto_settings(self):
+        if not self._auto_apply_enabled() or self._current_series is None:
+            return
+        panel = self._settings_panel
+        key = (self._current_series.group, panel._current_step)
+        baseline = self._auto_apply_baselines.get(key)
+        if baseline is None:
+            return
+        panel.finish_color_picker()
+        panel.set_pending_values(deepcopy(baseline))
+        self._auto_apply_timer.stop()
+        self._apply_auto_settings()
+        self._sync_auto_apply_controls()
+
     def _on_auto_preview_toggled(self, enabled: bool) -> None:
-        """Handle Auto Preview menu toggle."""
-        # Auto Preview controls whether preprocessing happens automatically on group selection
-        pass
-    
+        self._auto_apply_timer.stop()
+        self._sync_auto_apply_controls()
+        if self._auto_apply_enabled() and self._settings_panel._is_dirty:
+            self._auto_apply_timer.start()
+
     def _on_detect_barcodes_toggled(self, enabled: bool) -> None:
         """Handle Detect Barcodes menu toggle."""
         self._config.data.detect_barcodes = enabled

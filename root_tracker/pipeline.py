@@ -243,6 +243,46 @@ class RootTrackingPipeline:
         image_data.process = self.background_remover.remove_gradient(cropped)
         image_data.canny = self.background_remover.compute_canny_edges(image_data.process)
 
+    def redetect_centroids(self, series: ImageSeries) -> None:
+        """Refresh plant centers without rebuilding processed pixels or alignment."""
+        from .preprocessing.roi import extraction_geometry, transform_points
+        state = series.pipeline_state
+        if (any(len(image.plate_transform) != 6 for image in series.images) or
+                (state.preprocess_config_hash and
+                 state.preprocess_config_hash != self.config.preprocess_config_hash())):
+            # Older caches lack the coordinate mapping needed to reuse alignment.
+            series.clear_tracking_results()
+            self.preprocess_series(series)
+            self.register_series(series)
+            return
+
+        detected = []
+        if not series.images:
+            return
+        # Overlap JPEG decoding with detection without changing clustering order.
+        with ThreadPoolExecutor(max_workers=1, thread_name_prefix='centroid-decode') as reader:
+            pending = reader.submit(cv2.imread, series.images[0].path)
+            for index, image in enumerate(series.images):
+                original = pending.result()
+                if index + 1 < len(series.images):
+                    pending = reader.submit(cv2.imread, series.images[index + 1].path)
+                if original is None:
+                    raise ValueError(f"Cannot read image: {image.path}")
+                plate = self.cropper.process(original)
+                contours, _ = self.green_detector.find_green_contours(plate)
+                x, y, areas = self.green_detector.cluster_plant_positions(contours)
+                _, crop_matrix, _ = extraction_geometry(plate.shape, self.cropper.analysis_roi(plate.shape))
+                registered = np.asarray(image.plate_transform).reshape(2, 3)
+                offset = np.rint(registered[:, 2] - crop_matrix[:, 2]).astype(int)
+                # Match preprocessing's rounding BEFORE the integer registration shift.
+                positions = np.rint(transform_points(list(zip(x, y)), crop_matrix)).astype(int) + offset
+                detected.append((positions[:, 0].tolist(), positions[:, 1].tolist(), areas))
+
+        # Commit only after every image succeeded; preserve existing data on errors.
+        series.clear_tracking_results()
+        for image, (x, y, areas) in zip(series.images, detected):
+            image.positions_x, image.positions_y, image.green_areas = x, y, areas
+
     def preprocess_series(self, series: ImageSeries, progress_callback: callable = None) -> None:
         """
         Preprocess all images in a series.

@@ -56,10 +56,10 @@ def fit_inside(box, shape):
     return cx/w, cy/h, width/w, height/h, angle
 
 
-def extract(image, box, interpolation=cv2.INTER_LINEAR):
-    """Return cropped pixels and the source-pixel → output-pixel affine matrix."""
-    cx, cy, width, height, angle = pixel_box(box, image.shape)
-    diagonal = math.hypot(*image.shape[:2])
+def extraction_geometry(shape, box):
+    """Return the crop transforms and output size without allocating pixels."""
+    cx, cy, width, height, angle = pixel_box(box, shape)
+    diagonal = math.hypot(*shape[:2])
     if max(width, height) > diagonal + 1:
         raise ValueError('Crop dimensions exceed the image diagonal')
     ow, oh = max(1, round(width)), max(1, round(height))
@@ -68,6 +68,13 @@ def extract(image, box, interpolation=cv2.INTER_LINEAR):
     inverse = np.array([[c, -s, cx-.5-c*(ow-1)/2+s*(oh-1)/2],
                         [s, c, cy-.5-s*(ow-1)/2-c*(oh-1)/2]], np.float64)
     matrix = cv2.invertAffineTransform(inverse)
+    return inverse, matrix, (ow, oh)
+
+
+def extract(image, box, interpolation=cv2.INTER_LINEAR):
+    """Return cropped pixels and the source-pixel → output-pixel affine matrix."""
+    inverse, matrix, (ow, oh) = extraction_geometry(image.shape, box)
+    cx, cy, width, height, angle = pixel_box(box, image.shape)
     # Integer, unrotated crops can be copied without interpolation.
     x, y = cx-width/2, cy-height/2
     if angle % 360 == 0 and abs(x-round(x)) < 1e-7 and abs(y-round(y)) < 1e-7:

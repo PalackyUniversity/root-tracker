@@ -43,6 +43,7 @@ class SettingsPanel(QWidget):
     apply_all_requested = Signal()  # Apply settings to all groups
     redetect_requested = Signal()  # Re-run centroid detection
     track_requested = Signal()
+    reset_auto_requested = Signal()
 
     # Masking signals
     mask_tool_changed = Signal(str, int)  # tool name, brush size
@@ -120,9 +121,21 @@ class SettingsPanel(QWidget):
         self._discard_btn.clicked.connect(self.discard_requested.emit)
         self._buttons_layout.addWidget(self._discard_btn)
 
+        self._auto_reset_btn = QPushButton('Reset')
+        self._auto_reset_btn.setStatusTip('Restore the settings from before automatic edits for this group and step.')
+        self._auto_reset_btn.clicked.connect(self.reset_auto_requested.emit)
+        self._auto_reset_btn.hide()
+        apply_layout.addWidget(self._auto_reset_btn)
         self._main_layout.addWidget(self._buttons_widget)
 
     
+    def set_auto_apply_mode(self, enabled, can_reset=False):
+        enabled = enabled and self._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS)
+        self._apply_btn.setVisible(not enabled)
+        self._discard_btn.setVisible(not enabled)
+        self._auto_reset_btn.setVisible(enabled)
+        self._auto_reset_btn.setEnabled(can_reset)
+
     def finish_color_picker(self):
         control = getattr(self, '_color_control', None)
         if control is not None and self._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS):
@@ -213,8 +226,8 @@ class SettingsPanel(QWidget):
         self._settings_layout.addWidget(group)
         lower, upper = ((self._config.crop.blue_hsv_lower, self._config.crop.blue_hsv_upper) if load else
                         (self._config.green.hsv_lower, self._config.green.hsv_upper))
-        self._color_control = ColorRangeControl('Plate search by color' if load else 'Green plant parts', lower, upper,
-                                                selector_label='Background color' if load else 'Plant color')
+        self._color_control = ColorRangeControl('Plate search by color' if load else 'Plants', lower, upper,
+                                                selector_label='Background color' if load else 'Leaves color')
         self._color_control.setStatusTip('Detect the plate by color inside the Load search box using the selected region method.' if load else 'Select the green plant parts used to locate plant centers and exclude leaves from root detection.')
         self._color_control.range_changed.connect(self._color_range_changed)
         self._color_control.preview_changed.connect(self.color_preview_toggled)
@@ -284,17 +297,17 @@ class SettingsPanel(QWidget):
         self._create_crop_settings(load=False)
 
         # Plant Attributes Group
-        attr_group = QGroupBox("Plant Attributes")
-        attr_layout = QFormLayout(attr_group)
+        attr_layout = QFormLayout()
+        self._color_control.layout().addLayout(attr_layout)
         
         self._n_clusters_spin = QSpinBox()
         self._n_clusters_spin.setRange(1, 20)
         self._n_clusters_spin.setValue(self._config.n_clusters)
         self._n_clusters_spin.valueChanged.connect(self._on_setting_changed)
-        attr_layout.addRow("Number of plants:", self._n_clusters_spin)
+        attr_layout.addRow("Origin counts:", self._n_clusters_spin)
         
         # Re-detect button inside Plant Attributes
-        self._redetect_btn = QPushButton("Re-detect centroids")
+        self._redetect_btn = QPushButton("Reset origins")
         self._redetect_btn.setEnabled(False)
         self._redetect_btn.setStatusTip("Click after moving centroids to re-run auto-detection")
         self._redetect_btn.clicked.connect(self._on_redetect_clicked)
@@ -302,7 +315,6 @@ class SettingsPanel(QWidget):
         attr_layout.addRow(self._redetect_btn)
         self._redetect_btn.show()
         
-        self._settings_layout.addWidget(attr_group)
         
         # Registration Group
         reg_group = QGroupBox("Registration of Images in a Group")

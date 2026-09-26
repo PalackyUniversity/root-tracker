@@ -31,6 +31,12 @@ class SettingsDraftTests(unittest.TestCase):
         self.w._settings_panel.set_step(WorkflowStep.TRACK)
         self.w._image_tree.set_step(WorkflowStep.TRACK, self.w._config)
         self.w._auto_preview_action.setChecked(False)
+        # These tests exercise settings/preview behavior; selection now always
+        # schedules processing, so isolate the worker boundary explicitly.
+        for method in ('_preprocess_group', '_auto_process_for_tracking', '_on_track_roots', '_detect_barcodes_in_group'):
+            worker_patch = patch.object(self.w, method)
+            worker_patch.start()
+            self.addCleanup(worker_patch.stop)
 
     def select(self, group):
         with patch.object(self.w, '_ensure_series_loaded'), patch.object(self.w, '_display_image'):

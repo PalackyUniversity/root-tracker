@@ -169,10 +169,10 @@ class ImageViewer(QWidget):
             self._crop_overlay.deleteLater()
             self._crop_overlay = None
 
-    def set_plate_outline(self, points):
+    def set_plate_outline(self, points, *, color="#22c55e"):
         self.clear_plate_outline()
         self._plate_outline = QGraphicsPolygonItem(QPolygonF([QPointF(float(x), float(y)) for x, y in points]))
-        pen = QPen(QColor('#ff9800'), 2, Qt.PenStyle.DashLine)
+        pen = QPen(QColor(color), 2, Qt.PenStyle.DashLine)
         pen.setCosmetic(True)
         self._plate_outline.setPen(pen)
         self._plate_outline.setAcceptedMouseButtons(Qt.MouseButton.NoButton)

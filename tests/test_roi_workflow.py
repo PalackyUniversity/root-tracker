@@ -46,6 +46,14 @@ class RoiWorkflowTests(unittest.TestCase):
         self.w._series_dict = {s.group: s for s in self.groups}
         self.w._image_tree.set_series(self.w._series_dict)
         self.w._auto_preview_action.setChecked(False)
+        # These tests exercise settings/preview behavior; selection now always
+        # schedules processing, so isolate the worker boundary explicitly.
+        self._worker_patches = {}
+        for method in ('_preprocess_group', '_auto_process_for_tracking'):
+            worker_patch = patch.object(self.w, method)
+            worker_patch.start()
+            self._worker_patches[method] = worker_patch
+            self.addCleanup(worker_patch.stop)
         self.w._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
         self.w._current_series = self.groups[0]
         self.w._current_image = self.groups[0].images[0]
@@ -229,6 +237,8 @@ class RoiWorkflowTests(unittest.TestCase):
         panel = self.w._settings_panel
         box = (.5, .5, .6, .6, 17.)
         panel.set_crop(box)
+        self.w._evaluation_timer.stop()
+        self._worker_patches['_preprocess_group'].stop()
         panel._apply_btn.click()
         worker = self.w._worker
         self.assertIsNotNone(worker)
@@ -520,6 +530,170 @@ class RoiWorkflowTests(unittest.TestCase):
                 actual = viewer._view.viewportTransform().map(QPointF(*(point+.5)))
                 self.assertAlmostEqual(actual.x(), previous.x(), places=5)
                 self.assertAlmostEqual(actual.y(), previous.y(), places=5)
+
+    def test_centroid_redetection_reuses_processed_arrays_and_registration(self):
+        self.w._config.preprocess_roi = (.5, .5, .8, .8, 17.)
+        self.enter_preprocess()
+        pipeline, series = self.w._pipeline, self.w._current_series
+        image = self.w._current_image
+        pipeline.preprocess_image(image, original=self.source)
+        image.plate_transform[2] += 7
+        image.plate_transform[5] -= 4
+        expected_x = [x+7 for x in image.positions_x]
+        expected_y = [y-4 for y in image.positions_y]
+        arrays = (image.image, image.process, image.canny)
+        image.positions_x = [-100]
+        image.positions_y = [-100]
+        image.total_length = 100
+        with patch.object(pipeline, 'preprocess_image') as preprocess, patch.object(pipeline, 'register_series') as register:
+            pipeline.redetect_centroids(series)
+            preprocess.assert_not_called()
+            register.assert_not_called()
+        self.assertEqual(image.positions_x, expected_x)
+        self.assertEqual(image.positions_y, expected_y)
+        self.assertIsNone(image.total_length)
+        for before, after in zip(arrays, (image.image, image.process, image.canny)):
+            self.assertIs(before, after)
+
+    def test_centroid_redetection_failure_keeps_existing_centers(self):
+        self.enter_preprocess()
+        pipeline, series = self.w._pipeline, self.w._current_series
+        image = self.w._current_image
+        pipeline.preprocess_image(image, original=self.source)
+        expected = image.positions_x.copy()
+        image.total_length = 100
+        with patch.object(pipeline.green_detector, 'cluster_plant_positions', side_effect=ValueError('detection failed')):
+            with self.assertRaises(ValueError):
+                pipeline.redetect_centroids(series)
+        self.assertEqual(image.positions_x, expected)
+        self.assertEqual(image.total_length, 100)
+
+    def test_centroid_redetection_falls_back_for_older_cache(self):
+        pipeline, series = self.w._pipeline, self.w._current_series
+        with patch.object(pipeline, 'preprocess_series') as preprocess, patch.object(pipeline, 'register_series') as register:
+            pipeline.redetect_centroids(series)
+            preprocess.assert_called_once_with(series)
+            register.assert_called_once_with(series)
+
+    def test_plate_outline_follows_barcode_warning_and_visibility(self):
+        image = self.w._current_image
+        self.w._config.data.detect_barcodes = True
+        cases = [
+            (False, False, False, '', '#9ca3af'),
+            (True, False, False, 'a', '#22c55e'),
+            (True, True, False, 'wrong', '#ff9800'),
+            (True, False, True, '', '#ff9800'),
+        ]
+        for editing in (True, False):
+            self.w._settings_panel._crop_edit_btn.setChecked(editing)
+            for detected, mismatch, missing, read, expected in cases:
+                image.barcode_detected = detected
+                image.barcode_mismatch = mismatch
+                image.barcode_not_found = missing
+                image.barcode_read = read
+                self.w._roi_editor.refresh()
+                pen = self.w._image_viewer._plate_outline.pen()
+                self.assertEqual(pen.color().name(), expected)
+                self.assertEqual(pen.style(), Qt.PenStyle.DashLine)
+        with patch.object(self.w._settings, 'setValue'):
+            self.w._on_detect_barcodes_toggled(False)
+            self.assertEqual(self.w._image_viewer._plate_outline.pen().color().name(), '#22c55e')
+            self.w._on_detect_barcodes_toggled(True)
+            self.assertEqual(self.w._image_viewer._plate_outline.pen().color().name(), '#ff9800')
+
+    def test_auto_apply_load_edits_and_reset_restore_session_baseline(self):
+        panel = self.w._settings_panel
+        self.w._auto_preview_action.setChecked(True)
+        original = panel.get_current_values().copy()
+        self.assertTrue(panel._apply_btn.isHidden())
+        self.assertTrue(panel._discard_btn.isHidden())
+        self.assertFalse(panel._auto_reset_btn.isHidden())
+        panel.set_crop((.5, .5, .8, .7, 12.))
+        self.w._apply_auto_settings()
+        self.assertEqual(self.w._config.load_roi, (.5, .5, .8, .7, 12.))
+        self.assertFalse(panel._is_dirty)
+        self.assertTrue(panel.crop_editing())
+        panel._background_region.setCurrentIndex(1)
+        self.w._apply_auto_settings()
+        self.assertEqual(self.w._config.crop.background_region, 'all')
+        panel._auto_reset_btn.click()
+        self.assertEqual(panel.get_current_values(), original)
+        self.assertIsNone(self.w._config.load_roi)
+        self.assertEqual(self.w._config.crop.background_region, 'largest')
+        self.assertFalse(panel._auto_reset_btn.isEnabled())
+
+    def test_auto_apply_preprocess_and_track_exclusion(self):
+        self.enter_preprocess()
+        self.w._auto_preview_action.setChecked(True)
+        panel = self.w._settings_panel
+        original = self.w._config.n_clusters
+        panel._n_clusters_spin.setValue(original+1)
+        self.w._apply_auto_settings()
+        self.assertEqual(self.w._config.n_clusters, original+1)
+        self.w._preprocess_group.assert_called_with(self.w._current_series, force=True)
+        self.assertEqual(panel._color_control.title(), 'Plants')
+        self.assertEqual(panel._redetect_btn.text(), 'Reset origins')
+        self.w._restore_settings_draft(WorkflowStep.TRACK)
+        self.assertFalse(panel._apply_btn.isHidden())
+        self.assertFalse(panel._discard_btn.isHidden())
+        self.assertTrue(panel._auto_reset_btn.isHidden())
+        before = self.w._config.threshold.min_contour_area
+        panel._min_contour_area_spin.setValue(before+10)
+        self.w._apply_auto_settings()
+        self.assertEqual(self.w._config.threshold.min_contour_area, before)
+
+    def test_auto_apply_reset_survives_group_navigation(self):
+        panel = self.w._settings_panel
+        self.w._auto_preview_action.setChecked(True)
+        panel.set_crop((.5, .5, .8, .8, 0.))
+        self.w._apply_auto_settings()
+        self.w._on_group_selected(self.groups[1])
+        self.w._on_group_selected(self.groups[0])
+        self.assertTrue(panel._auto_reset_btn.isEnabled())
+        panel._auto_reset_btn.click()
+        self.assertIsNone(self.w._config.load_roi)
+
+    def test_selection_evaluates_even_when_auto_apply_is_off(self):
+        self.enter_preprocess()
+        self.w._auto_preview_action.setChecked(False)
+        self.w._preprocess_group.reset_mock()
+        self.w._on_group_selected(self.groups[1])
+        self.w._preprocess_group.assert_called_once_with(self.groups[1])
+
+    def test_auto_apply_waits_for_color_dialog_confirmation(self):
+        self.w._auto_preview_action.setChecked(True)
+        panel = self.w._settings_panel
+        original = tuple(self.w._config.crop.blue_hsv_lower)
+        panel._color_control.swatch.click()
+        picker = panel._color_control._picker
+        picker.editors[0].controls[0].setValue(90)
+        self.w._apply_auto_settings()
+        self.assertEqual(tuple(self.w._config.crop.blue_hsv_lower), original)
+        picker.reject()
+        self.w._apply_auto_settings()
+        self.assertEqual(tuple(self.w._config.crop.blue_hsv_lower), original)
+
+    def test_auto_apply_timer_coalesces_edits(self):
+        self.enter_preprocess()
+        self.w._evaluation_timer.stop()
+        self.w._auto_preview_action.setChecked(True)
+        self.w._preprocess_group.reset_mock()
+        panel = self.w._settings_panel
+        panel._n_clusters_spin.setValue(2)
+        panel._n_clusters_spin.setValue(3)
+        panel._n_clusters_spin.setValue(4)
+        QTest.qWait(450)
+        self.assertEqual(self.w._config.n_clusters, 4)
+        self.w._preprocess_group.assert_called_once_with(self.w._current_series, force=True)
+
+    def test_auto_apply_commits_pending_edit_before_switching_groups(self):
+        self.w._auto_preview_action.setChecked(True)
+        self.w._settings_panel.set_crop((.5, .5, .7, .8, 0.))
+        self.w._on_group_selected(self.groups[1])
+        self.assertEqual(self.w._config.load_roi, (.5, .5, .7, .8, 0.))
+        self.w._on_group_selected(self.groups[0])
+        self.w._settings_panel._auto_reset_btn.click()
+        self.assertIsNone(self.w._config.load_roi)
 
 
 if __name__ == '__main__':
