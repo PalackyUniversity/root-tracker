@@ -49,3 +49,56 @@ class MaskOverlayTests(unittest.TestCase):
         self.assertEqual(item.pixmap().toImage().pixelColor(12, 12).alpha(), 230)
         viewer.set_mask_data(None, np.zeros_like(mask))
         self.assertIsNone(viewer._mask_overlay_item)
+
+    def test_restore_reveals_image_during_drag_without_committing(self):
+        from PySide6.QtCore import QPointF, QRectF, Qt
+        from PySide6.QtGui import QImage, QPainter
+        from PySide6.QtTest import QTest
+        from root_tracker.gui.image_viewer import ImageViewer
+        from root_tracker.gui.masking_tools import MaskTool
+
+        for tool in (MaskTool.BRUSH_ERASER, MaskTool.RECT_ERASER):
+            with self.subTest(tool=tool):
+                viewer = ImageViewer()
+                self.addCleanup(viewer.close)
+                viewer.resize(500, 500)
+                viewer.show()
+                viewer.set_image(np.full((100, 100, 3), 255, np.uint8))
+                mask = np.zeros((100, 100), np.uint8)
+                mask[20:80, 20:80] = 255
+                viewer.set_mask_data(mask.copy(), mask.copy())
+                viewer.set_mask_tool(tool, 12)
+                self.app.processEvents()
+                viewer._set_zoom(3)
+                changes = []
+                viewer.mask_modified.connect(lambda: changes.append(True))
+
+                def pixel(x, y):
+                    image = QImage(100, 100, QImage.Format.Format_ARGB32)
+                    image.fill(Qt.GlobalColor.transparent)
+                    painter = QPainter(image)
+                    viewer._scene.render(painter, QRectF(0, 0, 100, 100), QRectF(0, 0, 100, 100))
+                    painter.end()
+                    return image.pixelColor(x, y)
+
+                def position(x, y):
+                    return viewer._view.mapFromScene(QPointF(x, y))
+
+                self.assertLess(pixel(40, 40).red(), 50)
+                QTest.mousePress(viewer._view.viewport(), Qt.MouseButton.LeftButton, pos=position(40, 40))
+                if tool == MaskTool.BRUSH_ERASER:
+                    self.assertEqual(pixel(40, 40).red(), 255)
+                QTest.mouseMove(viewer._view.viewport(), position(60, 60))
+                self.assertEqual(pixel(50, 50).red(), 255)
+                self.assertEqual(pixel(50, 50).green(), 255)
+                self.assertLess(pixel(30, 60).red(), 50)
+                np.testing.assert_array_equal(viewer.get_working_mask(), mask)
+                self.assertEqual(changes, [])
+                if tool == MaskTool.RECT_ERASER:
+                    QTest.mouseMove(viewer._view.viewport(), position(45, 45))
+                    self.assertLess(pixel(50, 50).red(), 50)
+                    QTest.mouseMove(viewer._view.viewport(), position(60, 60))
+                QTest.mouseRelease(viewer._view.viewport(), Qt.MouseButton.LeftButton, pos=position(60, 60))
+                self.assertEqual(viewer.get_working_mask()[50, 50], 0)
+                self.assertEqual(changes, [True])
+                self.assertEqual(pixel(50, 50).red(), 255)

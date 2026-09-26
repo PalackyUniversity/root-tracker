@@ -293,3 +293,36 @@ class MaskAutoApplyTests(unittest.TestCase):
         self.w._invalidate_preprocessing(self.series)
         self.w._sync_auto_apply_controls()
         self.assertFalse(self.panel._auto_reset_btn.isEnabled())
+
+    def test_removal_buttons_follow_loaded_cleared_and_restored_masks(self):
+        self.w._auto_preview_action.setChecked(False)
+        viewer = self.w._image_viewer
+        viewer.set_image(self.image.image)
+        self.w.show()
+        self.app.processEvents()
+        viewer._set_zoom(3)
+        controls = self.panel._mask_controls
+        controls._tools.button(1).click()
+        restore = controls._operations.button(1)
+        clear = controls._clear_button
+        self.assertFalse(restore.isEnabled())
+        self.assertFalse(clear.isEnabled())
+        mask = self.paint()
+        self.assertTrue(restore.isEnabled())
+        self.assertTrue(clear.isEnabled())
+        clear.click()
+        self.assertFalse(restore.isEnabled())
+        self.assertFalse(clear.isEnabled())
+        # Reload an applied mask, then erase all of it with a single stroke.
+        viewer.set_mask_data(mask.copy(), None)
+        self.assertTrue(restore.isEnabled())
+        self.assertTrue(clear.isEnabled())
+        restore.click()
+        controls._diameter.setValue(100)
+        position = viewer._view.mapFromScene(QPointF(20, 20))
+        QTest.mouseClick(viewer._view.viewport(), Qt.MouseButton.LeftButton, pos=position)
+        self.assertFalse(np.any(viewer.get_working_mask()))
+        self.assertFalse(restore.isEnabled())
+        self.assertFalse(clear.isEnabled())
+        # The committed mask is still present, but availability follows the draft.
+        self.assertTrue(np.any(viewer._applied_mask))

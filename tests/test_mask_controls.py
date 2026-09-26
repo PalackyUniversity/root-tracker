@@ -31,6 +31,7 @@ class MaskControlsTests(unittest.TestCase):
         return matches[0]
 
     def test_shapes_and_operations_deliver_the_correct_tool_and_size(self):
+        self.panel.set_mask_available(True)
         self.button('Brush').click()
         self.assertEqual(self.events[-1], ('brush', 100))
         self.diameter().setValue(47)
@@ -75,7 +76,29 @@ class MaskControlsTests(unittest.TestCase):
             self.assertGreater(top, bottom)
 
     def test_clear_mask_keeps_the_existing_draft_action(self):
+        self.panel.set_mask_available(True)
         clears = []
         self.panel.mask_erase_all_requested.connect(lambda: clears.append(True))
         self.button('Clear mask').click()
         self.assertEqual(clears, [True])
+
+    def test_empty_mask_disables_clear_and_restore(self):
+        self.button('Brush').click()
+        self.assertFalse(self.button('Clear mask').isEnabled())
+        self.assertFalse(self.button('Restore').isEnabled())
+        self.assertTrue(self.button('Exclude').isEnabled())
+        self.panel.set_mask_available(True)
+        self.assertTrue(self.button('Clear mask').isEnabled())
+        self.assertTrue(self.button('Restore').isEnabled())
+        self.panel.set_mask_available(False)
+        self.assertFalse(self.button('Clear mask').isEnabled())
+        self.assertFalse(self.button('Restore').isEnabled())
+
+    def test_mask_availability_survives_controls_rebuild(self):
+        self.panel.set_mask_available(True)
+        self.panel.set_step(WorkflowStep.LOAD)
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.panel.set_step(WorkflowStep.TRACK)
+        self.button('Brush').click()
+        self.assertTrue(self.button('Clear mask').isEnabled())
+        self.assertTrue(self.button('Restore').isEnabled())

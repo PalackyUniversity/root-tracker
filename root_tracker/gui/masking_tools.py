@@ -8,9 +8,9 @@ from enum import Enum
 from typing import Optional
 import numpy as np
 import cv2
-from PySide6.QtWidgets import QGraphicsItem, QGraphicsEllipseItem, QGraphicsRectItem
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsEllipseItem, QGraphicsRectItem, QGraphicsPixmapItem
 from PySide6.QtCore import Qt, QPoint, QPointF, QRectF
-from PySide6.QtGui import QPen, QBrush, QColor, QImage, QPixmap, QPainter, QPolygon
+from PySide6.QtGui import QPen, QBrush, QColor, QImage, QPixmap, QPainter, QPolygon, QPainterPath, QPainterPathStroker
 
 
 class MaskTool(Enum):
@@ -91,6 +91,29 @@ class MaskOverlay:
             painter.drawPolygon(polygon)
         painter.end()
         return pixmap
+
+
+class MaskOverlayItem(QGraphicsPixmapItem):
+    """Reveal the image during restore without rerasterizing the mask."""
+
+    def __init__(self, pixmap):
+        super().__init__(pixmap)
+        self._restore_path = QPainterPath()
+
+    def set_restore_path(self, scene_path):
+        path = self.mapFromScene(scene_path)
+        dirty = self._restore_path.boundingRect().united(path.boundingRect())
+        self._restore_path = path
+        self.update(dirty.adjusted(-2, -2, 2, 2))
+
+    def paint(self, painter, option, widget=None):
+        painter.save()
+        if not self._restore_path.isEmpty():
+            visible = QPainterPath()
+            visible.addRect(self.boundingRect())
+            painter.setClipPath(visible.subtracted(self._restore_path), Qt.ClipOperation.IntersectClip)
+        super().paint(painter, option, widget)
+        painter.restore()
 
 
 class BrushCursor(QGraphicsEllipseItem):
@@ -174,11 +197,23 @@ class BrushStrokePreview(QGraphicsItem):
 
     def add_point(self, point: QPointF) -> None:
         """Add a point to the stroke path."""
+        self.prepareGeometryChange()
         if self._path.elementCount() == 0:
             self._path.moveTo(point)
         else:
             self._path.lineTo(point)
-        self.prepareGeometryChange()
+        self.update()
+
+    def restore_path(self):
+        stroker = QPainterPathStroker()
+        stroker.setWidth(self._brush_size)
+        stroker.setCapStyle(Qt.PenCapStyle.RoundCap)
+        stroker.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        path = stroker.createStroke(self._path)
+        if self._path.elementCount() == 1:
+            point = self._path.elementAt(0)
+            path.addEllipse(QPointF(point.x, point.y), self._brush_size / 2, self._brush_size / 2)
+        return path
 
     def boundingRect(self) -> QRectF:
         """Return bounding rectangle for this item."""
@@ -190,13 +225,9 @@ class BrushStrokePreview(QGraphicsItem):
         """Paint the brush stroke preview."""
         from PySide6.QtGui import QPainter
 
-        # Set up pen for stroke
         if self._is_eraser:
-            # Green for eraser preview
-            pen = QPen(QColor(0, 255, 0, 200))
-        else:
-            # Black for brush preview
-            pen = QPen(QColor(0, 0, 0, 200))
+            return  # The exclusion overlay clips out the restore stroke.
+        pen = QPen(QColor(0, 0, 0, 200))
 
         pen.setWidth(self._brush_size)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)

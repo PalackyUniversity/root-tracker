@@ -19,7 +19,7 @@ from .crop_overlay import CropOverlay
 from .theme import scrollbar_stylesheet, is_light
 
 from .masking_tools import (
-    MaskTool, MaskOverlay, BrushCursor, RectanglePreview, BrushStrokePreview,
+    MaskTool, MaskOverlay, MaskOverlayItem, BrushCursor, RectanglePreview, BrushStrokePreview,
     draw_brush_stroke, draw_rectangle
 )
 
@@ -109,6 +109,7 @@ class ImageViewer(QWidget):
     mask_restore_toggled = Signal(bool)
     mask_diameter_steps = Signal(int)
     mask_modified = Signal()  # Emitted when working mask changes
+    mask_available_changed = Signal(bool)
 
     # Zoom limits (10% to 500%)
     MIN_ZOOM = 0.1
@@ -455,6 +456,9 @@ class ImageViewer(QWidget):
         self._mask_editing_enabled = enabled
 
     def _finish_mask_gesture(self):
+        if self._mask_overlay_item is not None:
+            from PySide6.QtGui import QPainterPath
+            self._mask_overlay_item.set_restore_path(QPainterPath())
         button = self._mask_draw_button
         self._mask_draw_button = None
         if button == Qt.MouseButton.RightButton:
@@ -476,6 +480,7 @@ class ImageViewer(QWidget):
             self._brush_cursor.set_size(size)
         if self._brush_stroke_preview is not None and tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER):
             self._brush_stroke_preview.set_size(size)
+            self._update_restore_preview()
 
         # Show/hide visual feedback items
         if tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER):
@@ -536,8 +541,21 @@ class ImageViewer(QWidget):
         self._update_mask_overlay()
         self.mask_modified.emit()
 
+    def _update_restore_preview(self) -> None:
+        if self._mask_overlay_item is None:
+            return
+        from PySide6.QtGui import QPainterPath
+        path = QPainterPath()
+        if self._mask_tool == MaskTool.BRUSH_ERASER and self._brush_stroke_preview is not None:
+            path = self._brush_stroke_preview.restore_path()
+        elif self._mask_tool == MaskTool.RECT_ERASER and self._rect_start_point is not None:
+            path.addRect(self._rect_preview.rect())
+        self._mask_overlay_item.set_restore_path(path)
+
     def _update_mask_overlay(self) -> None:
         """Update the mask overlay visualization."""
+        self.mask_available_changed.emit(
+            self._working_mask is not None and bool(np.any(self._working_mask)))
         if self._working_mask is None or self._pixmap_item is None:
             if self._mask_overlay_item is not None:
                 self._scene.removeItem(self._mask_overlay_item)
@@ -556,7 +574,7 @@ class ImageViewer(QWidget):
 
             if overlay_pixmap is not None:
                 if self._mask_overlay_item is None:
-                    self._mask_overlay_item = QGraphicsPixmapItem(overlay_pixmap)
+                    self._mask_overlay_item = MaskOverlayItem(overlay_pixmap)
                     self._mask_overlay_item.setZValue(10)  # Above image, below centroids
                     self._scene.addItem(self._mask_overlay_item)
                 else:
@@ -751,6 +769,7 @@ class ZoomableGraphicsView(QGraphicsView):
             viewer._brush_stroke_preview = BrushStrokePreview(viewer._brush_size, is_eraser)
             viewer._brush_stroke_preview.add_point(scene_pos)
             viewer._scene.addItem(viewer._brush_stroke_preview)
+            viewer._update_restore_preview()
 
         elif viewer._mask_tool in (MaskTool.RECTANGLE, MaskTool.RECT_ERASER):
             viewer._rect_start_point = scene_pos
@@ -759,7 +778,10 @@ class ZoomableGraphicsView(QGraphicsView):
                 viewer._rect_preview = RectanglePreview()
                 viewer._scene.addItem(viewer._rect_preview)
             viewer._rect_preview.set_rectangle(scene_pos, scene_pos)
+            viewer._rect_preview.setBrush(Qt.BrushStyle.NoBrush if viewer._mask_tool == MaskTool.RECT_ERASER
+                                          else QBrush(QColor(255, 255, 255, 50)))
             viewer._rect_preview.show()
+            viewer._update_restore_preview()
 
         event.accept()
 
@@ -782,12 +804,14 @@ class ZoomableGraphicsView(QGraphicsView):
         if viewer._drawing and viewer._mask_tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER):
             if viewer._brush_stroke_preview is not None:
                 viewer._brush_stroke_preview.add_point(scene_pos)
+                viewer._update_restore_preview()
             event.accept()
             return
 
         # Update rectangle preview
         if viewer._rect_start_point is not None and viewer._rect_preview is not None:
             viewer._rect_preview.set_rectangle(viewer._rect_start_point, scene_pos)
+            viewer._update_restore_preview()
             event.accept()
             return
 

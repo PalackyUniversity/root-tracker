@@ -61,6 +61,7 @@ class SettingsPanel(QWidget):
         self._centroids_modified = False  # True if user moved centroids
 
         self._mask_controls: MaskControls | None = None
+        self._mask_available = False
 
         self._setup_ui()
         self.set_step(WorkflowStep.LOAD)
@@ -355,6 +356,7 @@ class SettingsPanel(QWidget):
         self._settings_layout.addWidget(group)
 
         self._mask_controls = MaskControls()
+        self._mask_controls.set_mask_available(self._mask_available)
         self._mask_controls.tool_changed.connect(self.mask_tool_changed.emit)
         self._mask_controls.clear_requested.connect(self.mask_erase_all_requested.emit)
         self._settings_layout.addWidget(self._mask_controls)
@@ -371,6 +373,11 @@ class SettingsPanel(QWidget):
         """
         # This will be called by main_window to check if Apply buttons should be enabled
         return False  # Placeholder - actual check done in main_window
+
+    def set_mask_available(self, available: bool) -> None:
+        self._mask_available = available
+        if self._mask_controls is not None:
+            self._mask_controls.set_mask_available(available)
 
     def set_temporary_mask_restore(self, active):
         if self._mask_controls is not None:

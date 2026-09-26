@@ -84,6 +84,7 @@ class MaskControls(QGroupBox):
         footer = QHBoxLayout()
         footer.addStretch()
         clear = QPushButton('Clear mask')
+        self._clear_button = clear
         clear.setMinimumHeight(32)
         clear.setToolTip('Remove all exclusions for this group.')
         clear.setStatusTip(clear.toolTip())
@@ -94,7 +95,13 @@ class MaskControls(QGroupBox):
         self._tools.buttonClicked.connect(self._update_tool)
         self._operations.buttonClicked.connect(self._update_tool)
         self._diameter.valueChanged.connect(self._update_tool)
+        self.set_mask_available(False)
         self._update_tool()
+
+    def set_mask_available(self, available: bool) -> None:
+        """Only offer removal actions when there are exclusions to remove."""
+        self._clear_button.setEnabled(available)
+        self._operations.button(1).setEnabled(available)
 
     @staticmethod
     def _toggle(text, tip):
