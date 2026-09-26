@@ -86,7 +86,9 @@ for repeat in range(args.repeats):
                     raise RuntimeError('Cache write failed')
                 if stage.endswith('cache'):
                     cache_bytes[stage] = value.stat().st_size
-            record = {'group': group, 'repeat': repeat, 'timings': timings,
+            gpu_module = sys.modules.get('root_tracker.preprocessing.gpu_background')
+            record = {'gpu_backend_active': bool(gpu_module and gpu_module._backend is not None),
+                      'group': group, 'repeat': repeat, 'timings': timings,
                       'cache_bytes': cache_bytes,
                       'outputs': fingerprint(series, statistics)}
             records.append(record)

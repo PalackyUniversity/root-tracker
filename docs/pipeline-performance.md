@@ -1,5 +1,8 @@
 # Pipeline performance
 
+Latest follow-up: [GPU, copy reduction, and coarse-to-fine alignment](preprocess-gpu-performance.md).
+Earlier preprocessing work: [CPU measurements](preprocess-performance.md).
+
 The CPU optimizations preserve the original full-resolution pipeline outputs on
 six groups / 23 images from `configs/in_vitro.yaml`. The one-second-per-group
 target is not yet met. The largest remaining preprocessing costs are median
@@ -24,8 +27,9 @@ filtering and full-resolution registration.
   readable, and older versions can read newly written files. To prefer smaller
   cache files, add `cache_compressed: true` under `data:` in the YAML config.
 
-No GPU dependency was installed and no downsampling, threshold changes, or
-approximate registration were introduced.
+At this initial optimization stage, no GPU dependency was installed and no
+downsampling, threshold changes, or approximate registration were introduced.
+The linked follow-up describes the subsequent GPU and alignment changes.
 
 ## Measured results (2026-09-26)
 

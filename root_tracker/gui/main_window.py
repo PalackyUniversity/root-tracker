@@ -167,13 +167,13 @@ class ProcessWorker(QThread):
         if self._cancelled:
             return
         self.series.pipeline_state.invalidate_from('preprocess')
-        total_images = len(self.series.images)
-        for i, image_data in enumerate(self.series.images):
+        def progress_callback(current, total):
             if self._cancelled:
-                break
-            self.pipeline.preprocess_image(image_data)
-            self.progress.emit(i + 1, total_images)
-        
+                raise InterruptedError("Cancelled")
+            self.progress.emit(current, total)
+
+        self.pipeline.preprocess_series(self.series, progress_callback=progress_callback)
+
         if not self._cancelled:
             # Register the series
             self.pipeline.register_series(self.series)
@@ -607,8 +607,11 @@ class MainWindow(QMainWindow):
             self._current_series is not None):
             # Only detect if group has undetected barcodes
             if not all(img.barcode_detected for img in self._current_series.images):
+                # Show the selected photo immediately; the completion handler
+                # refreshes its overlay after the asynchronous barcode scan.
+                self._display_image(image_data)
                 self._detect_barcodes_in_group(self._current_series)
-                return  # _detect_barcodes_in_group already displays the image
+                return
 
         # Auto-preprocess if enabled and on PREPROCESS step
         if (step == WorkflowStep.PREPROCESS and
@@ -1642,9 +1645,13 @@ class MainWindow(QMainWindow):
         )
         
         if success:
-            # Update tree to show warning icons
+            # Tree refresh preserves selection without emitting a new selection
+            # signal, so explicitly refresh the selected photo and barcode overlay.
             self._image_tree.refresh()
-            
+            if (self._workflow_bar.get_current_step() == WorkflowStep.LOAD
+                    and self._current_image is not None):
+                self._display_image(self._current_image)
+
             # Set up continuation if needed
             if should_continue_to_preprocess:
                 self._auto_process_pending_preprocess = False

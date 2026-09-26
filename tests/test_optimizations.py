@@ -7,9 +7,11 @@ import cv2
 import numpy as np
 
 from root_tracker.config import Config
+from root_tracker.pipeline import RootTrackingPipeline
 from root_tracker.tracking.thresholder import RootThresholder
 from root_tracker.tracking.corner_detector import CornerDetector, NEIGHBOR_OFFSETS
 from root_tracker.preprocessing.background import BackgroundRemover
+from root_tracker.registration.template_matcher import ImageRegistrator
 from root_tracker.models import ImageData, ImageSeries
 from root_tracker.io import series_cache
 from root_tracker.tracking.skeletonizer import RootSkeletonizer
@@ -40,6 +42,59 @@ def reference_threshold(image, config):
 
 
 class OptimizationTests(unittest.TestCase):
+    def test_predecoded_image_matches_regular_preprocessing_without_mutation(self):
+        config = Config(n_clusters=1, rotation=0)
+        image = np.full((128, 192, 3), (255, 0, 0), np.uint8)
+        green = cv2.cvtColor(np.uint8([[[35, 200, 150]]]), cv2.COLOR_HSV2BGR)[0, 0]
+        image[20:50, 70:90] = green
+        original = image.copy()
+        with tempfile.TemporaryDirectory() as folder:
+            config.data.output = folder
+            path = str(Path(folder) / 'input.png')
+            cv2.imwrite(path, image)
+            pipeline = RootTrackingPipeline(config)
+            regular = ImageData(datetime(2026, 1, 1), path, 'group')
+            predecoded = ImageData(datetime(2026, 1, 1), 'not-on-disk.png', 'group')
+            np.random.seed(0)
+            pipeline.preprocess_image(regular)
+            np.random.seed(0)
+            pipeline.preprocess_image(predecoded, original=image)
+            self.assertIsNotNone(regular.process)
+            for field in ('image', 'process', 'canny'):
+                np.testing.assert_array_equal(getattr(regular, field), getattr(predecoded, field))
+            self.assertEqual(regular.positions_x, predecoded.positions_x)
+            self.assertEqual(regular.positions_y, predecoded.positions_y)
+            np.testing.assert_array_equal(image, original)
+            series = ImageSeries('group', [ImageData(datetime(2026, 1, i+1), path, 'group')
+                                          for i in range(3)])
+            progress = []
+            pipeline.preprocess_series(series, progress_callback=lambda i, n: progress.append((i, n)))
+            self.assertEqual(progress, [(1, 3), (2, 3), (3, 3)])
+            for item in series.images:
+                np.testing.assert_array_equal(item.process, regular.process)
+            interrupted = ImageSeries('group', [ImageData(datetime(2026, 1, i+1), path, 'group')
+                                               for i in range(3)])
+            def cancel(current, total):
+                raise InterruptedError('Cancelled')
+            with self.assertRaises(InterruptedError):
+                pipeline.preprocess_series(interrupted, progress_callback=cancel)
+            self.assertIsNotNone(interrupted.images[0].process)
+            self.assertTrue(all(item.process is None for item in interrupted.images[1:]))
+
+    def test_registration_score_preserves_full_search_offsets(self):
+        rng = np.random.default_rng(76)
+        registrator = ImageRegistrator(Config())
+        template = (rng.random((731, 809)) < .012).astype(np.uint8) * 255
+        target = (rng.random((1103, 1307)) < .008).astype(np.uint8) * 255
+        target[311:1042, 417:1226] = template
+        # Full search must retain large translations, not just nearby matches.
+        expected = cv2.minMaxLoc(cv2.matchTemplate(target, template, cv2.TM_CCOEFF))[3]
+        self.assertEqual(registrator._match_location(target, template), expected)
+        # Blank/tied and non-binary inputs must preserve OpenCV's tie behavior.
+        for sample in (np.zeros_like(template), template // 3):
+            expected = cv2.minMaxLoc(cv2.matchTemplate(target, sample, cv2.TM_CCOEFF))[3]
+            self.assertEqual(registrator._match_location(target, sample), expected)
+
     def test_skeleton_components_match_full_frame(self):
         mask = np.zeros((600, 700), np.uint8)
         cv2.rectangle(mask, (0, 0), (25, 599), 1, -1)

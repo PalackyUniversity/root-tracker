@@ -1,0 +1,3426 @@
+[
+  {
+    "gpu_backend_active": true,
+    "group": "RT_26_2-1",
+    "repeat": 0,
+    "timings": {
+      "preprocess": 3.0924442510004155,
+      "registration": 0.8062207369948737,
+      "preprocess_cache": 0.3727881099912338,
+      "track": 2.9381036989943823,
+      "track_cache": 0.7929469859955134
+    },
+    "cache_bytes": {
+      "preprocess_cache": 281757513,
+      "track_cache": 428759819
+    },
+    "outputs": {
+      "images": [
+        {
+          "image": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "aafa183d9c625f784f9132334031f169b9adf693654a994a356d033015f8571d"
+          },
+          "process": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "f23c6077f99627c5da7bc86ae9e45b4d9dff20174a0bcf842058f32a40e1e4bd"
+          },
+          "canny": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "1acf840c23619c637bb28b669ae924e452bbeaf305e15b712eac7d4504a2811e"
+          },
+          "diff": null,
+          "image_annotated": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "7c8e4e5560294af1b1a93f558625edd32b073d384a04ba1c244aa89b3ea9a681"
+          },
+          "positions_x": [
+            1216,
+            1544,
+            2038,
+            2392,
+            2904,
+            3427
+          ],
+          "positions_y": [
+            70,
+            76,
+            95,
+            86,
+            56,
+            71
+          ],
+          "green_areas": [
+            6149,
+            7245,
+            5703,
+            5910,
+            7043,
+            6981
+          ],
+          "total_length": 14844,
+          "total_area": 168945,
+          "new_area": null,
+          "new_parts": null,
+          "plant_length": [
+            3079,
+            1555,
+            1695,
+            1297,
+            1840,
+            3201
+          ],
+          "longest": [
+            164,
+            1179,
+            1153,
+            1159,
+            1159,
+            2022
+          ],
+          "colored_samples": "8c4450a232c3a080f200d0d20c7e719284aea375922b458f29cbec2dcb3039d4"
+        },
+        {
+          "image": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "f12cc51c5f03096526ffb5766724c43d39e123e7fe4f2467130a27e59339c3a8"
+          },
+          "process": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "1cfb3bc5075c0b54dd30b693d9868f52d3f277c2c647c1ffe6549a05fff5486a"
+          },
+          "canny": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "b07cc8341150683bacdb09dd3f24fedd1e7dac96d15e295825b25590cabee377"
+          },
+          "diff": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "9cf6c0b8e29f9028cc306c623095c1bc4e27ef13e315ed41e72fe8219dfddef6"
+          },
+          "image_annotated": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "3b823a0bdd7057f2f02faaacd98e79368c6af1306d7a1073887e79d3bee044fa"
+          },
+          "positions_x": [
+            1206,
+            1536,
+            2011,
+            2395,
+            2910,
+            3418
+          ],
+          "positions_y": [
+            70,
+            72,
+            124,
+            91,
+            90,
+            106
+          ],
+          "green_areas": [
+            9370,
+            10464,
+            7659,
+            8593,
+            9226,
+            8357
+          ],
+          "total_length": 18392,
+          "total_area": 163618,
+          "new_area": 113810,
+          "new_parts": 69,
+          "plant_length": [
+            4381,
+            2067,
+            2345,
+            1731,
+            2397,
+            1722
+          ],
+          "longest": [
+            1814,
+            1448,
+            1419,
+            1360,
+            1403,
+            488
+          ],
+          "colored_samples": "92853ccc453b97949b182d392f6fcc59896e49a581a0e604cb4700b842595219"
+        },
+        {
+          "image": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "350e84abfccd9d98008bf36513e9b9e9394dd42e06dd4dbe3d9b76b6b0d15983"
+          },
+          "process": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "c82374f875ab928bb728b00c254b55a56e7b9c052c2072a5235235e5c37e65e0"
+          },
+          "canny": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "95204ac3aa142a3740d7a52e3b244f02b7100e3d25807f8b99ad19954126ce71"
+          },
+          "diff": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "68b1d8a343504393b1fca5064d9d258ae768fa57efbdbd8d3ee260e38be26f72"
+          },
+          "image_annotated": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "c837bc34c1f5aec98062dad1812e68642fe4d4e298a844b4770757ac1676026e"
+          },
+          "positions_x": [
+            1205,
+            1536,
+            2029,
+            2407,
+            2923,
+            3418
+          ],
+          "positions_y": [
+            77,
+            82,
+            157,
+            125,
+            120,
+            127
+          ],
+          "green_areas": [
+            11248,
+            12863,
+            11091,
+            10409,
+            12111,
+            12057
+          ],
+          "total_length": 20794,
+          "total_area": 196620,
+          "new_area": 117369,
+          "new_parts": 68,
+          "plant_length": [
+            4633,
+            2838,
+            3132,
+            2151,
+            2992,
+            2144
+          ],
+          "longest": [
+            1677,
+            1615,
+            1609,
+            1655,
+            1672,
+            1744
+          ],
+          "colored_samples": "ddd7eb8987241dc94894d4402cb052be470b152bca73f55e61e18adabba994f2"
+        },
+        {
+          "image": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "286fc6945cfb44fe71e48c3c2b167112f3ba0a693a57cc8bf9b3a89d67232414"
+          },
+          "process": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "b9964e4713fb9f8a7138bd6ded5350daf6460975bf247934c79692921568590e"
+          },
+          "canny": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "3e868fcab9ac0265ca3c3d73fca7176b1c68bcf5309b0f754fe173301251d7a3"
+          },
+          "diff": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "5740b03a358651f1fe3d7eed4f6f5f3c40f1998acb65b00f44853e092cdf7e7e"
+          },
+          "image_annotated": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "599927beb856b1dce7611d38e6ef0bcf76345abab020d550ac47c2a1f14ab325"
+          },
+          "positions_x": [
+            1216,
+            1539,
+            2033,
+            2413,
+            2937,
+            3422
+          ],
+          "positions_y": [
+            138,
+            96,
+            172,
+            146,
+            110,
+            122
+          ],
+          "green_areas": [
+            13195,
+            16221,
+            14273,
+            14603,
+            14407,
+            15062
+          ],
+          "total_length": 23818,
+          "total_area": 199829,
+          "new_area": 93159,
+          "new_parts": 100,
+          "plant_length": [
+            4466,
+            3562,
+            3880,
+            2562,
+            3903,
+            2484
+          ],
+          "longest": [
+            1955,
+            1874,
+            1828,
+            1917,
+            1906,
+            1765
+          ],
+          "colored_samples": "4bdd13187259a48aabde0601b7d4b9c200c007485d097dfae2fc37869749ebd9"
+        }
+      ],
+      "statistics": [
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 1,
+          "plant_center_x": 1211,
+          "plant_center_y": 74,
+          "plant_green_area": 6149,
+          "plant_root_count": 26,
+          "plant_total_length": 3079,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 2083,
+          "plant_main_root_length": 164,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 2,
+          "plant_center_x": 1538,
+          "plant_center_y": 79,
+          "plant_green_area": 7245,
+          "plant_root_count": 10,
+          "plant_total_length": 1555,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1241,
+          "plant_main_root_length": 1179,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 3,
+          "plant_center_x": 2031,
+          "plant_center_y": 140,
+          "plant_green_area": 5703,
+          "plant_root_count": 14,
+          "plant_total_length": 1695,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1178,
+          "plant_main_root_length": 1153,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 4,
+          "plant_center_x": 2401,
+          "plant_center_y": 108,
+          "plant_green_area": 5910,
+          "plant_root_count": 6,
+          "plant_total_length": 1297,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1199,
+          "plant_main_root_length": 1159,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 5,
+          "plant_center_x": 2916,
+          "plant_center_y": 100,
+          "plant_green_area": 7043,
+          "plant_root_count": 14,
+          "plant_total_length": 1840,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1182,
+          "plant_main_root_length": 1159,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 6,
+          "plant_center_x": 3420,
+          "plant_center_y": 114,
+          "plant_green_area": 6981,
+          "plant_root_count": 16,
+          "plant_total_length": 3201,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 2042,
+          "plant_main_root_length": 2022,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 1,
+          "plant_center_x": 1211,
+          "plant_center_y": 74,
+          "plant_green_area": 9370,
+          "plant_root_count": 63,
+          "plant_total_length": 4381,
+          "plant_total_length_RGR": 0.0009635850816650217,
+          "plant_main_root_depth": 2095,
+          "plant_main_root_length": 1814,
+          "plant_main_root_length_RGR": 0.006566730062434106
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 2,
+          "plant_center_x": 1538,
+          "plant_center_y": 79,
+          "plant_green_area": 10464,
+          "plant_root_count": 17,
+          "plant_total_length": 2067,
+          "plant_total_length_RGR": 0.0007776577460886158,
+          "plant_main_root_depth": 1516,
+          "plant_main_root_length": 1448,
+          "plant_main_root_length_RGR": 0.0005615209628641809
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 3,
+          "plant_center_x": 2031,
+          "plant_center_y": 140,
+          "plant_green_area": 7659,
+          "plant_root_count": 20,
+          "plant_total_length": 2345,
+          "plant_total_length_RGR": 0.0008868925165733039,
+          "plant_main_root_depth": 1439,
+          "plant_main_root_length": 1419,
+          "plant_main_root_length_RGR": 0.0005671725598114308
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 4,
+          "plant_center_x": 2401,
+          "plant_center_y": 108,
+          "plant_green_area": 8593,
+          "plant_root_count": 10,
+          "plant_total_length": 1731,
+          "plant_total_length_RGR": 0.0007886485542616528,
+          "plant_main_root_depth": 1469,
+          "plant_main_root_length": 1360,
+          "plant_main_root_length_RGR": 0.0004369593863124201
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 5,
+          "plant_center_x": 2916,
+          "plant_center_y": 100,
+          "plant_green_area": 9226,
+          "plant_root_count": 19,
+          "plant_total_length": 2397,
+          "plant_total_length_RGR": 0.0007225474968069774,
+          "plant_main_root_depth": 1443,
+          "plant_main_root_length": 1403,
+          "plant_main_root_length_RGR": 0.0005220088436139602
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 6,
+          "plant_center_x": 3420,
+          "plant_center_y": 114,
+          "plant_green_area": 8357,
+          "plant_root_count": 14,
+          "plant_total_length": 1722,
+          "plant_total_length_RGR": -0.001693925833284663,
+          "plant_main_root_depth": 1833,
+          "plant_main_root_length": 488,
+          "plant_main_root_length_RGR": -0.0038839535347739602
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 1,
+          "plant_center_x": 1211,
+          "plant_center_y": 74,
+          "plant_green_area": 11248,
+          "plant_root_count": 47,
+          "plant_total_length": 4633,
+          "plant_total_length_RGR": 0.00015322629480205482,
+          "plant_main_root_depth": 2051,
+          "plant_main_root_length": 1677,
+          "plant_main_root_length_RGR": -0.0002151448461695136
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 2,
+          "plant_center_x": 1538,
+          "plant_center_y": 79,
+          "plant_green_area": 12863,
+          "plant_root_count": 34,
+          "plant_total_length": 2838,
+          "plant_total_length_RGR": 0.0008684967069540279,
+          "plant_main_root_depth": 1769,
+          "plant_main_root_length": 1615,
+          "plant_main_root_length_RGR": 0.00029904565126327547
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 3,
+          "plant_center_x": 2031,
+          "plant_center_y": 140,
+          "plant_green_area": 11091,
+          "plant_root_count": 27,
+          "plant_total_length": 3132,
+          "plant_total_length_RGR": 0.0007928393869323693,
+          "plant_main_root_depth": 1721,
+          "plant_main_root_length": 1609,
+          "plant_main_root_length_RGR": 0.00034427525981463265
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 4,
+          "plant_center_x": 2401,
+          "plant_center_y": 108,
+          "plant_green_area": 10409,
+          "plant_root_count": 11,
+          "plant_total_length": 2151,
+          "plant_total_length_RGR": 0.0005951604769630719,
+          "plant_main_root_depth": 1713,
+          "plant_main_root_length": 1655,
+          "plant_main_root_length_RGR": 0.0005378529015919617
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 5,
+          "plant_center_x": 2916,
+          "plant_center_y": 100,
+          "plant_green_area": 12111,
+          "plant_root_count": 25,
+          "plant_total_length": 2992,
+          "plant_total_length_RGR": 0.0006074633004383094,
+          "plant_main_root_depth": 1716,
+          "plant_main_root_length": 1672,
+          "plant_main_root_length_RGR": 0.0004805690781977701
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 6,
+          "plant_center_x": 3420,
+          "plant_center_y": 114,
+          "plant_green_area": 12057,
+          "plant_root_count": 19,
+          "plant_total_length": 2144,
+          "plant_total_length_RGR": 0.0006005118827479912,
+          "plant_main_root_depth": 1825,
+          "plant_main_root_length": 1744,
+          "plant_main_root_length_RGR": 0.003489373146892541
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 1,
+          "plant_center_x": 1211,
+          "plant_center_y": 74,
+          "plant_green_area": 13195,
+          "plant_root_count": 52,
+          "plant_total_length": 4466,
+          "plant_total_length_RGR": -0.0001005793233330015,
+          "plant_main_root_depth": 2096,
+          "plant_main_root_length": 1955,
+          "plant_main_root_length_RGR": 0.00042022934409933485
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 2,
+          "plant_center_x": 1538,
+          "plant_center_y": 79,
+          "plant_green_area": 16221,
+          "plant_root_count": 40,
+          "plant_total_length": 3562,
+          "plant_total_length_RGR": 0.0006225276880263552,
+          "plant_main_root_depth": 2013,
+          "plant_main_root_length": 1874,
+          "plant_main_root_length_RGR": 0.0004075074716208507
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 3,
+          "plant_center_x": 2031,
+          "plant_center_y": 140,
+          "plant_green_area": 14273,
+          "plant_root_count": 30,
+          "plant_total_length": 3880,
+          "plant_total_length_RGR": 0.000586748973990751,
+          "plant_main_root_depth": 1985,
+          "plant_main_root_length": 1828,
+          "plant_main_root_length_RGR": 0.0003496153562238671
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 4,
+          "plant_center_x": 2401,
+          "plant_center_y": 108,
+          "plant_green_area": 14603,
+          "plant_root_count": 20,
+          "plant_total_length": 2562,
+          "plant_total_length_RGR": 0.00047905576216150463,
+          "plant_main_root_depth": 1963,
+          "plant_main_root_length": 1917,
+          "plant_main_root_length_RGR": 0.0004026313842040581
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 5,
+          "plant_center_x": 2916,
+          "plant_center_y": 100,
+          "plant_green_area": 14407,
+          "plant_root_count": 34,
+          "plant_total_length": 3903,
+          "plant_total_length_RGR": 0.0007282285700993079,
+          "plant_main_root_depth": 1966,
+          "plant_main_root_length": 1906,
+          "plant_main_root_length_RGR": 0.00035886654950547964
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 6,
+          "plant_center_x": 3420,
+          "plant_center_y": 114,
+          "plant_green_area": 15062,
+          "plant_root_count": 21,
+          "plant_total_length": 2484,
+          "plant_total_length_RGR": 0.00040327923524021065,
+          "plant_main_root_depth": 1902,
+          "plant_main_root_length": 1765,
+          "plant_main_root_length_RGR": 3.279278054375891e-05
+        }
+      ]
+    }
+  },
+  {
+    "gpu_backend_active": true,
+    "group": "RT_26_2-40",
+    "repeat": 0,
+    "timings": {
+      "preprocess": 2.578255004991661,
+      "registration": 1.0219585479935631,
+      "preprocess_cache": 0.2786192750063492,
+      "track": 1.9213787359913113,
+      "track_cache": 0.6822470780025469
+    },
+    "cache_bytes": {
+      "preprocess_cache": 293302590,
+      "track_cache": 446328406
+    },
+    "outputs": {
+      "images": [
+        {
+          "image": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "273b097a70dcbaab70f472c591dfa3a9e23625efa05e908e3567d690c7acb79a"
+          },
+          "process": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "690aa567d7d81369aa6ae4f72a9f805dfa39d210afe04d93b44d265f53a6860d"
+          },
+          "canny": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "b3300a44af311d7440dacd713db158388c5456809385d00fe6d64178f37f9fcb"
+          },
+          "diff": null,
+          "image_annotated": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "9153fb8350e28a8a014c66693503a332f5eee89a0f0fcd414fc93ccf38530527"
+          },
+          "positions_x": [
+            1460,
+            1842,
+            2270,
+            2729,
+            3102,
+            3578
+          ],
+          "positions_y": [
+            64,
+            102,
+            42,
+            123,
+            94,
+            137
+          ],
+          "green_areas": [
+            4034,
+            6962,
+            6676,
+            6013,
+            4298,
+            4154
+          ],
+          "total_length": 11905,
+          "total_area": 132934,
+          "new_area": null,
+          "new_parts": null,
+          "plant_length": [
+            1186,
+            1710,
+            1033,
+            1787,
+            1041,
+            2526
+          ],
+          "longest": [
+            978,
+            1170,
+            860,
+            1178,
+            908,
+            1198
+          ],
+          "colored_samples": "895bd7df66370305e59659e5eef79d1e381a63495347dc214ccb745449630b8f"
+        },
+        {
+          "image": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "6556905e6024ea3a70e8021e63ddb56da8f44f0820a8f601e149b6b9211ac3ab"
+          },
+          "process": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "fe2163dd23653acfe76aa03d7943a49e910ff4ebf6486b6c0b3893dd84f23994"
+          },
+          "canny": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "9c8cde1afb440c9c5f8d1edf3a68801acdc28818cc950bf9d08b1732b10bc2b0"
+          },
+          "diff": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "8498adbda82067f76fe86939af922504f892a8a3968c0d9314b6f2189420def3"
+          },
+          "image_annotated": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "8eb76104da3453334602f01b77f4e84208c65839cff5ea5102aa6232a9451382"
+          },
+          "positions_x": [
+            1468,
+            1839,
+            2279,
+            2731,
+            3109,
+            3555
+          ],
+          "positions_y": [
+            74,
+            103,
+            47,
+            142,
+            115,
+            161
+          ],
+          "green_areas": [
+            6297,
+            9143,
+            8250,
+            8948,
+            5896,
+            5344
+          ],
+          "total_length": 14756,
+          "total_area": 129138,
+          "new_area": 77974,
+          "new_parts": 61,
+          "plant_length": [
+            2194,
+            2444,
+            1169,
+            2427,
+            1404,
+            3205
+          ],
+          "longest": [
+            676,
+            1381,
+            888,
+            1445,
+            1142,
+            1774
+          ],
+          "colored_samples": "98b342b862eed19432b0854530f7745530fdf8777061e2a33f31fd741f795b8e"
+        },
+        {
+          "image": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "6cf569d349890eaba4a80adeb30c418d2f7c1648b013c43690fa4b02da0a73d9"
+          },
+          "process": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "f129209f692e96b4268118ffa12100f10ae2810c2e3c1e74726459ace5916bd4"
+          },
+          "canny": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "68cbf966c187b6440555b81abe02697d2c2a194ff076cdd8c97684f71d75e826"
+          },
+          "diff": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "f4fd25a8ac0117c3644ff81e2787c56f4710acccbf534837379e0edec960b8b5"
+          },
+          "image_annotated": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "63bd2ab0786bbb2e926563b0b0c10596a723c4323f14cfdcad51385fe11d816b"
+          },
+          "positions_x": [
+            1454,
+            1855,
+            2281,
+            2722,
+            3116,
+            3549
+          ],
+          "positions_y": [
+            58,
+            121,
+            51,
+            161,
+            119,
+            175
+          ],
+          "green_areas": [
+            9889,
+            11002,
+            8562,
+            10360,
+            6707,
+            6977
+          ],
+          "total_length": 18479,
+          "total_area": 179600,
+          "new_area": 86981,
+          "new_parts": 74,
+          "plant_length": [
+            2758,
+            3335,
+            1294,
+            3148,
+            1759,
+            3070
+          ],
+          "longest": [
+            765,
+            1644,
+            872,
+            1705,
+            1379,
+            995
+          ],
+          "colored_samples": "d565cfb738e7762a0d13ea0af6c88131c063263eb0c7138c971abb852e400502"
+        },
+        {
+          "image": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "5f5c636e676a5c5fc96b8c3aa18f41254e5d5960f3beb0cd135dde427d2698e1"
+          },
+          "process": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "28458bf42dc598392d52597582705a3d01be8803098936366a8b09e2516064f2"
+          },
+          "canny": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "ab5d29be2d4c03062ab9e97e49773f2f5d444e2cf0c8672727b8333b1fe14b4b"
+          },
+          "diff": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "e12ecec342c708b6fef30a31019c63d728e238589739a1758a64cb45d754c893"
+          },
+          "image_annotated": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "e0eaf265fc410958c26ecd74573784463f1389a18c8e3b00287200e2553c5527"
+          },
+          "positions_x": [
+            1455,
+            1844,
+            2301,
+            2701,
+            3119,
+            3526
+          ],
+          "positions_y": [
+            56,
+            146,
+            76,
+            166,
+            92,
+            185
+          ],
+          "green_areas": [
+            12135,
+            13352,
+            13148,
+            15570,
+            9257,
+            10046
+          ],
+          "total_length": 21153,
+          "total_area": 211975,
+          "new_area": 118817,
+          "new_parts": 70,
+          "plant_length": [
+            3725,
+            3999,
+            1474,
+            3544,
+            2106,
+            3248
+          ],
+          "longest": [
+            2026,
+            1950,
+            862,
+            1912,
+            1607,
+            520
+          ],
+          "colored_samples": "3acd63943430e3b2218b508a5a986a2d750ef3397e88df8603eb4b978064a8c5"
+        }
+      ],
+      "statistics": [
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 1,
+          "plant_center_x": 1458,
+          "plant_center_y": 61,
+          "plant_green_area": 4034,
+          "plant_root_count": 11,
+          "plant_total_length": 1186,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1060,
+          "plant_main_root_length": 978,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 2,
+          "plant_center_x": 1843,
+          "plant_center_y": 112,
+          "plant_green_area": 6962,
+          "plant_root_count": 23,
+          "plant_total_length": 1710,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1194,
+          "plant_main_root_length": 1170,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 3,
+          "plant_center_x": 2280,
+          "plant_center_y": 49,
+          "plant_green_area": 6676,
+          "plant_root_count": 9,
+          "plant_total_length": 1033,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1014,
+          "plant_main_root_length": 860,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 4,
+          "plant_center_x": 2726,
+          "plant_center_y": 152,
+          "plant_green_area": 6013,
+          "plant_root_count": 14,
+          "plant_total_length": 1787,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1196,
+          "plant_main_root_length": 1178,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 5,
+          "plant_center_x": 3112,
+          "plant_center_y": 104,
+          "plant_green_area": 4298,
+          "plant_root_count": 9,
+          "plant_total_length": 1041,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 990,
+          "plant_main_root_length": 908,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 6,
+          "plant_center_x": 3552,
+          "plant_center_y": 168,
+          "plant_green_area": 4154,
+          "plant_root_count": 21,
+          "plant_total_length": 2526,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 2080,
+          "plant_main_root_length": 1198,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 1,
+          "plant_center_x": 1458,
+          "plant_center_y": 61,
+          "plant_green_area": 6297,
+          "plant_root_count": 18,
+          "plant_total_length": 2194,
+          "plant_total_length_RGR": 0.001680710549938536,
+          "plant_main_root_depth": 2197,
+          "plant_main_root_length": 676,
+          "plant_main_root_length_RGR": -0.0010090617322181788
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 2,
+          "plant_center_x": 1843,
+          "plant_center_y": 112,
+          "plant_green_area": 9143,
+          "plant_root_count": 32,
+          "plant_total_length": 2444,
+          "plant_total_length_RGR": 0.0009757996469802739,
+          "plant_main_root_depth": 1465,
+          "plant_main_root_length": 1381,
+          "plant_main_root_length_RGR": 0.0004530167366598094
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 3,
+          "plant_center_x": 2280,
+          "plant_center_y": 49,
+          "plant_green_area": 8250,
+          "plant_root_count": 11,
+          "plant_total_length": 1169,
+          "plant_total_length_RGR": 0.0003379275747334137,
+          "plant_main_root_depth": 1016,
+          "plant_main_root_length": 888,
+          "plant_main_root_length_RGR": 8.753921788146683e-05
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 4,
+          "plant_center_x": 2726,
+          "plant_center_y": 152,
+          "plant_green_area": 8948,
+          "plant_root_count": 17,
+          "plant_total_length": 2427,
+          "plant_total_length_RGR": 0.0008363871326971957,
+          "plant_main_root_depth": 1470,
+          "plant_main_root_length": 1445,
+          "plant_main_root_length_RGR": 0.0005581727768715871
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 5,
+          "plant_center_x": 3112,
+          "plant_center_y": 104,
+          "plant_green_area": 5896,
+          "plant_root_count": 10,
+          "plant_total_length": 1404,
+          "plant_total_length_RGR": 0.0008173320108491446,
+          "plant_main_root_depth": 1224,
+          "plant_main_root_length": 1142,
+          "plant_main_root_length_RGR": 0.0006264809060509896
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 6,
+          "plant_center_x": 3552,
+          "plant_center_y": 168,
+          "plant_green_area": 5344,
+          "plant_root_count": 21,
+          "plant_total_length": 3205,
+          "plant_total_length_RGR": 0.0006504783236183985,
+          "plant_main_root_depth": 2087,
+          "plant_main_root_length": 1774,
+          "plant_main_root_length_RGR": 0.0010726321972517213
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 1,
+          "plant_center_x": 1458,
+          "plant_center_y": 61,
+          "plant_green_area": 9889,
+          "plant_root_count": 21,
+          "plant_total_length": 2758,
+          "plant_total_length_RGR": 0.0006267929247070464,
+          "plant_main_root_depth": 2198,
+          "plant_main_root_length": 765,
+          "plant_main_root_length_RGR": 0.000338856870639922
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 2,
+          "plant_center_x": 1843,
+          "plant_center_y": 112,
+          "plant_green_area": 11002,
+          "plant_root_count": 47,
+          "plant_total_length": 3335,
+          "plant_total_length_RGR": 0.0008516072275568175,
+          "plant_main_root_depth": 1741,
+          "plant_main_root_length": 1644,
+          "plant_main_root_length_RGR": 0.00047760115673104803
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 3,
+          "plant_center_x": 2280,
+          "plant_center_y": 49,
+          "plant_green_area": 8562,
+          "plant_root_count": 15,
+          "plant_total_length": 1294,
+          "plant_total_length_RGR": 0.0002783274344898012,
+          "plant_main_root_depth": 1009,
+          "plant_main_root_length": 872,
+          "plant_main_root_length_RGR": -4.981457283065878e-05
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 4,
+          "plant_center_x": 2726,
+          "plant_center_y": 152,
+          "plant_green_area": 10360,
+          "plant_root_count": 32,
+          "plant_total_length": 3148,
+          "plant_total_length_RGR": 0.0007126339830429935,
+          "plant_main_root_depth": 1739,
+          "plant_main_root_length": 1705,
+          "plant_main_root_length_RGR": 0.0004533035319755743
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 5,
+          "plant_center_x": 3112,
+          "plant_center_y": 104,
+          "plant_green_area": 6707,
+          "plant_root_count": 15,
+          "plant_total_length": 1759,
+          "plant_total_length_RGR": 0.00061758947986795,
+          "plant_main_root_depth": 1463,
+          "plant_main_root_length": 1379,
+          "plant_main_root_length_RGR": 0.0005166506508968385
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 6,
+          "plant_center_x": 3552,
+          "plant_center_y": 168,
+          "plant_green_area": 6977,
+          "plant_root_count": 29,
+          "plant_total_length": 3070,
+          "plant_total_length_RGR": -0.00011790281855760756,
+          "plant_main_root_depth": 2088,
+          "plant_main_root_length": 995,
+          "plant_main_root_length_RGR": -0.0015842450019477585
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 1,
+          "plant_center_x": 1458,
+          "plant_center_y": 61,
+          "plant_green_area": 12135,
+          "plant_root_count": 21,
+          "plant_total_length": 3725,
+          "plant_total_length_RGR": 0.0008234549930422246,
+          "plant_main_root_depth": 2190,
+          "plant_main_root_length": 2026,
+          "plant_main_root_length_RGR": 0.0026683365780331312
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 2,
+          "plant_center_x": 1843,
+          "plant_center_y": 112,
+          "plant_green_area": 13352,
+          "plant_root_count": 40,
+          "plant_total_length": 3999,
+          "plant_total_length_RGR": 0.000497456576704368,
+          "plant_main_root_depth": 2003,
+          "plant_main_root_length": 1950,
+          "plant_main_root_length_RGR": 0.00046766322175799375
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 3,
+          "plant_center_x": 2280,
+          "plant_center_y": 49,
+          "plant_green_area": 13148,
+          "plant_root_count": 17,
+          "plant_total_length": 1474,
+          "plant_total_length_RGR": 0.0003568262950368119,
+          "plant_main_root_depth": 1000,
+          "plant_main_root_length": 862,
+          "plant_main_root_length_RGR": -3.160041985010092e-05
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 4,
+          "plant_center_x": 2726,
+          "plant_center_y": 152,
+          "plant_green_area": 15570,
+          "plant_root_count": 30,
+          "plant_total_length": 3544,
+          "plant_total_length_RGR": 0.00032462658133610394,
+          "plant_main_root_depth": 1953,
+          "plant_main_root_length": 1912,
+          "plant_main_root_length_RGR": 0.0003139306955992572
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 5,
+          "plant_center_x": 3112,
+          "plant_center_y": 104,
+          "plant_green_area": 9257,
+          "plant_root_count": 24,
+          "plant_total_length": 2106,
+          "plant_total_length_RGR": 0.0004932738300174324,
+          "plant_main_root_depth": 1687,
+          "plant_main_root_length": 1607,
+          "plant_main_root_length_RGR": 0.0004192068162855081
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 6,
+          "plant_center_x": 3552,
+          "plant_center_y": 168,
+          "plant_green_area": 10046,
+          "plant_root_count": 38,
+          "plant_total_length": 3248,
+          "plant_total_length_RGR": 0.00015441605671321707,
+          "plant_main_root_depth": 2092,
+          "plant_main_root_length": 520,
+          "plant_main_root_length_RGR": -0.001777846371460602
+        }
+      ]
+    }
+  },
+  {
+    "gpu_backend_active": true,
+    "group": "RT_26_2-1",
+    "repeat": 1,
+    "timings": {
+      "preprocess": 2.5341864400106715,
+      "registration": 0.5708054090064252,
+      "preprocess_cache": 0.32681104900257196,
+      "track": 2.214337012002943,
+      "track_cache": 0.6854055629955838
+    },
+    "cache_bytes": {
+      "preprocess_cache": 281757513,
+      "track_cache": 428759819
+    },
+    "outputs": {
+      "images": [
+        {
+          "image": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "aafa183d9c625f784f9132334031f169b9adf693654a994a356d033015f8571d"
+          },
+          "process": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "f23c6077f99627c5da7bc86ae9e45b4d9dff20174a0bcf842058f32a40e1e4bd"
+          },
+          "canny": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "1acf840c23619c637bb28b669ae924e452bbeaf305e15b712eac7d4504a2811e"
+          },
+          "diff": null,
+          "image_annotated": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "7c8e4e5560294af1b1a93f558625edd32b073d384a04ba1c244aa89b3ea9a681"
+          },
+          "positions_x": [
+            1216,
+            1544,
+            2038,
+            2392,
+            2904,
+            3427
+          ],
+          "positions_y": [
+            70,
+            76,
+            95,
+            86,
+            56,
+            71
+          ],
+          "green_areas": [
+            6149,
+            7245,
+            5703,
+            5910,
+            7043,
+            6981
+          ],
+          "total_length": 14844,
+          "total_area": 168945,
+          "new_area": null,
+          "new_parts": null,
+          "plant_length": [
+            3079,
+            1555,
+            1695,
+            1297,
+            1840,
+            3201
+          ],
+          "longest": [
+            164,
+            1179,
+            1153,
+            1159,
+            1159,
+            2022
+          ],
+          "colored_samples": "8c4450a232c3a080f200d0d20c7e719284aea375922b458f29cbec2dcb3039d4"
+        },
+        {
+          "image": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "f12cc51c5f03096526ffb5766724c43d39e123e7fe4f2467130a27e59339c3a8"
+          },
+          "process": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "1cfb3bc5075c0b54dd30b693d9868f52d3f277c2c647c1ffe6549a05fff5486a"
+          },
+          "canny": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "b07cc8341150683bacdb09dd3f24fedd1e7dac96d15e295825b25590cabee377"
+          },
+          "diff": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "9cf6c0b8e29f9028cc306c623095c1bc4e27ef13e315ed41e72fe8219dfddef6"
+          },
+          "image_annotated": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "3b823a0bdd7057f2f02faaacd98e79368c6af1306d7a1073887e79d3bee044fa"
+          },
+          "positions_x": [
+            1206,
+            1536,
+            2011,
+            2395,
+            2910,
+            3418
+          ],
+          "positions_y": [
+            70,
+            72,
+            124,
+            91,
+            90,
+            106
+          ],
+          "green_areas": [
+            9370,
+            10464,
+            7659,
+            8593,
+            9226,
+            8357
+          ],
+          "total_length": 18392,
+          "total_area": 163618,
+          "new_area": 113810,
+          "new_parts": 69,
+          "plant_length": [
+            4381,
+            2067,
+            2345,
+            1731,
+            2397,
+            1722
+          ],
+          "longest": [
+            1814,
+            1448,
+            1419,
+            1360,
+            1403,
+            488
+          ],
+          "colored_samples": "92853ccc453b97949b182d392f6fcc59896e49a581a0e604cb4700b842595219"
+        },
+        {
+          "image": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "350e84abfccd9d98008bf36513e9b9e9394dd42e06dd4dbe3d9b76b6b0d15983"
+          },
+          "process": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "c82374f875ab928bb728b00c254b55a56e7b9c052c2072a5235235e5c37e65e0"
+          },
+          "canny": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "95204ac3aa142a3740d7a52e3b244f02b7100e3d25807f8b99ad19954126ce71"
+          },
+          "diff": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "68b1d8a343504393b1fca5064d9d258ae768fa57efbdbd8d3ee260e38be26f72"
+          },
+          "image_annotated": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "c837bc34c1f5aec98062dad1812e68642fe4d4e298a844b4770757ac1676026e"
+          },
+          "positions_x": [
+            1205,
+            1536,
+            2029,
+            2407,
+            2923,
+            3418
+          ],
+          "positions_y": [
+            77,
+            82,
+            157,
+            125,
+            120,
+            127
+          ],
+          "green_areas": [
+            11248,
+            12863,
+            11091,
+            10409,
+            12111,
+            12057
+          ],
+          "total_length": 20794,
+          "total_area": 196620,
+          "new_area": 117369,
+          "new_parts": 68,
+          "plant_length": [
+            4633,
+            2838,
+            3132,
+            2151,
+            2992,
+            2144
+          ],
+          "longest": [
+            1677,
+            1615,
+            1609,
+            1655,
+            1672,
+            1744
+          ],
+          "colored_samples": "ddd7eb8987241dc94894d4402cb052be470b152bca73f55e61e18adabba994f2"
+        },
+        {
+          "image": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "286fc6945cfb44fe71e48c3c2b167112f3ba0a693a57cc8bf9b3a89d67232414"
+          },
+          "process": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "b9964e4713fb9f8a7138bd6ded5350daf6460975bf247934c79692921568590e"
+          },
+          "canny": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "3e868fcab9ac0265ca3c3d73fca7176b1c68bcf5309b0f754fe173301251d7a3"
+          },
+          "diff": {
+            "shape": [
+              2172,
+              5640
+            ],
+            "sha256": "5740b03a358651f1fe3d7eed4f6f5f3c40f1998acb65b00f44853e092cdf7e7e"
+          },
+          "image_annotated": {
+            "shape": [
+              2172,
+              5640,
+              3
+            ],
+            "sha256": "599927beb856b1dce7611d38e6ef0bcf76345abab020d550ac47c2a1f14ab325"
+          },
+          "positions_x": [
+            1216,
+            1539,
+            2033,
+            2413,
+            2937,
+            3422
+          ],
+          "positions_y": [
+            138,
+            96,
+            172,
+            146,
+            110,
+            122
+          ],
+          "green_areas": [
+            13195,
+            16221,
+            14273,
+            14603,
+            14407,
+            15062
+          ],
+          "total_length": 23818,
+          "total_area": 199829,
+          "new_area": 93159,
+          "new_parts": 100,
+          "plant_length": [
+            4466,
+            3562,
+            3880,
+            2562,
+            3903,
+            2484
+          ],
+          "longest": [
+            1955,
+            1874,
+            1828,
+            1917,
+            1906,
+            1765
+          ],
+          "colored_samples": "4bdd13187259a48aabde0601b7d4b9c200c007485d097dfae2fc37869749ebd9"
+        }
+      ],
+      "statistics": [
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 1,
+          "plant_center_x": 1211,
+          "plant_center_y": 74,
+          "plant_green_area": 6149,
+          "plant_root_count": 26,
+          "plant_total_length": 3079,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 2083,
+          "plant_main_root_length": 164,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 2,
+          "plant_center_x": 1538,
+          "plant_center_y": 79,
+          "plant_green_area": 7245,
+          "plant_root_count": 10,
+          "plant_total_length": 1555,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1241,
+          "plant_main_root_length": 1179,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 3,
+          "plant_center_x": 2031,
+          "plant_center_y": 140,
+          "plant_green_area": 5703,
+          "plant_root_count": 14,
+          "plant_total_length": 1695,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1178,
+          "plant_main_root_length": 1153,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 4,
+          "plant_center_x": 2401,
+          "plant_center_y": 108,
+          "plant_green_area": 5910,
+          "plant_root_count": 6,
+          "plant_total_length": 1297,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1199,
+          "plant_main_root_length": 1159,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 5,
+          "plant_center_x": 2916,
+          "plant_center_y": 100,
+          "plant_green_area": 7043,
+          "plant_root_count": 14,
+          "plant_total_length": 1840,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1182,
+          "plant_main_root_length": 1159,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "image_total_area": 168945,
+          "image_total_length": 14844,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 6,
+          "plant_center_x": 3420,
+          "plant_center_y": 114,
+          "plant_green_area": 6981,
+          "plant_root_count": 16,
+          "plant_total_length": 3201,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 2042,
+          "plant_main_root_length": 2022,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 1,
+          "plant_center_x": 1211,
+          "plant_center_y": 74,
+          "plant_green_area": 9370,
+          "plant_root_count": 63,
+          "plant_total_length": 4381,
+          "plant_total_length_RGR": 0.0009635850816650217,
+          "plant_main_root_depth": 2095,
+          "plant_main_root_length": 1814,
+          "plant_main_root_length_RGR": 0.006566730062434106
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 2,
+          "plant_center_x": 1538,
+          "plant_center_y": 79,
+          "plant_green_area": 10464,
+          "plant_root_count": 17,
+          "plant_total_length": 2067,
+          "plant_total_length_RGR": 0.0007776577460886158,
+          "plant_main_root_depth": 1516,
+          "plant_main_root_length": 1448,
+          "plant_main_root_length_RGR": 0.0005615209628641809
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 3,
+          "plant_center_x": 2031,
+          "plant_center_y": 140,
+          "plant_green_area": 7659,
+          "plant_root_count": 20,
+          "plant_total_length": 2345,
+          "plant_total_length_RGR": 0.0008868925165733039,
+          "plant_main_root_depth": 1439,
+          "plant_main_root_length": 1419,
+          "plant_main_root_length_RGR": 0.0005671725598114308
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 4,
+          "plant_center_x": 2401,
+          "plant_center_y": 108,
+          "plant_green_area": 8593,
+          "plant_root_count": 10,
+          "plant_total_length": 1731,
+          "plant_total_length_RGR": 0.0007886485542616528,
+          "plant_main_root_depth": 1469,
+          "plant_main_root_length": 1360,
+          "plant_main_root_length_RGR": 0.0004369593863124201
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 5,
+          "plant_center_x": 2916,
+          "plant_center_y": 100,
+          "plant_green_area": 9226,
+          "plant_root_count": 19,
+          "plant_total_length": 2397,
+          "plant_total_length_RGR": 0.0007225474968069774,
+          "plant_main_root_depth": 1443,
+          "plant_main_root_length": 1403,
+          "plant_main_root_length_RGR": 0.0005220088436139602
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "image_total_area": 163618,
+          "image_total_length": 18392,
+          "image_new_area": 113810,
+          "image_new_parts": 69,
+          "image_area_change": 70.51821598745154,
+          "plant_id": 6,
+          "plant_center_x": 3420,
+          "plant_center_y": 114,
+          "plant_green_area": 8357,
+          "plant_root_count": 14,
+          "plant_total_length": 1722,
+          "plant_total_length_RGR": -0.001693925833284663,
+          "plant_main_root_depth": 1833,
+          "plant_main_root_length": 488,
+          "plant_main_root_length_RGR": -0.0038839535347739602
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 1,
+          "plant_center_x": 1211,
+          "plant_center_y": 74,
+          "plant_green_area": 11248,
+          "plant_root_count": 47,
+          "plant_total_length": 4633,
+          "plant_total_length_RGR": 0.00015322629480205482,
+          "plant_main_root_depth": 2051,
+          "plant_main_root_length": 1677,
+          "plant_main_root_length_RGR": -0.0002151448461695136
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 2,
+          "plant_center_x": 1538,
+          "plant_center_y": 79,
+          "plant_green_area": 12863,
+          "plant_root_count": 34,
+          "plant_total_length": 2838,
+          "plant_total_length_RGR": 0.0008684967069540279,
+          "plant_main_root_depth": 1769,
+          "plant_main_root_length": 1615,
+          "plant_main_root_length_RGR": 0.00029904565126327547
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 3,
+          "plant_center_x": 2031,
+          "plant_center_y": 140,
+          "plant_green_area": 11091,
+          "plant_root_count": 27,
+          "plant_total_length": 3132,
+          "plant_total_length_RGR": 0.0007928393869323693,
+          "plant_main_root_depth": 1721,
+          "plant_main_root_length": 1609,
+          "plant_main_root_length_RGR": 0.00034427525981463265
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 4,
+          "plant_center_x": 2401,
+          "plant_center_y": 108,
+          "plant_green_area": 10409,
+          "plant_root_count": 11,
+          "plant_total_length": 2151,
+          "plant_total_length_RGR": 0.0005951604769630719,
+          "plant_main_root_depth": 1713,
+          "plant_main_root_length": 1655,
+          "plant_main_root_length_RGR": 0.0005378529015919617
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 5,
+          "plant_center_x": 2916,
+          "plant_center_y": 100,
+          "plant_green_area": 12111,
+          "plant_root_count": 25,
+          "plant_total_length": 2992,
+          "plant_total_length_RGR": 0.0006074633004383094,
+          "plant_main_root_depth": 1716,
+          "plant_main_root_length": 1672,
+          "plant_main_root_length_RGR": 0.0004805690781977701
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "image_total_area": 196620,
+          "image_total_length": 20794,
+          "image_new_area": 117369,
+          "image_new_parts": 68,
+          "image_area_change": 51.56339767018299,
+          "plant_id": 6,
+          "plant_center_x": 3420,
+          "plant_center_y": 114,
+          "plant_green_area": 12057,
+          "plant_root_count": 19,
+          "plant_total_length": 2144,
+          "plant_total_length_RGR": 0.0006005118827479912,
+          "plant_main_root_depth": 1825,
+          "plant_main_root_length": 1744,
+          "plant_main_root_length_RGR": 0.003489373146892541
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 1,
+          "plant_center_x": 1211,
+          "plant_center_y": 74,
+          "plant_green_area": 13195,
+          "plant_root_count": 52,
+          "plant_total_length": 4466,
+          "plant_total_length_RGR": -0.0001005793233330015,
+          "plant_main_root_depth": 2096,
+          "plant_main_root_length": 1955,
+          "plant_main_root_length_RGR": 0.00042022934409933485
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 2,
+          "plant_center_x": 1538,
+          "plant_center_y": 79,
+          "plant_green_area": 16221,
+          "plant_root_count": 40,
+          "plant_total_length": 3562,
+          "plant_total_length_RGR": 0.0006225276880263552,
+          "plant_main_root_depth": 2013,
+          "plant_main_root_length": 1874,
+          "plant_main_root_length_RGR": 0.0004075074716208507
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 3,
+          "plant_center_x": 2031,
+          "plant_center_y": 140,
+          "plant_green_area": 14273,
+          "plant_root_count": 30,
+          "plant_total_length": 3880,
+          "plant_total_length_RGR": 0.000586748973990751,
+          "plant_main_root_depth": 1985,
+          "plant_main_root_length": 1828,
+          "plant_main_root_length_RGR": 0.0003496153562238671
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 4,
+          "plant_center_x": 2401,
+          "plant_center_y": 108,
+          "plant_green_area": 14603,
+          "plant_root_count": 20,
+          "plant_total_length": 2562,
+          "plant_total_length_RGR": 0.00047905576216150463,
+          "plant_main_root_depth": 1963,
+          "plant_main_root_length": 1917,
+          "plant_main_root_length_RGR": 0.0004026313842040581
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 5,
+          "plant_center_x": 2916,
+          "plant_center_y": 100,
+          "plant_green_area": 14407,
+          "plant_root_count": 34,
+          "plant_total_length": 3903,
+          "plant_total_length_RGR": 0.0007282285700993079,
+          "plant_main_root_depth": 1966,
+          "plant_main_root_length": 1906,
+          "plant_main_root_length_RGR": 0.00035886654950547964
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "image_total_area": 199829,
+          "image_total_length": 23818,
+          "image_new_area": 93159,
+          "image_new_parts": 100,
+          "image_area_change": 45.74814362730139,
+          "plant_id": 6,
+          "plant_center_x": 3420,
+          "plant_center_y": 114,
+          "plant_green_area": 15062,
+          "plant_root_count": 21,
+          "plant_total_length": 2484,
+          "plant_total_length_RGR": 0.00040327923524021065,
+          "plant_main_root_depth": 1902,
+          "plant_main_root_length": 1765,
+          "plant_main_root_length_RGR": 3.279278054375891e-05
+        }
+      ]
+    }
+  },
+  {
+    "gpu_backend_active": true,
+    "group": "RT_26_2-40",
+    "repeat": 1,
+    "timings": {
+      "preprocess": 2.397675847998471,
+      "registration": 0.5365443850023439,
+      "preprocess_cache": 0.23045371699845418,
+      "track": 3.003474144003121,
+      "track_cache": 0.6573270599910757
+    },
+    "cache_bytes": {
+      "preprocess_cache": 293302590,
+      "track_cache": 446328406
+    },
+    "outputs": {
+      "images": [
+        {
+          "image": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "273b097a70dcbaab70f472c591dfa3a9e23625efa05e908e3567d690c7acb79a"
+          },
+          "process": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "690aa567d7d81369aa6ae4f72a9f805dfa39d210afe04d93b44d265f53a6860d"
+          },
+          "canny": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "b3300a44af311d7440dacd713db158388c5456809385d00fe6d64178f37f9fcb"
+          },
+          "diff": null,
+          "image_annotated": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "9153fb8350e28a8a014c66693503a332f5eee89a0f0fcd414fc93ccf38530527"
+          },
+          "positions_x": [
+            1460,
+            1842,
+            2270,
+            2729,
+            3102,
+            3578
+          ],
+          "positions_y": [
+            64,
+            102,
+            42,
+            123,
+            94,
+            137
+          ],
+          "green_areas": [
+            4034,
+            6962,
+            6676,
+            6013,
+            4298,
+            4154
+          ],
+          "total_length": 11905,
+          "total_area": 132934,
+          "new_area": null,
+          "new_parts": null,
+          "plant_length": [
+            1186,
+            1710,
+            1033,
+            1787,
+            1041,
+            2526
+          ],
+          "longest": [
+            978,
+            1170,
+            860,
+            1178,
+            908,
+            1198
+          ],
+          "colored_samples": "895bd7df66370305e59659e5eef79d1e381a63495347dc214ccb745449630b8f"
+        },
+        {
+          "image": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "6556905e6024ea3a70e8021e63ddb56da8f44f0820a8f601e149b6b9211ac3ab"
+          },
+          "process": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "fe2163dd23653acfe76aa03d7943a49e910ff4ebf6486b6c0b3893dd84f23994"
+          },
+          "canny": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "9c8cde1afb440c9c5f8d1edf3a68801acdc28818cc950bf9d08b1732b10bc2b0"
+          },
+          "diff": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "8498adbda82067f76fe86939af922504f892a8a3968c0d9314b6f2189420def3"
+          },
+          "image_annotated": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "8eb76104da3453334602f01b77f4e84208c65839cff5ea5102aa6232a9451382"
+          },
+          "positions_x": [
+            1468,
+            1839,
+            2279,
+            2731,
+            3109,
+            3555
+          ],
+          "positions_y": [
+            74,
+            103,
+            47,
+            142,
+            115,
+            161
+          ],
+          "green_areas": [
+            6297,
+            9143,
+            8250,
+            8948,
+            5896,
+            5344
+          ],
+          "total_length": 14756,
+          "total_area": 129138,
+          "new_area": 77974,
+          "new_parts": 61,
+          "plant_length": [
+            2194,
+            2444,
+            1169,
+            2427,
+            1404,
+            3205
+          ],
+          "longest": [
+            676,
+            1381,
+            888,
+            1445,
+            1142,
+            1774
+          ],
+          "colored_samples": "98b342b862eed19432b0854530f7745530fdf8777061e2a33f31fd741f795b8e"
+        },
+        {
+          "image": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "6cf569d349890eaba4a80adeb30c418d2f7c1648b013c43690fa4b02da0a73d9"
+          },
+          "process": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "f129209f692e96b4268118ffa12100f10ae2810c2e3c1e74726459ace5916bd4"
+          },
+          "canny": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "68cbf966c187b6440555b81abe02697d2c2a194ff076cdd8c97684f71d75e826"
+          },
+          "diff": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "f4fd25a8ac0117c3644ff81e2787c56f4710acccbf534837379e0edec960b8b5"
+          },
+          "image_annotated": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "63bd2ab0786bbb2e926563b0b0c10596a723c4323f14cfdcad51385fe11d816b"
+          },
+          "positions_x": [
+            1454,
+            1855,
+            2281,
+            2722,
+            3116,
+            3549
+          ],
+          "positions_y": [
+            58,
+            121,
+            51,
+            161,
+            119,
+            175
+          ],
+          "green_areas": [
+            9889,
+            11002,
+            8562,
+            10360,
+            6707,
+            6977
+          ],
+          "total_length": 18479,
+          "total_area": 179600,
+          "new_area": 86981,
+          "new_parts": 74,
+          "plant_length": [
+            2758,
+            3335,
+            1294,
+            3148,
+            1759,
+            3070
+          ],
+          "longest": [
+            765,
+            1644,
+            872,
+            1705,
+            1379,
+            995
+          ],
+          "colored_samples": "d565cfb738e7762a0d13ea0af6c88131c063263eb0c7138c971abb852e400502"
+        },
+        {
+          "image": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "5f5c636e676a5c5fc96b8c3aa18f41254e5d5960f3beb0cd135dde427d2698e1"
+          },
+          "process": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "28458bf42dc598392d52597582705a3d01be8803098936366a8b09e2516064f2"
+          },
+          "canny": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "ab5d29be2d4c03062ab9e97e49773f2f5d444e2cf0c8672727b8333b1fe14b4b"
+          },
+          "diff": {
+            "shape": [
+              2261,
+              5640
+            ],
+            "sha256": "e12ecec342c708b6fef30a31019c63d728e238589739a1758a64cb45d754c893"
+          },
+          "image_annotated": {
+            "shape": [
+              2261,
+              5640,
+              3
+            ],
+            "sha256": "e0eaf265fc410958c26ecd74573784463f1389a18c8e3b00287200e2553c5527"
+          },
+          "positions_x": [
+            1455,
+            1844,
+            2301,
+            2701,
+            3119,
+            3526
+          ],
+          "positions_y": [
+            56,
+            146,
+            76,
+            166,
+            92,
+            185
+          ],
+          "green_areas": [
+            12135,
+            13352,
+            13148,
+            15570,
+            9257,
+            10046
+          ],
+          "total_length": 21153,
+          "total_area": 211975,
+          "new_area": 118817,
+          "new_parts": 70,
+          "plant_length": [
+            3725,
+            3999,
+            1474,
+            3544,
+            2106,
+            3248
+          ],
+          "longest": [
+            2026,
+            1950,
+            862,
+            1912,
+            1607,
+            520
+          ],
+          "colored_samples": "3acd63943430e3b2218b508a5a986a2d750ef3397e88df8603eb4b978064a8c5"
+        }
+      ],
+      "statistics": [
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 1,
+          "plant_center_x": 1458,
+          "plant_center_y": 61,
+          "plant_green_area": 4034,
+          "plant_root_count": 11,
+          "plant_total_length": 1186,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1060,
+          "plant_main_root_length": 978,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 2,
+          "plant_center_x": 1843,
+          "plant_center_y": 112,
+          "plant_green_area": 6962,
+          "plant_root_count": 23,
+          "plant_total_length": 1710,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1194,
+          "plant_main_root_length": 1170,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 3,
+          "plant_center_x": 2280,
+          "plant_center_y": 49,
+          "plant_green_area": 6676,
+          "plant_root_count": 9,
+          "plant_total_length": 1033,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1014,
+          "plant_main_root_length": 860,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 4,
+          "plant_center_x": 2726,
+          "plant_center_y": 152,
+          "plant_green_area": 6013,
+          "plant_root_count": 14,
+          "plant_total_length": 1787,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1196,
+          "plant_main_root_length": 1178,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 5,
+          "plant_center_x": 3112,
+          "plant_center_y": 104,
+          "plant_green_area": 4298,
+          "plant_root_count": 9,
+          "plant_total_length": 1041,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 990,
+          "plant_main_root_length": 908,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2027-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+          "image_total_area": 132934,
+          "image_total_length": 11905,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 6,
+          "plant_center_x": 3552,
+          "plant_center_y": 168,
+          "plant_green_area": 4154,
+          "plant_root_count": 21,
+          "plant_total_length": 2526,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 2080,
+          "plant_main_root_length": 1198,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 1,
+          "plant_center_x": 1458,
+          "plant_center_y": 61,
+          "plant_green_area": 6297,
+          "plant_root_count": 18,
+          "plant_total_length": 2194,
+          "plant_total_length_RGR": 0.001680710549938536,
+          "plant_main_root_depth": 2197,
+          "plant_main_root_length": 676,
+          "plant_main_root_length_RGR": -0.0010090617322181788
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 2,
+          "plant_center_x": 1843,
+          "plant_center_y": 112,
+          "plant_green_area": 9143,
+          "plant_root_count": 32,
+          "plant_total_length": 2444,
+          "plant_total_length_RGR": 0.0009757996469802739,
+          "plant_main_root_depth": 1465,
+          "plant_main_root_length": 1381,
+          "plant_main_root_length_RGR": 0.0004530167366598094
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 3,
+          "plant_center_x": 2280,
+          "plant_center_y": 49,
+          "plant_green_area": 8250,
+          "plant_root_count": 11,
+          "plant_total_length": 1169,
+          "plant_total_length_RGR": 0.0003379275747334137,
+          "plant_main_root_depth": 1016,
+          "plant_main_root_length": 888,
+          "plant_main_root_length_RGR": 8.753921788146683e-05
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 4,
+          "plant_center_x": 2726,
+          "plant_center_y": 152,
+          "plant_green_area": 8948,
+          "plant_root_count": 17,
+          "plant_total_length": 2427,
+          "plant_total_length_RGR": 0.0008363871326971957,
+          "plant_main_root_depth": 1470,
+          "plant_main_root_length": 1445,
+          "plant_main_root_length_RGR": 0.0005581727768715871
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 5,
+          "plant_center_x": 3112,
+          "plant_center_y": 104,
+          "plant_green_area": 5896,
+          "plant_root_count": 10,
+          "plant_total_length": 1404,
+          "plant_total_length_RGR": 0.0008173320108491446,
+          "plant_main_root_depth": 1224,
+          "plant_main_root_length": 1142,
+          "plant_main_root_length_RGR": 0.0006264809060509896
+        },
+        {
+          "image_date": "2028-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+          "image_total_area": 129138,
+          "image_total_length": 14756,
+          "image_new_area": 77974,
+          "image_new_parts": 61,
+          "image_area_change": 61.51172762423458,
+          "plant_id": 6,
+          "plant_center_x": 3552,
+          "plant_center_y": 168,
+          "plant_green_area": 5344,
+          "plant_root_count": 21,
+          "plant_total_length": 3205,
+          "plant_total_length_RGR": 0.0006504783236183985,
+          "plant_main_root_depth": 2087,
+          "plant_main_root_length": 1774,
+          "plant_main_root_length_RGR": 0.0010726321972517213
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 1,
+          "plant_center_x": 1458,
+          "plant_center_y": 61,
+          "plant_green_area": 9889,
+          "plant_root_count": 21,
+          "plant_total_length": 2758,
+          "plant_total_length_RGR": 0.0006267929247070464,
+          "plant_main_root_depth": 2198,
+          "plant_main_root_length": 765,
+          "plant_main_root_length_RGR": 0.000338856870639922
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 2,
+          "plant_center_x": 1843,
+          "plant_center_y": 112,
+          "plant_green_area": 11002,
+          "plant_root_count": 47,
+          "plant_total_length": 3335,
+          "plant_total_length_RGR": 0.0008516072275568175,
+          "plant_main_root_depth": 1741,
+          "plant_main_root_length": 1644,
+          "plant_main_root_length_RGR": 0.00047760115673104803
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 3,
+          "plant_center_x": 2280,
+          "plant_center_y": 49,
+          "plant_green_area": 8562,
+          "plant_root_count": 15,
+          "plant_total_length": 1294,
+          "plant_total_length_RGR": 0.0002783274344898012,
+          "plant_main_root_depth": 1009,
+          "plant_main_root_length": 872,
+          "plant_main_root_length_RGR": -4.981457283065878e-05
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 4,
+          "plant_center_x": 2726,
+          "plant_center_y": 152,
+          "plant_green_area": 10360,
+          "plant_root_count": 32,
+          "plant_total_length": 3148,
+          "plant_total_length_RGR": 0.0007126339830429935,
+          "plant_main_root_depth": 1739,
+          "plant_main_root_length": 1705,
+          "plant_main_root_length_RGR": 0.0004533035319755743
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 5,
+          "plant_center_x": 3112,
+          "plant_center_y": 104,
+          "plant_green_area": 6707,
+          "plant_root_count": 15,
+          "plant_total_length": 1759,
+          "plant_total_length_RGR": 0.00061758947986795,
+          "plant_main_root_depth": 1463,
+          "plant_main_root_length": 1379,
+          "plant_main_root_length_RGR": 0.0005166506508968385
+        },
+        {
+          "image_date": "2029-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+          "image_total_area": 179600,
+          "image_total_length": 18479,
+          "image_new_area": 86981,
+          "image_new_parts": 74,
+          "image_area_change": 28.279050318264183,
+          "plant_id": 6,
+          "plant_center_x": 3552,
+          "plant_center_y": 168,
+          "plant_green_area": 6977,
+          "plant_root_count": 29,
+          "plant_total_length": 3070,
+          "plant_total_length_RGR": -0.00011790281855760756,
+          "plant_main_root_depth": 2088,
+          "plant_main_root_length": 995,
+          "plant_main_root_length_RGR": -0.0015842450019477585
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 1,
+          "plant_center_x": 1458,
+          "plant_center_y": 61,
+          "plant_green_area": 12135,
+          "plant_root_count": 21,
+          "plant_total_length": 3725,
+          "plant_total_length_RGR": 0.0008234549930422246,
+          "plant_main_root_depth": 2190,
+          "plant_main_root_length": 2026,
+          "plant_main_root_length_RGR": 0.0026683365780331312
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 2,
+          "plant_center_x": 1843,
+          "plant_center_y": 112,
+          "plant_green_area": 13352,
+          "plant_root_count": 40,
+          "plant_total_length": 3999,
+          "plant_total_length_RGR": 0.000497456576704368,
+          "plant_main_root_depth": 2003,
+          "plant_main_root_length": 1950,
+          "plant_main_root_length_RGR": 0.00046766322175799375
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 3,
+          "plant_center_x": 2280,
+          "plant_center_y": 49,
+          "plant_green_area": 13148,
+          "plant_root_count": 17,
+          "plant_total_length": 1474,
+          "plant_total_length_RGR": 0.0003568262950368119,
+          "plant_main_root_depth": 1000,
+          "plant_main_root_length": 862,
+          "plant_main_root_length_RGR": -3.160041985010092e-05
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 4,
+          "plant_center_x": 2726,
+          "plant_center_y": 152,
+          "plant_green_area": 15570,
+          "plant_root_count": 30,
+          "plant_total_length": 3544,
+          "plant_total_length_RGR": 0.00032462658133610394,
+          "plant_main_root_depth": 1953,
+          "plant_main_root_length": 1912,
+          "plant_main_root_length_RGR": 0.0003139306955992572
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 5,
+          "plant_center_x": 3112,
+          "plant_center_y": 104,
+          "plant_green_area": 9257,
+          "plant_root_count": 24,
+          "plant_total_length": 2106,
+          "plant_total_length_RGR": 0.0004932738300174324,
+          "plant_main_root_depth": 1687,
+          "plant_main_root_length": 1607,
+          "plant_main_root_length_RGR": 0.0004192068162855081
+        },
+        {
+          "image_date": "2030-04-26T00:00:00",
+          "image_barcode": "RT_26_2-40",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+          "image_total_area": 211975,
+          "image_total_length": 21153,
+          "image_new_area": 118817,
+          "image_new_parts": 70,
+          "image_area_change": 48.130289532293986,
+          "plant_id": 6,
+          "plant_center_x": 3552,
+          "plant_center_y": 168,
+          "plant_green_area": 10046,
+          "plant_root_count": 38,
+          "plant_total_length": 3248,
+          "plant_total_length_RGR": 0.00015441605671321707,
+          "plant_main_root_depth": 2092,
+          "plant_main_root_length": 520,
+          "plant_main_root_length_RGR": -0.001777846371460602
+        }
+      ]
+    }
+  }
+]

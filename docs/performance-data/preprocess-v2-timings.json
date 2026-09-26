@@ -1,0 +1,98 @@
+[
+  {
+    "version": "before",
+    "pair": 0,
+    "group": "RT_26_2-1",
+    "timings": {
+      "preprocess": 6.206304359002388,
+      "registration": 2.9107911799947033,
+      "preprocess_cache": 0.27204792700649705,
+      "track": 2.003302397992229,
+      "track_cache": 0.6539443309884518
+    }
+  },
+  {
+    "version": "before",
+    "pair": 0,
+    "group": "RT_26_2-4",
+    "timings": {
+      "preprocess": 3.874827342995559,
+      "registration": 1.5765186810021987,
+      "preprocess_cache": 0.17074280900123995,
+      "track": 1.7044052139972337,
+      "track_cache": 0.5374727849994088
+    }
+  },
+  {
+    "version": "after",
+    "pair": 0,
+    "group": "RT_26_2-1",
+    "timings": {
+      "preprocess": 3.9380319900083123,
+      "registration": 2.210544130008202,
+      "preprocess_cache": 0.3198972079990199,
+      "track": 2.0474421290127793,
+      "track_cache": 0.4674105640006019
+    }
+  },
+  {
+    "version": "after",
+    "pair": 0,
+    "group": "RT_26_2-4",
+    "timings": {
+      "preprocess": 3.008950827002991,
+      "registration": 1.6100877299904823,
+      "preprocess_cache": 0.29266055100015365,
+      "track": 1.8947014059958747,
+      "track_cache": 0.695425615995191
+    }
+  },
+  {
+    "version": "before",
+    "pair": 1,
+    "group": "RT_26_2-1",
+    "timings": {
+      "preprocess": 3.5430467469996074,
+      "registration": 2.322780613001669,
+      "preprocess_cache": 0.23128824699961115,
+      "track": 1.8317217989970231,
+      "track_cache": 0.37589614999888
+    }
+  },
+  {
+    "version": "before",
+    "pair": 1,
+    "group": "RT_26_2-4",
+    "timings": {
+      "preprocess": 2.038248113996815,
+      "registration": 1.4497312260064064,
+      "preprocess_cache": 0.1565203450008994,
+      "track": 1.1850366410071729,
+      "track_cache": 0.34238376400026027
+    }
+  },
+  {
+    "version": "after",
+    "pair": 1,
+    "group": "RT_26_2-1",
+    "timings": {
+      "preprocess": 2.7331356150098145,
+      "registration": 1.8295694569969783,
+      "preprocess_cache": 0.388362846992095,
+      "track": 1.8199230220052414,
+      "track_cache": 0.4086545140016824
+    }
+  },
+  {
+    "version": "after",
+    "pair": 1,
+    "group": "RT_26_2-4",
+    "timings": {
+      "preprocess": 1.9241763930040179,
+      "registration": 1.0942740800091997,
+      "preprocess_cache": 0.20647385698975995,
+      "track": 1.0820566589973168,
+      "track_cache": 0.3217523759958567
+    }
+  }
+]

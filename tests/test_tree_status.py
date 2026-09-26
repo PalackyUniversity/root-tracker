@@ -105,7 +105,7 @@ class TreeStatusTests(unittest.TestCase):
         self.mark_preprocessed()
         self.series.pipeline_state.tracked = True
         pipeline = Mock()
-        pipeline.preprocess_image.side_effect = RuntimeError('failed')
+        pipeline.preprocess_series.side_effect = RuntimeError('failed')
         worker = ProcessWorker(pipeline, self.series, self.config)
         with self.assertRaises(RuntimeError):
             worker._run_preprocess()

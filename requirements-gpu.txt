@@ -1,0 +1,4 @@
+# Optional NVIDIA acceleration; base requirements remain CPU-only.
+# CUDA 13 compatible NVIDIA driver required. Installation documentation:
+# https://docs.cupy.dev/en/stable/install.html
+cupy-cuda13x[ctk]>=14.2,<15

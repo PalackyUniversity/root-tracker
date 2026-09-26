@@ -1,0 +1,1690 @@
+[
+  {
+    "group": "RT_26_2-1",
+    "repeat": 0,
+    "images": 4,
+    "elapsed_seconds": 3.166393720006454,
+    "barcodes": true,
+    "cpu_count": 8,
+    "opencv_threads": 8,
+    "load_average": [
+      5.40185546875,
+      2.9091796875,
+      3.107421875
+    ],
+    "image_shapes": [
+      [
+        2172,
+        5640,
+        3
+      ],
+      [
+        2172,
+        5640,
+        3
+      ],
+      [
+        2172,
+        5640,
+        3
+      ],
+      [
+        2172,
+        5640,
+        3
+      ]
+    ],
+    "timers": {
+      "refresh_status": {
+        "calls": 17,
+        "seconds": 0.214048018984613
+      },
+      "imread": {
+        "calls": 8,
+        "seconds": 0.679494096984854
+      },
+      "read_file": {
+        "calls": 4,
+        "seconds": 0.3648299880005652
+      },
+      "save_series": {
+        "calls": 2,
+        "seconds": 0.18094311299500987
+      },
+      "rotate": {
+        "calls": 4,
+        "seconds": 0.04234597898903303
+      },
+      "auto_crop_to_blue_background": {
+        "calls": 4,
+        "seconds": 0.28575700298824813
+      },
+      "find_green_contours": {
+        "calls": 4,
+        "seconds": 0.13034108700230718
+      },
+      "mask_green_in_image": {
+        "calls": 4,
+        "seconds": 0.03502247101278044
+      },
+      "cluster_plant_positions": {
+        "calls": 4,
+        "seconds": 0.0778908599895658
+      },
+      "medianBlur": {
+        "calls": 20,
+        "seconds": 2.844659252994461
+      },
+      "_median_background": {
+        "calls": 4,
+        "seconds": 0.7234699450054904
+      },
+      "remove_gradient": {
+        "calls": 4,
+        "seconds": 0.9000169419741724
+      },
+      "compute_canny_edges": {
+        "calls": 4,
+        "seconds": 0.04580107401125133
+      },
+      "preprocess_image": {
+        "calls": 4,
+        "seconds": 1.6255499099788722
+      },
+      "preprocess_series": {
+        "calls": 1,
+        "seconds": 1.7454404909949517
+      },
+      "copyMakeBorder": {
+        "calls": 9,
+        "seconds": 0.04514533199835569
+      },
+      "rfft2": {
+        "calls": 6,
+        "seconds": 0.34563162096310407
+      },
+      "irfft2": {
+        "calls": 3,
+        "seconds": 0.21458810300100595
+      },
+      "integral": {
+        "calls": 3,
+        "seconds": 0.035354223000467755
+      },
+      "_match_location": {
+        "calls": 3,
+        "seconds": 0.880879090007511
+      },
+      "align_to_template": {
+        "calls": 3,
+        "seconds": 0.9261474789964268
+      },
+      "register_series": {
+        "calls": 1,
+        "seconds": 0.9325627109938068
+      },
+      "set_image": {
+        "calls": 1,
+        "seconds": 0.01630102499620989
+      },
+      "_display_image": {
+        "calls": 1,
+        "seconds": 0.016319625996402465
+      }
+    },
+    "events": [
+      {
+        "name": "refresh_status",
+        "start": 0.0002022580010816455,
+        "seconds": 0.03374146900023334,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.03396705900377128,
+        "seconds": 0.006612621000385843,
+        "thread": 128409477812352
+      },
+      {
+        "name": "read_file",
+        "start": 0.041266603002441116,
+        "seconds": 0.0907398460112745,
+        "thread": 128407081830080
+      },
+      {
+        "name": "imread",
+        "start": 0.04129511000064667,
+        "seconds": 0.058753510005772114,
+        "thread": 128407081830080
+      },
+      {
+        "name": "read_file",
+        "start": 0.04148705300758593,
+        "seconds": 0.10478591600258369,
+        "thread": 128407073437376
+      },
+      {
+        "name": "imread",
+        "start": 0.04151322400139179,
+        "seconds": 0.059543096998822875,
+        "thread": 128407073437376
+      },
+      {
+        "name": "read_file",
+        "start": 0.04171357600716874,
+        "seconds": 0.08077859399782028,
+        "thread": 128407065044672
+      },
+      {
+        "name": "imread",
+        "start": 0.04173306201118976,
+        "seconds": 0.05078311100078281,
+        "thread": 128407065044672
+      },
+      {
+        "name": "read_file",
+        "start": 0.04186147201107815,
+        "seconds": 0.08852563198888674,
+        "thread": 128406570137280
+      },
+      {
+        "name": "imread",
+        "start": 0.04188252901076339,
+        "seconds": 0.05029063999245409,
+        "thread": 128406570137280
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.12329112400766462,
+        "seconds": 0.0065229309984715655,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.1323122419998981,
+        "seconds": 0.006468018007581122,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.13941370300017297,
+        "seconds": 0.006554028004757129,
+        "thread": 128409477812352
+      },
+      {
+        "name": "save_series",
+        "start": 0.1465629240119597,
+        "seconds": 0.00039370000013150275,
+        "thread": 128407090222784
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.14846246600791346,
+        "seconds": 0.006517814996186644,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.16257043500081636,
+        "seconds": 0.07869480900990311,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.2414267640124308,
+        "seconds": 0.006427900996641256,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.2478670700074872,
+        "seconds": 0.006385707994922996,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.25472184701357037,
+        "seconds": 0.006466381993959658,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.2612001220113598,
+        "seconds": 0.007082493000780232,
+        "thread": 128409477812352
+      },
+      {
+        "name": "preprocess_series",
+        "start": 0.26859525201143697,
+        "seconds": 1.7454404909949517,
+        "thread": 128407090222784
+      },
+      {
+        "name": "imread",
+        "start": 0.26871141900483053,
+        "seconds": 0.11298544000601396,
+        "thread": 128407073437376
+      },
+      {
+        "name": "preprocess_image",
+        "start": 0.3817722360108746,
+        "seconds": 0.4374379809887614,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rotate",
+        "start": 0.3817752239992842,
+        "seconds": 0.010454584000399336,
+        "thread": 128407090222784
+      },
+      {
+        "name": "imread",
+        "start": 0.3818914240109734,
+        "seconds": 0.12357248199987225,
+        "thread": 128407073437376
+      },
+      {
+        "name": "auto_crop_to_blue_background",
+        "start": 0.39223910101281945,
+        "seconds": 0.058764099987456575,
+        "thread": 128407090222784
+      },
+      {
+        "name": "find_green_contours",
+        "start": 0.4510098200116772,
+        "seconds": 0.04044748199521564,
+        "thread": 128407090222784
+      },
+      {
+        "name": "mask_green_in_image",
+        "start": 0.500897898004041,
+        "seconds": 0.008870692006894387,
+        "thread": 128407090222784
+      },
+      {
+        "name": "cluster_plant_positions",
+        "start": 0.5097750280110631,
+        "seconds": 0.03603176098840777,
+        "thread": 128407090222784
+      },
+      {
+        "name": "remove_gradient",
+        "start": 0.5581020280078519,
+        "seconds": 0.24003499699756503,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_median_background",
+        "start": 0.5581043550046161,
+        "seconds": 0.19600872800219804,
+        "thread": 128407090222784
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.558320302006905,
+        "seconds": 0.16538129300170112,
+        "thread": 128405580519104
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.5584435500059044,
+        "seconds": 0.17785378999542445,
+        "thread": 128405572126400
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.5585675170004833,
+        "seconds": 0.19378036800480913,
+        "thread": 128405563733696
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.5623335410055006,
+        "seconds": 0.17699393900693394,
+        "thread": 128405396207296
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.7606407800049055,
+        "seconds": 0.034643688006326556,
+        "thread": 128407090222784
+      },
+      {
+        "name": "compute_canny_edges",
+        "start": 0.7981434030079981,
+        "seconds": 0.012450024005374871,
+        "thread": 128407090222784
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.8196880210016388,
+        "seconds": 0.006707558000925928,
+        "thread": 128409477812352
+      },
+      {
+        "name": "preprocess_image",
+        "start": 0.8248958770127501,
+        "seconds": 0.3849555899942061,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rotate",
+        "start": 0.8248982380027883,
+        "seconds": 0.010101403997396119,
+        "thread": 128407090222784
+      },
+      {
+        "name": "imread",
+        "start": 0.8267403760110028,
+        "seconds": 0.11245488798886072,
+        "thread": 128407073437376
+      },
+      {
+        "name": "auto_crop_to_blue_background",
+        "start": 0.8350100250099786,
+        "seconds": 0.05331377898983192,
+        "thread": 128407090222784
+      },
+      {
+        "name": "find_green_contours",
+        "start": 0.8883311570098158,
+        "seconds": 0.029152264003641903,
+        "thread": 128407090222784
+      },
+      {
+        "name": "mask_green_in_image",
+        "start": 0.9258401280094404,
+        "seconds": 0.009217047001584433,
+        "thread": 128407090222784
+      },
+      {
+        "name": "cluster_plant_positions",
+        "start": 0.9350661160133313,
+        "seconds": 0.013649418993736617,
+        "thread": 128407090222784
+      },
+      {
+        "name": "remove_gradient",
+        "start": 0.9578797960130032,
+        "seconds": 0.22940644099435303,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_median_background",
+        "start": 0.9578821010072716,
+        "seconds": 0.18451935499615502,
+        "thread": 128407090222784
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.9586230109998723,
+        "seconds": 0.16698504899977706,
+        "thread": 128405563733696
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.9587479720066767,
+        "seconds": 0.18204841100669,
+        "thread": 128405396207296
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.9588494290073868,
+        "seconds": 0.17927178599347826,
+        "thread": 128405572126400
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.9595011350029381,
+        "seconds": 0.1662417860061396,
+        "thread": 128405580519104
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.1490034490125254,
+        "seconds": 0.035336413988261484,
+        "thread": 128407090222784
+      },
+      {
+        "name": "compute_canny_edges",
+        "start": 1.1872949130047346,
+        "seconds": 0.012913806000142358,
+        "thread": 128407090222784
+      },
+      {
+        "name": "preprocess_image",
+        "start": 1.2102888820081716,
+        "seconds": 0.41982789800385945,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rotate",
+        "start": 1.2102909040113445,
+        "seconds": 0.011216058992431499,
+        "thread": 128407090222784
+      },
+      {
+        "name": "refresh_status",
+        "start": 1.2104032900097081,
+        "seconds": 0.007098807996953838,
+        "thread": 128409477812352
+      },
+      {
+        "name": "imread",
+        "start": 1.2155952190078096,
+        "seconds": 0.11111092899227515,
+        "thread": 128407073437376
+      },
+      {
+        "name": "auto_crop_to_blue_background",
+        "start": 1.2215168160037138,
+        "seconds": 0.10818881700106431,
+        "thread": 128407090222784
+      },
+      {
+        "name": "find_green_contours",
+        "start": 1.3297116470057517,
+        "seconds": 0.030983816002844833,
+        "thread": 128407090222784
+      },
+      {
+        "name": "mask_green_in_image",
+        "start": 1.3695038110017776,
+        "seconds": 0.008648412011098117,
+        "thread": 128407090222784
+      },
+      {
+        "name": "cluster_plant_positions",
+        "start": 1.3781589760037605,
+        "seconds": 0.013594149000709876,
+        "thread": 128407090222784
+      },
+      {
+        "name": "remove_gradient",
+        "start": 1.4008037860039622,
+        "seconds": 0.2129467439954169,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_median_background",
+        "start": 1.40080582399969,
+        "seconds": 0.16928110900335014,
+        "thread": 128407090222784
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.4015514550119406,
+        "seconds": 0.1611613739951281,
+        "thread": 128405396207296
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.4016943540045759,
+        "seconds": 0.16455990800750442,
+        "thread": 128405572126400
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.401873806011281,
+        "seconds": 0.1664943859941559,
+        "thread": 128405580519104
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.4035846610058798,
+        "seconds": 0.15522499999497086,
+        "thread": 128405563733696
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.576507642006618,
+        "seconds": 0.03484925199882127,
+        "thread": 128407090222784
+      },
+      {
+        "name": "compute_canny_edges",
+        "start": 1.6137588270066772,
+        "seconds": 0.008555741005693562,
+        "thread": 128407090222784
+      },
+      {
+        "name": "preprocess_image",
+        "start": 1.6303307120106183,
+        "seconds": 0.3833284409920452,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rotate",
+        "start": 1.6303339270089054,
+        "seconds": 0.010573931998806074,
+        "thread": 128407090222784
+      },
+      {
+        "name": "refresh_status",
+        "start": 1.6310043200064683,
+        "seconds": 0.007370487001026049,
+        "thread": 128409477812352
+      },
+      {
+        "name": "auto_crop_to_blue_background",
+        "start": 1.6409135430003516,
+        "seconds": 0.06549030700989533,
+        "thread": 128407090222784
+      },
+      {
+        "name": "find_green_contours",
+        "start": 1.7064113860105863,
+        "seconds": 0.0297575250006048,
+        "thread": 128407090222784
+      },
+      {
+        "name": "mask_green_in_image",
+        "start": 1.7438726500113262,
+        "seconds": 0.008286319993203506,
+        "thread": 128407090222784
+      },
+      {
+        "name": "cluster_plant_positions",
+        "start": 1.752168007005821,
+        "seconds": 0.014615531006711535,
+        "thread": 128407090222784
+      },
+      {
+        "name": "remove_gradient",
+        "start": 1.7755360850133002,
+        "seconds": 0.2176287599868374,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_median_background",
+        "start": 1.7755378510046285,
+        "seconds": 0.17366075300378725,
+        "thread": 128407090222784
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.776290677007637,
+        "seconds": 0.15938870899844915,
+        "thread": 128405580519104
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.7777836790046422,
+        "seconds": 0.16992684699653182,
+        "thread": 128405572126400
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.779186401006882,
+        "seconds": 0.1672282399958931,
+        "thread": 128405396207296
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.7813127310073469,
+        "seconds": 0.1527424340019934,
+        "thread": 128405563733696
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.9557532870094292,
+        "seconds": 0.0345465790014714,
+        "thread": 128407090222784
+      },
+      {
+        "name": "compute_canny_edges",
+        "start": 1.9931729920062935,
+        "seconds": 0.011881503000040539,
+        "thread": 128407090222784
+      },
+      {
+        "name": "register_series",
+        "start": 2.0140409100131365,
+        "seconds": 0.9325627109938068,
+        "thread": 128407090222784
+      },
+      {
+        "name": "align_to_template",
+        "start": 2.0140493430080824,
+        "seconds": 0.3029742929938948,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.0140545450121863,
+        "seconds": 0.006995552001171745,
+        "thread": 128407090222784
+      },
+      {
+        "name": "refresh_status",
+        "start": 2.014355986000737,
+        "seconds": 0.007039080999675207,
+        "thread": 128409477812352
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.0210572270007106,
+        "seconds": 0.00854957100818865,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.029614005004987,
+        "seconds": 0.002895708996220492,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_match_location",
+        "start": 2.032516286999453,
+        "seconds": 0.28449746400292497,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.0729687250131974,
+        "seconds": 0.059256286986055784,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.143661197012989,
+        "seconds": 0.052672123987576924,
+        "thread": 128407090222784
+      },
+      {
+        "name": "irfft2",
+        "start": 2.2169612160068937,
+        "seconds": 0.07002839300548658,
+        "thread": 128407090222784
+      },
+      {
+        "name": "integral",
+        "start": 2.290963040009956,
+        "seconds": 0.011255933990469202,
+        "thread": 128407090222784
+      },
+      {
+        "name": "align_to_template",
+        "start": 2.319195148011204,
+        "seconds": 0.3055328149930574,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.3192056090047117,
+        "seconds": 0.0020382539951242507,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.321256962008192,
+        "seconds": 0.008302811998873949,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.3295659920113394,
+        "seconds": 0.002375866999500431,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_match_location",
+        "start": 2.331947616999969,
+        "seconds": 0.2927683920133859,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.3728177690063603,
+        "seconds": 0.060669904996757396,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.44555014600337,
+        "seconds": 0.05291039599978831,
+        "thread": 128407090222784
+      },
+      {
+        "name": "irfft2",
+        "start": 2.518540604010923,
+        "seconds": 0.07279203899088316,
+        "thread": 128407090222784
+      },
+      {
+        "name": "integral",
+        "start": 2.594951865001349,
+        "seconds": 0.012137060009990819,
+        "thread": 128407090222784
+      },
+      {
+        "name": "align_to_template",
+        "start": 2.6267464289994678,
+        "seconds": 0.3176403710094746,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.626750658004312,
+        "seconds": 0.00205069400544744,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.6288075300108176,
+        "seconds": 0.009663646997069009,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.6384816570061957,
+        "seconds": 0.00227322599675972,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_match_location",
+        "start": 2.6407623710110784,
+        "seconds": 0.3036132339912001,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.6839515560131986,
+        "seconds": 0.060451922996435314,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.75780136200774,
+        "seconds": 0.059670985996490344,
+        "thread": 128407090222784
+      },
+      {
+        "name": "irfft2",
+        "start": 2.840322150004795,
+        "seconds": 0.07176767100463621,
+        "thread": 128407090222784
+      },
+      {
+        "name": "integral",
+        "start": 2.915426050007227,
+        "seconds": 0.011961229000007734,
+        "thread": 128407090222784
+      },
+      {
+        "name": "save_series",
+        "start": 2.946656440006336,
+        "seconds": 0.18054941299487837,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_display_image",
+        "start": 3.1285828270047205,
+        "seconds": 0.016319625996402465,
+        "thread": 128409477812352
+      },
+      {
+        "name": "set_image",
+        "start": 3.128592759007006,
+        "seconds": 0.01630102499620989,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 3.145006745005958,
+        "seconds": 0.006650494993664324,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 3.15167144901352,
+        "seconds": 0.00770741498854477,
+        "thread": 128409477812352
+      }
+    ]
+  },
+  {
+    "group": "RT_26_2-1",
+    "repeat": 1,
+    "images": 4,
+    "elapsed_seconds": 3.1043770980031695,
+    "barcodes": true,
+    "cpu_count": 8,
+    "opencv_threads": 8,
+    "load_average": [
+      5.40185546875,
+      2.9091796875,
+      3.107421875
+    ],
+    "image_shapes": [
+      [
+        2172,
+        5640,
+        3
+      ],
+      [
+        2172,
+        5640,
+        3
+      ],
+      [
+        2172,
+        5640,
+        3
+      ],
+      [
+        2172,
+        5640,
+        3
+      ]
+    ],
+    "timers": {
+      "refresh_status": {
+        "calls": 17,
+        "seconds": 0.22273044999747071
+      },
+      "imread": {
+        "calls": 8,
+        "seconds": 0.6811563919909531
+      },
+      "read_file": {
+        "calls": 4,
+        "seconds": 0.36143173498567194
+      },
+      "save_series": {
+        "calls": 2,
+        "seconds": 0.1827177630184451
+      },
+      "rotate": {
+        "calls": 4,
+        "seconds": 0.042417160992044955
+      },
+      "auto_crop_to_blue_background": {
+        "calls": 4,
+        "seconds": 0.27129932402749546
+      },
+      "find_green_contours": {
+        "calls": 4,
+        "seconds": 0.1391177119949134
+      },
+      "mask_green_in_image": {
+        "calls": 4,
+        "seconds": 0.03507162096502725
+      },
+      "cluster_plant_positions": {
+        "calls": 4,
+        "seconds": 0.05018934400868602
+      },
+      "medianBlur": {
+        "calls": 20,
+        "seconds": 2.827126207004767
+      },
+      "_median_background": {
+        "calls": 4,
+        "seconds": 0.7095270249992609
+      },
+      "remove_gradient": {
+        "calls": 4,
+        "seconds": 0.8870187290012836
+      },
+      "compute_canny_edges": {
+        "calls": 4,
+        "seconds": 0.03639888600446284
+      },
+      "preprocess_image": {
+        "calls": 4,
+        "seconds": 1.5735036049882183
+      },
+      "preprocess_series": {
+        "calls": 1,
+        "seconds": 1.6892654849943938
+      },
+      "copyMakeBorder": {
+        "calls": 9,
+        "seconds": 0.04536219702276867
+      },
+      "rfft2": {
+        "calls": 6,
+        "seconds": 0.34424214500177186
+      },
+      "irfft2": {
+        "calls": 3,
+        "seconds": 0.20702032498957124
+      },
+      "integral": {
+        "calls": 3,
+        "seconds": 0.03516305598895997
+      },
+      "_match_location": {
+        "calls": 3,
+        "seconds": 0.8731579620070988
+      },
+      "align_to_template": {
+        "calls": 3,
+        "seconds": 0.9186439189943485
+      },
+      "register_series": {
+        "calls": 1,
+        "seconds": 0.9257123819988919
+      },
+      "set_image": {
+        "calls": 1,
+        "seconds": 0.007230075003462844
+      },
+      "_display_image": {
+        "calls": 1,
+        "seconds": 0.0072491460014134645
+      }
+    },
+    "events": [
+      {
+        "name": "refresh_status",
+        "start": 0.00019632300245575607,
+        "seconds": 0.034042409009998664,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.034256736005772837,
+        "seconds": 0.00658158199803438,
+        "thread": 128409477812352
+      },
+      {
+        "name": "read_file",
+        "start": 0.04135660800966434,
+        "seconds": 0.09554142199340276,
+        "thread": 128405845046976
+      },
+      {
+        "name": "imread",
+        "start": 0.041381568007636815,
+        "seconds": 0.058425202005309984,
+        "thread": 128405845046976
+      },
+      {
+        "name": "read_file",
+        "start": 0.041542151011526585,
+        "seconds": 0.09788776899222285,
+        "thread": 128406553351872
+      },
+      {
+        "name": "imread",
+        "start": 0.0415615640085889,
+        "seconds": 0.06077303399797529,
+        "thread": 128406553351872
+      },
+      {
+        "name": "read_file",
+        "start": 0.0416875390073983,
+        "seconds": 0.08797102500102483,
+        "thread": 128406570137280
+      },
+      {
+        "name": "imread",
+        "start": 0.04170670900202822,
+        "seconds": 0.05120651700417511,
+        "thread": 128406570137280
+      },
+      {
+        "name": "read_file",
+        "start": 0.041829927009530365,
+        "seconds": 0.0800315189990215,
+        "thread": 128407081830080
+      },
+      {
+        "name": "imread",
+        "start": 0.041849875007756054,
+        "seconds": 0.0501204489992233,
+        "thread": 128407081830080
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.12220365401299205,
+        "seconds": 0.007021951998467557,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.1317217980104033,
+        "seconds": 0.007052233995636925,
+        "thread": 128409477812352
+      },
+      {
+        "name": "save_series",
+        "start": 0.13984839800104965,
+        "seconds": 0.0003208350099157542,
+        "thread": 128407090222784
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.14169208401290234,
+        "seconds": 0.006826924989582039,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.14881732400681358,
+        "seconds": 0.006622877001063898,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.1637044390081428,
+        "seconds": 0.08370078400184866,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.24755873600952327,
+        "seconds": 0.0066600199934327975,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.25423106900416315,
+        "seconds": 0.006721070007188246,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.2613946250057779,
+        "seconds": 0.006801312993047759,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.26820698200026527,
+        "seconds": 0.007451828001649119,
+        "thread": 128409477812352
+      },
+      {
+        "name": "preprocess_series",
+        "start": 0.2759626840124838,
+        "seconds": 1.6892654849943938,
+        "thread": 128407090222784
+      },
+      {
+        "name": "imread",
+        "start": 0.27607224600797053,
+        "seconds": 0.11427093300153501,
+        "thread": 128406553351872
+      },
+      {
+        "name": "preprocess_image",
+        "start": 0.390420649011503,
+        "seconds": 0.37318306099041365,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rotate",
+        "start": 0.3904231000051368,
+        "seconds": 0.010159874000237323,
+        "thread": 128407090222784
+      },
+      {
+        "name": "imread",
+        "start": 0.39055342800565995,
+        "seconds": 0.11630753599456511,
+        "thread": 128406553351872
+      },
+      {
+        "name": "auto_crop_to_blue_background",
+        "start": 0.40059193600609433,
+        "seconds": 0.04601626000658143,
+        "thread": 128407090222784
+      },
+      {
+        "name": "find_green_contours",
+        "start": 0.44661528200958855,
+        "seconds": 0.03162703999259975,
+        "thread": 128407090222784
+      },
+      {
+        "name": "mask_green_in_image",
+        "start": 0.485837979009375,
+        "seconds": 0.00828820199239999,
+        "thread": 128407090222784
+      },
+      {
+        "name": "cluster_plant_positions",
+        "start": 0.49413362200721167,
+        "seconds": 0.01419074900331907,
+        "thread": 128407090222784
+      },
+      {
+        "name": "remove_gradient",
+        "start": 0.5197879710030975,
+        "seconds": 0.22568472199782263,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_median_background",
+        "start": 0.5197901500068838,
+        "seconds": 0.18094736700004432,
+        "thread": 128407090222784
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.5199914450058714,
+        "seconds": 0.162332317995606,
+        "thread": 128405589739200
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.5201020759996027,
+        "seconds": 0.1757940860115923,
+        "thread": 128405387814592
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.5202230770082679,
+        "seconds": 0.1790631469921209,
+        "thread": 128405379421888
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.5203443589998642,
+        "seconds": 0.16508400200109463,
+        "thread": 128405371029184
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.7071143820066936,
+        "seconds": 0.035657492000609636,
+        "thread": 128407090222784
+      },
+      {
+        "name": "compute_canny_edges",
+        "start": 0.7454803610016825,
+        "seconds": 0.00929652999911923,
+        "thread": 128407090222784
+      },
+      {
+        "name": "preprocess_image",
+        "start": 0.7638340010016691,
+        "seconds": 0.3849180810066173,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rotate",
+        "start": 0.7638369120104471,
+        "seconds": 0.011273782001808286,
+        "thread": 128407090222784
+      },
+      {
+        "name": "imread",
+        "start": 0.7638848900096491,
+        "seconds": 0.11821432899159845,
+        "thread": 128406553351872
+      },
+      {
+        "name": "refresh_status",
+        "start": 0.763907125001424,
+        "seconds": 0.007262664003064856,
+        "thread": 128409477812352
+      },
+      {
+        "name": "auto_crop_to_blue_background",
+        "start": 0.7751172330026748,
+        "seconds": 0.04652705500484444,
+        "thread": 128407090222784
+      },
+      {
+        "name": "find_green_contours",
+        "start": 0.821654508006759,
+        "seconds": 0.035315342000103556,
+        "thread": 128407090222784
+      },
+      {
+        "name": "mask_green_in_image",
+        "start": 0.8652504830097314,
+        "seconds": 0.01013140099530574,
+        "thread": 128407090222784
+      },
+      {
+        "name": "cluster_plant_positions",
+        "start": 0.8753913900000043,
+        "seconds": 0.01118960500753019,
+        "thread": 128407090222784
+      },
+      {
+        "name": "remove_gradient",
+        "start": 0.8987745610065758,
+        "seconds": 0.23339777799264994,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_median_background",
+        "start": 0.8987770840030862,
+        "seconds": 0.18825193100201432,
+        "thread": 128407090222784
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.8989670440059854,
+        "seconds": 0.170491133001633,
+        "thread": 128405379421888
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.899074050001218,
+        "seconds": 0.18573534600727726,
+        "thread": 128405387814592
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.9000725270016119,
+        "seconds": 0.18502718200033996,
+        "thread": 128405371029184
+      },
+      {
+        "name": "medianBlur",
+        "start": 0.900245155004086,
+        "seconds": 0.1692927249969216,
+        "thread": 128405589739200
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.0950686450087233,
+        "seconds": 0.03479928900196683,
+        "thread": 128407090222784
+      },
+      {
+        "name": "compute_canny_edges",
+        "start": 1.1321819740114734,
+        "seconds": 0.008612499994342215,
+        "thread": 128407090222784
+      },
+      {
+        "name": "preprocess_image",
+        "start": 1.1491684640059248,
+        "seconds": 0.4221371619933052,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rotate",
+        "start": 1.149171238008421,
+        "seconds": 0.010686562993214466,
+        "thread": 128407090222784
+      },
+      {
+        "name": "refresh_status",
+        "start": 1.149270952999359,
+        "seconds": 0.007152681006118655,
+        "thread": 128409477812352
+      },
+      {
+        "name": "imread",
+        "start": 1.15444937000575,
+        "seconds": 0.11183839199657086,
+        "thread": 128406553351872
+      },
+      {
+        "name": "auto_crop_to_blue_background",
+        "start": 1.159864582004957,
+        "seconds": 0.10390296300465707,
+        "thread": 128407090222784
+      },
+      {
+        "name": "find_green_contours",
+        "start": 1.2637782490055542,
+        "seconds": 0.03810897200310137,
+        "thread": 128407090222784
+      },
+      {
+        "name": "mask_green_in_image",
+        "start": 1.310253569012275,
+        "seconds": 0.008412272989517078,
+        "thread": 128407090222784
+      },
+      {
+        "name": "cluster_plant_positions",
+        "start": 1.3186721759993816,
+        "seconds": 0.01193146500736475,
+        "thread": 128407090222784
+      },
+      {
+        "name": "remove_gradient",
+        "start": 1.3429694490041584,
+        "seconds": 0.21188740500656422,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_median_background",
+        "start": 1.3429721290012822,
+        "seconds": 0.1680700680008158,
+        "thread": 128407090222784
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.3431665400130441,
+        "seconds": 0.15531952898891177,
+        "thread": 128405371029184
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.3433047110011103,
+        "seconds": 0.16499023800133727,
+        "thread": 128405387814592
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.3434372640040237,
+        "seconds": 0.16591068200068548,
+        "thread": 128405379421888
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.3435945570090553,
+        "seconds": 0.1553182689967798,
+        "thread": 128405589739200
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.5175840450101532,
+        "seconds": 0.03464483199059032,
+        "thread": 128407090222784
+      },
+      {
+        "name": "compute_canny_edges",
+        "start": 1.5548665140086086,
+        "seconds": 0.0088100110006053,
+        "thread": 128407090222784
+      },
+      {
+        "name": "preprocess_image",
+        "start": 1.5715291280066594,
+        "seconds": 0.39326530099788215,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rotate",
+        "start": 1.571534145012265,
+        "seconds": 0.01029694199678488,
+        "thread": 128407090222784
+      },
+      {
+        "name": "refresh_status",
+        "start": 1.5728008990117814,
+        "seconds": 0.007231168987345882,
+        "thread": 128409477812352
+      },
+      {
+        "name": "auto_crop_to_blue_background",
+        "start": 1.5818378289986867,
+        "seconds": 0.07485304601141252,
+        "thread": 128407090222784
+      },
+      {
+        "name": "find_green_contours",
+        "start": 1.65670175300329,
+        "seconds": 0.03406635799910873,
+        "thread": 128407090222784
+      },
+      {
+        "name": "mask_green_in_image",
+        "start": 1.6983585000125458,
+        "seconds": 0.008239744987804443,
+        "thread": 128407090222784
+      },
+      {
+        "name": "cluster_plant_positions",
+        "start": 1.7066062570083886,
+        "seconds": 0.012877524990472011,
+        "thread": 128407090222784
+      },
+      {
+        "name": "remove_gradient",
+        "start": 1.7308925910037942,
+        "seconds": 0.21604882400424685,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_median_background",
+        "start": 1.7308948340069037,
+        "seconds": 0.17225765899638645,
+        "thread": 128407090222784
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.7310507250076625,
+        "seconds": 0.16013745599775575,
+        "thread": 128405379421888
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.7311594040074851,
+        "seconds": 0.17048716600402258,
+        "thread": 128405387814592
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.731269168012659,
+        "seconds": 0.16692545299883932,
+        "thread": 128405589739200
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.7313441389997024,
+        "seconds": 0.15563800401287153,
+        "thread": 128405371029184
+      },
+      {
+        "name": "medianBlur",
+        "start": 1.9101309020043118,
+        "seconds": 0.03447785800381098,
+        "thread": 128407090222784
+      },
+      {
+        "name": "compute_canny_edges",
+        "start": 1.9469497009995393,
+        "seconds": 0.009679845010396093,
+        "thread": 128407090222784
+      },
+      {
+        "name": "register_series",
+        "start": 1.9652325040078722,
+        "seconds": 0.9257123819988919,
+        "thread": 128407090222784
+      },
+      {
+        "name": "align_to_template",
+        "start": 1.965240805002395,
+        "seconds": 0.30526667399681173,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 1.96524424800009,
+        "seconds": 0.0069763450010214,
+        "thread": 128407090222784
+      },
+      {
+        "name": "refresh_status",
+        "start": 1.965652217011666,
+        "seconds": 0.0070999949966790155,
+        "thread": 128409477812352
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 1.9722279859997798,
+        "seconds": 0.008840762006002478,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 1.9810749880125513,
+        "seconds": 0.0032459089998155832,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_match_location",
+        "start": 1.9843272030120715,
+        "seconds": 0.2861690199933946,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.027347950002877,
+        "seconds": 0.05896621200372465,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.0983580220054137,
+        "seconds": 0.05423064100614283,
+        "thread": 128407090222784
+      },
+      {
+        "name": "irfft2",
+        "start": 2.1728975380101474,
+        "seconds": 0.06561716899159364,
+        "thread": 128407090222784
+      },
+      {
+        "name": "integral",
+        "start": 2.2433219800004736,
+        "seconds": 0.01156297700072173,
+        "thread": 128407090222784
+      },
+      {
+        "name": "align_to_template",
+        "start": 2.2727378840063466,
+        "seconds": 0.30030706399702467,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.2727446440112544,
+        "seconds": 0.0021070459915790707,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.2748609440022847,
+        "seconds": 0.008416876007686369,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.283284460005234,
+        "seconds": 0.0025222580006811768,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_match_location",
+        "start": 2.285813294001855,
+        "seconds": 0.2872178820107365,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.3279583180119516,
+        "seconds": 0.059212052990915254,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.3991144620085834,
+        "seconds": 0.053976301991497166,
+        "thread": 128407090222784
+      },
+      {
+        "name": "irfft2",
+        "start": 2.473300662008114,
+        "seconds": 0.06919504899997264,
+        "thread": 128407090222784
+      },
+      {
+        "name": "integral",
+        "start": 2.545924175006803,
+        "seconds": 0.011806467999122106,
+        "thread": 128407090222784
+      },
+      {
+        "name": "align_to_template",
+        "start": 2.5750818900123704,
+        "seconds": 0.3130701810005121,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.575087474004249,
+        "seconds": 0.001966087002074346,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.5770611820043996,
+        "seconds": 0.008704043008037843,
+        "thread": 128407090222784
+      },
+      {
+        "name": "copyMakeBorder",
+        "start": 2.5857725410023704,
+        "seconds": 0.002582871005870402,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_match_location",
+        "start": 2.588369593999232,
+        "seconds": 0.2997710600029677,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.6327996760082897,
+        "seconds": 0.0611964209965663,
+        "thread": 128407090222784
+      },
+      {
+        "name": "rfft2",
+        "start": 2.706089997998788,
+        "seconds": 0.056660516012925655,
+        "thread": 128407090222784
+      },
+      {
+        "name": "irfft2",
+        "start": 2.785074491010164,
+        "seconds": 0.07220810699800495,
+        "thread": 128407090222784
+      },
+      {
+        "name": "integral",
+        "start": 2.8605878400121583,
+        "seconds": 0.011793610989116132,
+        "thread": 128407090222784
+      },
+      {
+        "name": "save_series",
+        "start": 2.890999601004296,
+        "seconds": 0.18239692800852936,
+        "thread": 128407090222784
+      },
+      {
+        "name": "_display_image",
+        "start": 3.0755279139993945,
+        "seconds": 0.0072491460014134645,
+        "thread": 128409477812352
+      },
+      {
+        "name": "set_image",
+        "start": 3.0755374580039643,
+        "seconds": 0.007230075003462844,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 3.082869093006593,
+        "seconds": 0.006802129006246105,
+        "thread": 128409477812352
+      },
+      {
+        "name": "refresh_status",
+        "start": 3.0896878089988604,
+        "seconds": 0.007698818008066155,
+        "thread": 128409477812352
+      }
+    ]
+  }
+]

@@ -9,7 +9,7 @@ import math
 import numpy as np
 import cv2
 import pandas as pd
-from multiprocessing import freeze_support
+from multiprocessing import freeze_support, current_process
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from collections.abc import Callable, Iterator
 from tqdm.contrib.concurrent import process_map
@@ -198,7 +198,7 @@ class RootTrackingPipeline:
                 for future in futures:
                     future.cancel()
 
-    def preprocess_image(self, image_data: ImageData) -> None:
+    def preprocess_image(self, image_data: ImageData, *, original: np.ndarray | None = None) -> None:
         """
         Preprocess a single image.
         
@@ -207,9 +207,11 @@ class RootTrackingPipeline:
         
         Args:
             image_data: The image to preprocess.
+            original: Optional predecoded BGR photograph (never modified).
         """
-        # Load image
-        original = cv2.imread(image_data.path)
+        # Load image unless the series reader has prefetched it.
+        if original is None:
+            original = cv2.imread(image_data.path)
         
         # Rotate if needed
         if self.config.rotation:
@@ -225,7 +227,9 @@ class RootTrackingPipeline:
         min_y = self.green_detector.find_crop_start(green_contours, cropped.shape[0])
         
         # Mask out green areas and adjust positions
-        origo = cropped.copy()
+        # Masking returns its own buffer, so retain the unmasked crop as a view
+        # until the final display crop rather than copying the full photograph.
+        origo = cropped
         cropped = self.green_detector.mask_green_in_image(cropped, green_contours)
         
         # Get plant positions
@@ -241,8 +245,9 @@ class RootTrackingPipeline:
         image_data.green_areas = areas
         
         # Crop to root region
-        cropped = cropped[min_y:].copy()  # .copy() ensures contiguous array
-        image_data.image = origo[min_y:].copy()
+        # A full-width row slice of the owned mask is already contiguous.
+        cropped = cropped[min_y:]
+        display_crop = origo[min_y:]
         
         # Remove background gradient
         image_data.process = self.background_remover.remove_gradient(cropped)
@@ -253,12 +258,15 @@ class RootTrackingPipeline:
         # UI preview. Margins are re-derived from the original image on every run
         # (margin_* are part of preprocess_config_hash), so lowering a margin later
         # simply keeps more pixels rather than losing them permanently.
-        h, w = image_data.image.shape[:2]
+        h, w = display_crop.shape[:2]
         top, bottom, left, right = self.cropper.margin_offsets(h, w)
         row, col = slice(top, h - bottom), slice(left, w - right)
-        image_data.image = image_data.image[row, col].copy()
-        image_data.process = image_data.process[row, col].copy()
-        image_data.canny = image_data.canny[row, col].copy()
+        image_data.image = display_crop[row, col].copy()
+        # These CV outputs already own their buffers. Copy only when trimming
+        # margins, so smaller results do not retain the full backing arrays.
+        if any((top, bottom, left, right)):
+            image_data.process = image_data.process[row, col].copy()
+            image_data.canny = image_data.canny[row, col].copy()
         image_data.positions_x = [x - left for x in image_data.positions_x]
         image_data.positions_y = [y - top for y in image_data.positions_y]
     
@@ -271,11 +279,27 @@ class RootTrackingPipeline:
             progress_callback: Optional callback(current, total) for progress.
         """
         total = len(series.images)
-        for i, image_data in enumerate(series.images):
-            self.preprocess_image(image_data)
-            if progress_callback:
-                progress_callback(i + 1, total)
-    
+        if total < 2 or current_process().name != 'MainProcess':
+            for i, image_data in enumerate(series.images):
+                self.preprocess_image(image_data)
+                if progress_callback:
+                    progress_callback(i + 1, total)
+            return
+
+        # Decode one photograph ahead while filtering the current image. Keep
+        # CV and KMeans in chronological order (including their random state).
+        # Batch child processes already overlap reads and do not add a pool.
+        with ThreadPoolExecutor(max_workers=1, thread_name_prefix='image-decode') as reader:
+            pending = reader.submit(cv2.imread, series.images[0].path)
+            for i, image_data in enumerate(series.images):
+                original = pending.result()
+                if i + 1 < total:
+                    pending = reader.submit(cv2.imread, series.images[i + 1].path)
+                self.preprocess_image(image_data, original=original)
+                del original
+                if progress_callback:
+                    progress_callback(i + 1, total)
+
     def register_series(self, series: ImageSeries) -> None:
         """
         Step 2: Register (align) images in a series.

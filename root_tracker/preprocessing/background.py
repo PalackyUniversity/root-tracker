@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import current_process
 
 from ..config import Config
+from .gpu_background import try_subtract_median
 
 
 class BackgroundRemover:
@@ -42,13 +43,13 @@ class BackgroundRemover:
         Returns:
             Grayscale image with gradient removed.
         """
-        # Compute gradient using median blur
-        blurred = self._median_background(image)
-        
-        # Saturated uint8 subtraction is identical to clipping negative values,
-        # without creating several full-resolution int64 arrays.
-        diff = cv2.subtract(image, blurred)
-        
+        # Optional exact GPU histogram median with fused saturated subtraction.
+        # Missing CUDA, small images and batch children retain the CPU path.
+        diff = try_subtract_median(image, self._blur_kernel_size)
+        if diff is None:
+            blurred = self._median_background(image)
+            diff = cv2.subtract(image, blurred)
+
         # Smooth the result
         diff = cv2.medianBlur(diff, self._smooth_kernel_size)
         
