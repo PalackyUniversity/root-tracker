@@ -612,6 +612,7 @@ class MainWindow(QMainWindow):
         self._image_viewer.mask_modified.connect(self._on_mask_modified)
         self._image_viewer.mask_available_changed.connect(self._settings_panel.set_mask_available)
         self._image_viewer.mask_restore_toggled.connect(self._settings_panel.set_temporary_mask_restore)
+        self._image_viewer.mask_pan_toggled.connect(self._settings_panel.set_temporary_mask_pan)
         self._image_viewer.mask_diameter_steps.connect(self._settings_panel.adjust_mask_diameter)
     
     def _get_preset_store(self):

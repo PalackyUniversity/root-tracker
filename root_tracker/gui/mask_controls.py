@@ -16,6 +16,7 @@ class MaskControls(QGroupBox):
     def __init__(self, parent=None):
         super().__init__('Exclusion mask', parent)
         self.setObjectName('maskControls')
+        self._pan_tool_before_alt = None
         self._restore_action_before_drag = None
         # Palette roles follow the application's light/dark theme. Scope the
         # checked style to these controls, leaving other application buttons alone.
@@ -36,8 +37,8 @@ class MaskControls(QGroupBox):
         tool_row.setSpacing(4)
         for index, (name, tip) in enumerate((
             ('Pan', 'Drag to move the image. Scroll to zoom.'),
-            ('Brush', 'Paint an exclusion or restore an area with a round brush.'),
-            ('Rectangle', 'Drag a rectangle to exclude or restore an area.'),
+            ('Brush', 'Paint an exclusion or restore an area with a round brush. Hold Alt to pan; Shift + scroll changes diameter.'),
+            ('Rectangle', 'Drag a rectangle to exclude or restore an area. Hold Alt to pan.'),
         )):
             button = self._toggle(name, tip)
             self._tools.addButton(button, index)
@@ -73,7 +74,7 @@ class MaskControls(QGroupBox):
         self._diameter.setSuffix(' px')
         self._diameter.setMinimumHeight(30)
         self._diameter.setAccessibleName('Brush diameter')
-        self._diameter.setStatusTip('Brush diameter in image pixels, shared by Exclude and Restore. Alt + scroll adjusts by 5 px.')
+        self._diameter.setStatusTip('Brush diameter in image pixels, shared by Exclude and Restore. Shift + scroll adjusts by 5 px.')
         self._diameter_label = QLabel('Diameter')
         self._diameter_label.setBuddy(self._diameter)
         self._diameter_label.setStatusTip(self._diameter.statusTip())
@@ -122,6 +123,20 @@ class MaskControls(QGroupBox):
             self._operations.button(self._restore_action_before_drag).setChecked(True)
             self._restore_action_before_drag = None
         self._update_tool()
+
+    def set_temporary_pan(self, active):
+        if active and self._pan_tool_before_alt is None:
+            self._pan_tool_before_alt = self._tools.checkedId()
+            self._tools.button(0).setChecked(True)
+        elif not active and self._pan_tool_before_alt is not None:
+            self._tools.button(self._pan_tool_before_alt).setChecked(True)
+            self._pan_tool_before_alt = None
+        # The viewer owns the temporary override; update button states silently.
+        previous = self.blockSignals(True)
+        try:
+            self._update_tool()
+        finally:
+            self.blockSignals(previous)
 
     def adjust_diameter(self, steps):
         self._diameter.setValue(self._diameter.value() + steps * 5)

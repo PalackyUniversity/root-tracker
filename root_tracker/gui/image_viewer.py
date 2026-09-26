@@ -7,9 +7,9 @@ Provides pan/zoom functionality using QGraphicsView.
 from PySide6.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
     QWidget, QVBoxLayout, QGraphicsEllipseItem, QGraphicsRectItem,
-    QGraphicsSimpleTextItem, QGraphicsPolygonItem
+    QGraphicsSimpleTextItem, QGraphicsPolygonItem, QApplication
 )
-from PySide6.QtCore import Qt, Signal, QPointF, QRectF
+from PySide6.QtCore import Qt, Signal, QPointF, QRectF, QEvent
 from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent, QTransform, QPolygonF, QPalette
 import math
 import numpy as np
@@ -107,6 +107,7 @@ class ImageViewer(QWidget):
     color_pick_cancelled = Signal()
     editor_help = Signal(str)
     mask_restore_toggled = Signal(bool)
+    mask_pan_toggled = Signal(bool)
     mask_diameter_steps = Signal(int)
     mask_modified = Signal()  # Emitted when working mask changes
     mask_available_changed = Signal(bool)
@@ -627,6 +628,10 @@ class ZoomableGraphicsView(QGraphicsView):
         super().__init__(scene, parent)
         
         self._current_zoom = 1.0
+        self._pan_previous = None
+        self._alt_held = False
+        self._pan_dragging = False
+        QApplication.instance().installEventFilter(self)
         
         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.setRenderHint(self.renderHints().TextAntialiasing, True)
@@ -670,10 +675,53 @@ class ZoomableGraphicsView(QGraphicsView):
         center_offset = self.mapToScene(self.viewport().rect().center()) - self.mapToScene(position)
         self.centerOn(anchor + center_offset)
 
+    def _temporary_pan(self, active):
+        viewer = self.parent()
+        if not isinstance(viewer, ImageViewer):
+            return
+        if active and self._pan_previous is None:
+            if (not viewer._mask_editing_enabled or viewer._color_picking
+                    or viewer._mask_draw_button is not None
+                    or viewer._mask_tool in (MaskTool.NONE, MaskTool.MOVE)):
+                return
+            self._pan_previous = (viewer._mask_tool, viewer._brush_size)
+            viewer.mask_pan_toggled.emit(True)
+            viewer.set_mask_tool(MaskTool.MOVE, viewer._brush_size)
+        elif not active and self._pan_previous is not None:
+            tool, size = self._pan_previous
+            self._pan_previous = None
+            viewer.mask_pan_toggled.emit(False)
+            viewer.set_mask_tool(tool, size)
+
+    def eventFilter(self, watched, event):
+        if isinstance(watched, QWidget) and watched.window() == self.window():
+            kind = event.type()
+            if kind in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease, QEvent.Type.ShortcutOverride):
+                if event.key() == Qt.Key.Key_Alt:
+                    if kind == QEvent.Type.ShortcutOverride:
+                        viewer = self.parent()
+                        if self._pan_previous is not None or (isinstance(viewer, ImageViewer)
+                                and viewer._mask_tool not in (MaskTool.NONE, MaskTool.MOVE)):
+                            event.accept()
+                            return True
+                    elif not event.isAutoRepeat():
+                        was_panning = self._pan_previous is not None
+                        self._alt_held = kind == QEvent.Type.KeyPress
+                        if self._alt_held or not self._pan_dragging:
+                            self._temporary_pan(self._alt_held)
+                        if self._pan_previous is not None or was_panning:
+                            event.accept()
+                            return True
+            elif kind == QEvent.Type.WindowDeactivate:
+                self._alt_held = False
+                self._pan_dragging = False
+                self._temporary_pan(False)
+        return super().eventFilter(watched, event)
+
     def wheelEvent(self, event: QWheelEvent) -> None:
         """Keep the scene point beneath the cursor fixed at every zoom level."""
         viewer = self.parent()
-        if (event.modifiers() & Qt.KeyboardModifier.AltModifier
+        if (event.modifiers() & Qt.KeyboardModifier.ShiftModifier
                 and isinstance(viewer, ImageViewer) and viewer._mask_editing_enabled
                 and viewer._mask_tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER)):
             delta = event.angleDelta().y()
@@ -709,6 +757,14 @@ class ZoomableGraphicsView(QGraphicsView):
         # Get parent ImageViewer
         viewer = self.parent()
         if not isinstance(viewer, ImageViewer):
+            super().mousePressEvent(event)
+            return
+
+        if event.modifiers() & Qt.KeyboardModifier.AltModifier:
+            self._alt_held = True
+            self._temporary_pan(True)
+        if self._pan_previous is not None:
+            self._pan_dragging = event.button() == Qt.MouseButton.LeftButton
             super().mousePressEvent(event)
             return
 
@@ -823,6 +879,13 @@ class ZoomableGraphicsView(QGraphicsView):
         viewer = self.parent()
         if not isinstance(viewer, ImageViewer):
             super().mouseReleaseEvent(event)
+            return
+
+        if self._pan_previous is not None:
+            super().mouseReleaseEvent(event)
+            self._pan_dragging = False
+            if not self._alt_held:
+                self._temporary_pan(False)
             return
 
         if event.button() != viewer._mask_draw_button:

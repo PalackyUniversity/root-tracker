@@ -6,8 +6,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
-from PySide6.QtCore import Qt, QPoint, QPointF
-from PySide6.QtGui import QWheelEvent
+from PySide6.QtCore import Qt, QPoint, QPointF, QEvent
+from PySide6.QtGui import QWheelEvent, QMouseEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
@@ -221,7 +221,64 @@ class MaskAutoApplyTests(unittest.TestCase):
                     self.assertTrue(controls._operations.button(original_action).isChecked())
                     self.assertEqual(controls._diameter.value(), 8)
 
-    def test_alt_scroll_changes_brush_diameter_without_zoom_and_respects_limits(self):
+    def test_alt_temporarily_pans_without_painting_and_restores_tool(self):
+        viewer = self.w._image_viewer
+        viewer.set_image(self.image.image)
+        viewer.show()
+        self.w.show()
+        self.app.processEvents()
+        controls = self.panel._mask_controls
+        view = viewer._view
+        viewer.fit_in_view()
+        for shape in (1, 2):
+            with self.subTest(shape=shape):
+                controls._tools.button(shape).click()
+                original_tool = viewer._mask_tool
+                original_size = viewer._brush_size
+                mask = np.zeros((40, 40), np.uint8)
+                viewer.set_mask_data(None, mask.copy())
+                # Alt must work immediately even while the tool button owns focus.
+                QTest.keyPress(controls._tools.button(shape), Qt.Key.Key_Alt)
+                self.assertEqual(viewer._mask_tool.value, 'move')
+                self.assertTrue(controls._tools.button(0).isChecked())
+                start = view.viewport().rect().center()
+                center_before = view.mapToScene(start)
+                QTest.mousePress(view.viewport(), Qt.MouseButton.LeftButton,
+                                 Qt.KeyboardModifier.AltModifier, start)
+                end = start + QPoint(35, 20)
+                move = QMouseEvent(QEvent.Type.MouseMove, QPointF(end),
+                                   QPointF(view.viewport().mapToGlobal(end)),
+                                   Qt.MouseButton.NoButton, Qt.MouseButton.LeftButton,
+                                   Qt.KeyboardModifier.AltModifier)
+                self.app.sendEvent(view.viewport(), move)
+                # Releasing Alt mid-drag must not turn the remaining drag into paint.
+                QTest.keyRelease(view, Qt.Key.Key_Alt)
+                self.assertEqual(viewer._mask_tool.value, 'move')
+                QTest.mouseRelease(view.viewport(), Qt.MouseButton.LeftButton,
+                                   pos=start + QPoint(35, 20))
+                self.assertNotEqual(view.mapToScene(start), center_before)
+                self.assertEqual(viewer._mask_tool, original_tool)
+                self.assertEqual(viewer._brush_size, original_size)
+                self.assertTrue(controls._tools.button(shape).isChecked())
+                np.testing.assert_array_equal(viewer._working_mask, mask)
+                self.assertFalse(viewer._drawing)
+                self.assertIsNone(viewer._mask_draw_button)
+                QTest.keyPress(view, Qt.Key.Key_Alt)
+                QTest.keyRelease(view, Qt.Key.Key_Alt)
+                self.assertEqual(viewer._mask_tool, original_tool)
+
+    def test_alt_pan_restores_on_window_deactivation(self):
+        controls = self.panel._mask_controls
+        viewer = self.w._image_viewer
+        controls._tools.button(1).click()
+        original = viewer._mask_tool
+        QTest.keyPress(viewer._view, Qt.Key.Key_Alt)
+        self.assertTrue(controls._tools.button(0).isChecked())
+        self.app.sendEvent(self.w, QEvent(QEvent.Type.WindowDeactivate))
+        self.assertEqual(viewer._mask_tool, original)
+        self.assertTrue(controls._tools.button(1).isChecked())
+
+    def test_shift_scroll_changes_brush_diameter_without_zoom_and_respects_limits(self):
         viewer = self.w._image_viewer
         viewer.set_image(self.image.image)
         controls = self.panel._mask_controls
@@ -229,7 +286,7 @@ class MaskAutoApplyTests(unittest.TestCase):
         view = viewer._view
         position = view.viewport().rect().center()
         zoom = view.transform().m11()
-        def scroll(delta, modifiers=Qt.KeyboardModifier.AltModifier):
+        def scroll(delta, modifiers=Qt.KeyboardModifier.ShiftModifier):
             event = QWheelEvent(QPointF(position), QPointF(view.viewport().mapToGlobal(position)),
                                 QPoint(), QPoint(0, delta), Qt.MouseButton.NoButton,
                                 modifiers, Qt.ScrollPhase.NoScrollPhase, False)

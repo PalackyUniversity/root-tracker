@@ -383,6 +383,10 @@ class SettingsPanel(QWidget):
         if self._mask_controls is not None:
             self._mask_controls.set_temporary_restore(active)
 
+    def set_temporary_mask_pan(self, active):
+        if self._mask_controls is not None:
+            self._mask_controls.set_temporary_pan(active)
+
     def adjust_mask_diameter(self, steps):
         if self._mask_controls is not None:
             self._mask_controls.adjust_diameter(steps)
