@@ -6,11 +6,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog, QHBoxLayout, QVBoxLayout, QListWidget, QPushButton, QTabWidget,
     QWidget, QFormLayout, QScrollArea, QLineEdit, QSpinBox, QDoubleSpinBox,
-    QLabel, QComboBox, QFileDialog, QInputDialog, QMessageBox, QGroupBox, QStyle,
+    QLabel, QComboBox, QFileDialog, QInputDialog, QMessageBox, QGroupBox, QStyle, QFrame,
 )
 from ...config import Config
 from ..color_range import ColorRangeControl
 from ..right_checkbox import RightAlignedCheckBox
+from ..theme import presets_stylesheet
 
 
 LABELS = {
@@ -72,6 +73,8 @@ class ConfigEditor(QTabWidget):
     """Every public Config field is represented; no separate preset schema."""
     def __init__(self, config, parent=None):
         super().__init__(parent)
+        self.setObjectName('presetEditor')
+        self.setStyleSheet(presets_stylesheet(self.palette()))
         self.set_config(config)
 
     def set_config(self, config):
@@ -87,7 +90,10 @@ class ConfigEditor(QTabWidget):
                   ('Workflow', 'gui', config.gui)]
         for title, prefix, section in groups:
             page = QWidget()
+            page.setObjectName('presetPage')
             form = QFormLayout(page)
+            form.setContentsMargins(16, 16, 16, 16)
+            form.setVerticalSpacing(12)
             form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
             entries = [(field, section, prefix) for field in fields(section)]
             if not prefix:
@@ -135,6 +141,7 @@ class ConfigEditor(QTabWidget):
                     reader = widget.value
                 else:
                     widget = QLineEdit('' if value is None else str(list(value)) if isinstance(value, (tuple, list)) else str(value))
+                    widget.setProperty('presetField', True)
                     reader = widget.text
                     form.addRow(label, widget)
                 if key in ('crop.top_ratio', 'crop.bottom_ratio'):
@@ -158,6 +165,8 @@ class ConfigEditor(QTabWidget):
                 note.setWordWrap(True)
                 form.addRow(note)
             scroll = QScrollArea()
+            scroll.setObjectName('presetScroll')
+            scroll.setFrameShape(QFrame.Shape.NoFrame)
             scroll.setWidgetResizable(True)
             scroll.setWidget(page)
             self.addTab(scroll, title)
@@ -186,6 +195,7 @@ class PresetsDialog(QDialog):
     def __init__(self, store, current, parent=None, *, active_name=None):
         super().__init__(parent)
         self.setWindowTitle('Presets')
+        self.setStyleSheet(presets_stylesheet(self.palette()))
         self.resize(960, 650)
         self.store = store
         self.active_name = active_name
@@ -197,6 +207,8 @@ class PresetsDialog(QDialog):
         layout.addWidget(QLabel(f'Active preset: {active_name}' if active_name else 'Active configuration: custom settings'))
         body = QHBoxLayout()
         self.list = QListWidget()
+        self.list.setObjectName('presetList')
+        self.list.setMouseTracking(True)
         self.list.setMaximumWidth(200)
         body.addWidget(self.list)
         self.editor = ConfigEditor(current)

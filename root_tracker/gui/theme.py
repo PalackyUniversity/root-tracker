@@ -140,6 +140,56 @@ def button_stylesheet(palette: QPalette) -> str:
     """
 
 
+def presets_stylesheet(palette: QPalette) -> str:
+    """Use the shared controls with spacious preset navigation and editor tabs."""
+    light = is_light(palette)
+    surface = palette.color(QPalette.ColorRole.Base if light else QPalette.ColorRole.Button)
+    text = palette.color(QPalette.ColorRole.ButtonText)
+    accent = palette.color(QPalette.ColorRole.Highlight)
+    border = blend(surface, text, .22 if light else .24).name()
+    hover = blend(surface, accent, .10 if light else .18).name()
+    return button_stylesheet(palette) + scrollbar_stylesheet(palette) + f"""
+        QLineEdit[presetField="true"] {{
+            background-color: {surface.name()}; color: {text.name()};
+            border: 1px solid {border}; border-radius: 5px;
+            padding: 3px 8px; min-height: 18px;
+            selection-background-color: {accent.name()};
+            selection-color: palette(highlighted-text);
+        }}
+        QLineEdit[presetField="true"]:hover {{ border-color: {accent.name()}; }}
+        QLineEdit[presetField="true"]:focus {{ border-color: {accent.name()}; }}
+        QTabWidget#presetEditor::pane {{
+            border: 1px solid {border}; border-radius: 8px;
+            background-color: palette(base); padding: 4px;
+        }}
+        QScrollArea#presetScroll {{ border: none; background-color: palette(base); }}
+        QWidget#presetPage {{ background-color: palette(base); }}
+        QTabWidget#presetEditor QTabBar::tab {{
+            background-color: {surface.name()}; color: {text.name()};
+            border: 1px solid {border}; border-radius: 7px;
+            padding: 7px 10px; min-height: 18px;
+            margin-right: 4px; margin-bottom: 7px;
+        }}
+        QTabWidget#presetEditor QTabBar::tab:hover:!selected {{ background-color: {hover}; }}
+        QTabWidget#presetEditor QTabBar::tab:selected {{
+            background-color: {accent.name()}; color: palette(highlighted-text);
+            border-color: {accent.name()};
+        }}
+        QListWidget#presetList {{
+            background-color: palette(base); border: 1px solid {border};
+            border-radius: 8px; padding: 5px; outline: none;
+        }}
+        QListWidget#presetList::item {{
+            min-height: 26px; padding: 5px 8px; margin: 2px 0px;
+            border-radius: 6px;
+        }}
+        QListWidget#presetList::item:hover:!selected {{ background-color: {hover}; }}
+        QListWidget#presetList::item:selected {{
+            background-color: {accent.name()}; color: palette(highlighted-text);
+        }}
+    """
+
+
 def tree_stylesheet(palette: QPalette) -> str:
     return """
         QTreeWidget {
