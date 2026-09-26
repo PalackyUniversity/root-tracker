@@ -178,6 +178,8 @@ class ImageTree(QWidget):
     # Context menu signals
     set_aside_requested = Signal(object)  # ImageData or ImageSeries
     unset_aside_requested = Signal(object)  # ImageData or ImageSeries
+    rsml_replace_requested = Signal(object)  # ImageData
+    rsml_export_requested = Signal(object)  # ImageData
     delete_requested = Signal(object)  # ImageData or ImageSeries
     
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -324,6 +326,8 @@ class ImageTree(QWidget):
     def _image_status(self, image, series, preprocess_hash, tracking_hash):
         if image.is_set_aside:
             return 'excluded', 'Set aside; excluded from processing'
+        if image.rsml_document is not None:
+            return 'rsml', 'Roots replaced with RSML; statistics use imported geometry; automatic tracking will not overwrite it'
         if self._step == WorkflowStep.LOAD:
             if not self._status_config.data.detect_barcodes:
                 return 'done', 'Image loaded; barcode checking is disabled'
@@ -361,6 +365,7 @@ class ImageTree(QWidget):
             verb = 'checked' if config.data.detect_barcodes else 'loaded'
         light = self.palette().color(QPalette.ColorRole.Base).lightness() >= 128
         colors = {
+            'rsml': QColor('#7744aa' if light else '#c4a0ff'),
             'done': QColor('#237a45' if light else '#74c69d'),
             'warning': QColor('#9a5b00' if light else '#ffad42'),
             'modified': QColor('#d97706' if light else '#ffad42'),
@@ -369,7 +374,9 @@ class ImageTree(QWidget):
             'running': QColor('#1766a5' if light else '#80bfff'),
             'excluded': self.palette().color(QPalette.ColorRole.PlaceholderText),
         }
-        symbols = {'done': '✓', 'pending': '○', 'outdated': '↻', 'running': '…', 'excluded': '—'}
+        symbols = {'rsml': 'RSML', 'done': '✓', 'pending': '○', 'outdated': '↻', 'running': '…', 'excluded': '—'}
+        has_rsml = any(image.rsml_document is not None for series in self._series_dict.values() for image in series)
+        self._tree.setColumnWidth(1, 52 if has_rsml else 30)
         for index in range(self._tree.topLevelItemCount()):
             group = self._tree.topLevelItem(index)
             series = self._item_to_data[id(group)]
@@ -392,14 +399,14 @@ class ImageTree(QWidget):
                 pending = id(series) in self._pending_series_ids and status != 'excluded'
                 if pending:
                     detail += '; Unapplied settings changes'
-                child.setText(1, '⚠' if warning else '●' if pending else symbols[status])
+                child.setText(1, 'RSML' if status == 'rsml' else '⚠' if warning else '●' if pending else symbols[status])
                 child.setTextAlignment(1, Qt.AlignmentFlag.AlignCenter)
-                child.setForeground(1, colors['warning' if warning else 'modified' if pending else status])
+                child.setForeground(1, colors['rsml' if status == 'rsml' else 'warning' if warning else 'modified' if pending else status])
                 child.setData(1, Qt.ItemDataRole.UserRole, status)
                 child.setToolTip(1, f'{label}: {detail}')
                 child.setData(1, Qt.ItemDataRole.AccessibleTextRole, f'{image.filename}: {label}. {detail}')
             count = sum(s != 'excluded' for s in statuses)
-            done = statuses.count('done')
+            done = statuses.count('done') + statuses.count('rsml')
             status = ('excluded' if not count else 'done' if done == count else
                       'running' if 'running' in statuses else
                       'outdated' if 'outdated' in statuses else 'pending')
@@ -409,6 +416,8 @@ class ImageTree(QWidget):
             group.setForeground(1, colors['warning' if warnings else 'modified' if pending else status])
             group.setData(1, Qt.ItemDataRole.UserRole, status)
             detail = f'{label}: {done} of {count} images {verb}' if count else 'Set aside; excluded from processing'
+            if 'rsml' in statuses:
+                detail += f'; {statuses.count("rsml")} RSML replacement(s)'
             if status == 'running':
                 detail += '; queued or processing'
             elif status == 'outdated':
@@ -624,6 +633,12 @@ class ImageTree(QWidget):
             return
             
         menu = RoundedMenu(self)
+        if isinstance(data, ImageData):
+            replace_action = menu.addAction("Replace with RSML…")
+            replace_action.triggered.connect(lambda: self.rsml_replace_requested.emit(data))
+            export_action = menu.addAction("Export to RSML…")
+            export_action.triggered.connect(lambda: self.rsml_export_requested.emit(data))
+            menu.addSeparator()
         
         # Determine if item is already set aside
         is_aside = data.is_set_aside

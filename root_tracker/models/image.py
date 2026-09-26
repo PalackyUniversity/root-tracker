@@ -8,8 +8,11 @@ associated metadata and processed results.
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import numpy as np
+
+if TYPE_CHECKING:
+    from ..io.rsml import RSMLDocument
 
 
 @dataclass
@@ -81,8 +84,20 @@ class ImageData:
     longest: list[int] = field(default_factory=list)
     colored_samples: dict[int, set] = field(default_factory=dict)
     
+    # Export-only snapshot; never consumed by tracking. None identifies old caches.
+    rsml_samples: dict[int, np.ndarray] | None = field(default=None, repr=False)
+
+    # User replacements are authoritative and survive cache/result invalidation.
+    rsml_document: Optional["RSMLDocument"] = field(default=None, repr=False)
+    rsml_background: Optional[np.ndarray] = field(default=None, repr=False)
+
     def clear_tracking_results(self) -> None:
         """Clear all tracking/analysis results, preserving preprocessing data."""
+        if self.rsml_document is not None:
+            self.colored_samples = {}
+            self.rsml_samples = None
+            self.image_annotated = None
+            return
         self.total_length = None
         self.total_area = None
         self.new_area = None
@@ -90,6 +105,7 @@ class ImageData:
         self.plant_length = []
         self.longest = []
         self.colored_samples = {}
+        self.rsml_samples = None
         self.image_annotated = None
 
     def clear_preprocessing_results(self) -> None:
@@ -145,6 +161,10 @@ class ImageData:
             plant_length=self.plant_length.copy(),
             longest=self.longest.copy(),
             colored_samples={k: v.copy() for k, v in self.colored_samples.items()},
+            rsml_document=self.rsml_document,
+            rsml_background=self.rsml_background.copy() if self.rsml_background is not None else None,
+            rsml_samples=({k: v.copy() for k, v in self.rsml_samples.items()}
+                          if self.rsml_samples is not None else None),
         )
 
 

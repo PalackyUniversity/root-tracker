@@ -97,9 +97,11 @@ class ResultExporter:
         
         df = pd.DataFrame.from_records(records)
         
+        has_rsml = "root_source" in df and (df["root_source"] == "rsml").any()
+        plant_ids = sorted(df["plant_id"].unique()) if has_rsml else range(1, self.config.n_clusters + 1)
         summary = {
             "total_images": df["image_path"].nunique(),
-            "total_plants": self.config.n_clusters,
+            "total_plants": len(plant_ids),
             "date_range": (
                 df["image_date"].min().isoformat() if not df.empty else None,
                 df["image_date"].max().isoformat() if not df.empty else None,
@@ -107,7 +109,7 @@ class ResultExporter:
         }
         
         # Per-plant summary
-        for plant_id in range(1, self.config.n_clusters + 1):
+        for plant_id in plant_ids:
             plant_df = df[df["plant_id"] == plant_id]
             if not plant_df.empty:
                 summary[f"plant_{plant_id}"] = {

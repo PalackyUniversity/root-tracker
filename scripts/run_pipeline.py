@@ -61,6 +61,10 @@ Examples:
         help="Enable verbose output"
     )
     
+    parser.add_argument(
+        "--rsml-output", type=str, default=None,
+        help="Also export RSML and matching processed images to this directory"
+    )
     args = parser.parse_args()
     
     # Load configuration
@@ -92,9 +96,11 @@ Examples:
         print(f"Running pipeline in {mode} mode...")
     
     try:
-        output_path = pipeline.run(parallel=parallel, max_workers=args.workers)
+        output_path = pipeline.run(parallel=parallel, max_workers=args.workers, rsml_output=args.rsml_output)
         print(f"Pipeline completed successfully!")
         print(f"Statistics saved to: {output_path}")
+        if args.rsml_output:
+            print(f"RSML saved to: {args.rsml_output}")
     except Exception as e:
         print(f"Error running pipeline: {e}")
         if args.verbose:

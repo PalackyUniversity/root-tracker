@@ -48,6 +48,7 @@ class ProcessingState(Enum):
     TRACKING = "tracking"
     BATCH_PREPROCESS = "batch_preprocess"
     BATCH_TRACK = "batch_track"
+    RSML_EXPORT = "rsml_export"
 
 
 class ProcessingContext:
@@ -587,6 +588,8 @@ class MainWindow(QMainWindow):
         self._image_tree.set_aside_requested.connect(self._on_set_aside_requested)
         self._image_tree.unset_aside_requested.connect(self._on_unset_aside_requested)
         self._image_tree.delete_requested.connect(self._on_delete_requested)
+        self._image_tree.rsml_export_requested.connect(self._on_export_rsml)
+        self._image_tree.rsml_replace_requested.connect(self._on_replace_rsml)
         
         # Settings panel
         self._settings_panel.dirty_changed.connect(self._on_settings_dirty_changed)
@@ -950,7 +953,10 @@ class MainWindow(QMainWindow):
                 self._image_viewer.clear_barcode_overlay()
         else:
             # TRACK: prefer annotated image, fall back to preprocessed
-            if image_data.image_annotated is not None:
+            if image_data.rsml_document is not None:
+                from ..io.rsml_replacement import render_replacement
+                image = render_replacement(image_data)
+            elif image_data.image_annotated is not None:
                 image = image_data.image_annotated
             elif image_data.image is not None:
                 image = image_data.image
@@ -973,7 +979,8 @@ class MainWindow(QMainWindow):
                     image_data.positions_x, image_data.positions_y)))
 
             # Set mask data if in TRACK step
-            if step == WorkflowStep.TRACK and self._current_series is not None:
+            if (step == WorkflowStep.TRACK and self._current_series is not None
+                    and image_data.rsml_document is None):
                 # Erase mask if dimensions don't match (preprocessing changed the crop)
                 user_mask = self._current_series.user_mask
                 if user_mask is not None and user_mask.shape[:2] != image.shape[:2]:
@@ -1471,7 +1478,8 @@ class MainWindow(QMainWindow):
                 # Ensure target directory exists
                 os.makedirs(os.path.dirname(target_path), exist_ok=True)
                 
-                shutil.move(src_path, target_path)
+                from ..io.rsml_replacement import move_image_with_replacement
+                move_image_with_replacement(src_path, target_path)
                 image_data.path = target_path
             
             # If it was a series, we might want to update the group identifier if it contained path info?
@@ -1536,7 +1544,8 @@ class MainWindow(QMainWindow):
                 # Ensure target directory exists
                 os.makedirs(os.path.dirname(target_path), exist_ok=True)
                 
-                shutil.move(src_path, target_path)
+                from ..io.rsml_replacement import move_image_with_replacement
+                move_image_with_replacement(src_path, target_path)
                 image_data.path = target_path
 
             self._image_tree.refresh()
@@ -1564,6 +1573,8 @@ class MainWindow(QMainWindow):
                 for image_data in items_to_delete:
                     if os.path.exists(image_data.path):
                         os.remove(image_data.path)
+                    from ..io.rsml_replacement import replacement_path
+                    replacement_path(image_data.path).unlink(missing_ok=True)
                     
                     # update data structures
                     # If dealing with single image delete
@@ -2335,6 +2346,8 @@ class MainWindow(QMainWindow):
             img.diff = None
             img.image_annotated = None
             img.colored_samples = {}
+            img.rsml_samples = None
+            img.rsml_background = None
 
     # Removed _is_operation_running - replaced by checking _state != ProcessingState.IDLE
     
@@ -2583,6 +2596,52 @@ class MainWindow(QMainWindow):
         # Delegate to _start_tracking which uses ProcessWorker
         self._start_tracking(self._current_series)
     
+    def _on_replace_rsml(self, image: ImageData) -> None:
+        if self._state != ProcessingState.IDLE:
+            return
+        series = next((series for series in self._series_dict.values()
+                       if any(candidate is image for candidate in series)), None)
+        if series is None:
+            return
+        from ..io.rsml import read_rsml
+        from ..io.rsml_replacement import replace_roots, restore_measurements
+        filename, _ = QFileDialog.getOpenFileName(
+            self, f"Replace roots for {image.filename} with RSML", "", "RSML Files (*.rsml);;All Files (*)")
+        if not filename:
+            return
+        try:
+            document = read_rsml(filename)
+            self._ensure_series_loaded(series)
+            replace_roots(image, document)
+            restore_measurements(series)
+        except (OSError, ValueError) as exc:
+            QMessageBox.critical(self, "RSML Replacement Failed", str(exc))
+            return
+        self._image_tree.refresh_status()
+        if self._current_image is image:
+            self._display_image(image, preserve_view=True)
+        self._status_bar.showMessage(f"{image.filename}: roots and measurements replaced with RSML", 6000)
+
+    def _on_export_rsml(self, image: ImageData) -> None:
+        if self._state != ProcessingState.IDLE or self._pipeline is None:
+            return
+        from .dialogs.rsml_dialog import RSMLExportDialog
+        match = next(((series, index)
+                      for series in self._series_dict.values()
+                      for index, candidate in enumerate(series.images)
+                      if candidate is image), None)
+        if match is None:
+            return
+        series, index = match
+        if image.rsml_document is None and not self._pipeline.is_tracking_current(series):
+            QMessageBox.warning(self, "Tracking Required", "Track this image's series before exporting RSML.")
+            return
+        destination = QFileDialog.getExistingDirectory(self, f"Export to RSML: {image.filename}")
+        if destination:
+            with ProcessingContext(self, ProcessingState.RSML_EXPORT):
+                RSMLExportDialog([series], deepcopy(self._config), destination,
+                                 self, image_index=index).exec()
+
     def _on_export_results(self) -> None:
         """Handle export results action."""
         if self._pipeline is None or not self._series_dict:

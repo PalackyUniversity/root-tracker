@@ -86,6 +86,7 @@ class RootTrackingPipeline:
         # State
         self._series: dict[str, ImageSeries] = {}
         self._all_statistics: list[PlantStatistics] = []
+        self.rsml_output: str | None = None
     
     def load_images(self) -> dict[str, ImageSeries]:
         """
@@ -99,6 +100,10 @@ class RootTrackingPipeline:
         # Try to load cached state for each series
         for series in self._series.values():
             series_cache.load_series_state(series, self.config)
+            from .io.rsml_replacement import load_replacement, restore_measurements
+            for image in series:
+                load_replacement(image)
+            restore_measurements(series)
             
         return self._series
     
@@ -291,9 +296,10 @@ class RootTrackingPipeline:
             series: ImageSeries to preprocess.
             progress_callback: Optional callback(current, total) for progress.
         """
-        total = len(series.images)
+        images = [image for image in series if image.rsml_document is None]
+        total = len(images)
         if total < 2 or current_process().name != 'MainProcess':
-            for i, image_data in enumerate(series.images):
+            for i, image_data in enumerate(images):
                 self.preprocess_image(image_data)
                 if progress_callback:
                     progress_callback(i + 1, total)
@@ -303,11 +309,11 @@ class RootTrackingPipeline:
         # CV and KMeans in chronological order (including their random state).
         # Batch child processes already overlap reads and do not add a pool.
         with ThreadPoolExecutor(max_workers=1, thread_name_prefix='image-decode') as reader:
-            pending = reader.submit(cv2.imread, series.images[0].path)
-            for i, image_data in enumerate(series.images):
+            pending = reader.submit(cv2.imread, images[0].path)
+            for i, image_data in enumerate(images):
                 original = pending.result()
                 if i + 1 < total:
-                    pending = reader.submit(cv2.imread, series.images[i + 1].path)
+                    pending = reader.submit(cv2.imread, images[i + 1].path)
                 self.preprocess_image(image_data, original=original)
                 del original
                 if progress_callback:
@@ -320,7 +326,7 @@ class RootTrackingPipeline:
         Args:
             series: ImageSeries to register.
         """
-        self.registrator.register_series(series.images)
+        self.registrator.register_series([image for image in series if image.rsml_document is None])
     
     def track_and_analyze_series(
         self, 
@@ -354,18 +360,38 @@ class RootTrackingPipeline:
         pos_x_median = []
         pos_y_median = []
         for i in range(self.config.n_clusters):
-            x_values = [img.positions_x[i] for img in series.images if img.positions_x]
-            y_values = [img.positions_y[i] for img in series.images if img.positions_y]
+            x_values = [img.positions_x[i] for img in series.images if img.rsml_document is None and img.positions_x]
+            y_values = [img.positions_y[i] for img in series.images if img.rsml_document is None and img.positions_y]
             if x_values and y_values:
                 pos_x_median.append(round(np.median(x_values)))
                 pos_y_median.append(round(np.median(y_values)))
         
-        if not pos_x_median:
+        # Invalidate only export geometry at the start of each tracking run.
+        for image_data in series.images:
+            image_data.rsml_samples = None
+        has_replacements = any(image.rsml_document is not None for image in series)
+        if not pos_x_median and not has_replacements:
+            for image_data in series.images:
+                if image_data.image is not None and image_data.process is not None:
+                    image_data.rsml_samples = {}
             return statistics
         
         total_images = len(series.images)
         for idx, image_data in enumerate(series.images):
-            if image_data.process is None:
+            if image_data.rsml_document is not None:
+                from .io.rsml_replacement import render_replacement
+                from .analysis.rsml_statistics import apply_measurements, image_statistics
+                apply_measurements(image_data)
+                statistics.extend(image_statistics(image_data))
+                image_data.image_annotated = render_replacement(image_data)
+                if image_callback:
+                    image_callback(image_data)
+                if save_images:
+                    self.exporter.save_image(image_data.image_annotated, os.path.basename(image_data.path))
+                if progress_callback:
+                    progress_callback(idx + 1, total_images)
+                continue
+            if not pos_x_median or image_data.process is None:
                 continue
 
             # Create annotated copy — never mutate image_data.image
@@ -456,6 +482,10 @@ class RootTrackingPipeline:
             )
             
             image_data.colored_samples = colored_samples
+            image_data.rsml_samples = {
+                int(k): np.asarray(sorted(v), dtype=np.int32).reshape(-1, 2)
+                for k, v in colored_samples.items()
+            }
             
             # Draw links on image
             for upper, lower in pairs:
@@ -603,6 +633,10 @@ class RootTrackingPipeline:
             if progress_callback:
                 progress_callback(idx + 1, total_images)
         
+        if has_replacements:
+            from .analysis.rsml_statistics import refresh_statistics
+            return refresh_statistics(series, statistics)
+
         # Validate monotonic growth
         for key in ["image_total_area", "image_total_length", "plant_total_length", 
                     "plant_main_root_depth", "plant_main_root_length"]:
@@ -614,6 +648,8 @@ class RootTrackingPipeline:
     
     def is_tracking_current(self, series: ImageSeries) -> bool:
         """Check if tracking results are still valid for the current config."""
+        if series.images and all(image.rsml_document is not None for image in series):
+            return True
         state = series.pipeline_state
         return (
             state.tracked
@@ -648,11 +684,14 @@ class RootTrackingPipeline:
         for series in series_dict.values():
             state = series.pipeline_state
             if state.tracked and state.last_statistics:
-                all_stats.extend(state.last_statistics)
+                stats = state.last_statistics
             else:
                 # If not tracked yet, track it now (synchronously)
                 stats = self.track_and_analyze_series(series)
-                all_stats.extend(stats)
+            if any(image.rsml_document is not None for image in series):
+                from .analysis.rsml_statistics import refresh_statistics
+                stats = refresh_statistics(series, stats)
+            all_stats.extend(stats)
         
         # Convert to records
         records = [
@@ -680,12 +719,24 @@ class RootTrackingPipeline:
         try:
             self.preprocess_series(series)
             self.register_series(series)
-            return self.track_and_analyze_series(series)
+            statistics = self.track_and_analyze_series(series)
+            if self.rsml_output is not None:
+                from pathlib import Path
+                from .io.rsml_export import export_series_rsml
+                state = series.pipeline_state
+                state.preprocessed = state.tracked = True
+                state.preprocess_config_hash = self.config.preprocess_config_hash()
+                state.tracking_config_hash = self.config.tracking_config_hash()
+                export_series_rsml(series, self.config, Path(self.rsml_output))
+            return statistics
         except Exception as e:
             print(f"Error processing {series.group}: {e}")
+            if self.rsml_output is not None:
+                raise
             return []
     
-    def run(self, parallel: bool = True, max_workers: int | None = None) -> str:
+    def run(self, parallel: bool = True, max_workers: int | None = None,
+            rsml_output: str | None = None) -> str:
         """
         Run the full pipeline.
         
@@ -696,6 +747,7 @@ class RootTrackingPipeline:
         Returns:
             Path to the saved CSV file.
         """
+        self.rsml_output = rsml_output
         # Load images
         series_dict = self.load_images()
         series_list = list(series_dict.values())
@@ -727,6 +779,7 @@ class RootTrackingPipeline:
         """Process series for parallel execution (creates new pipeline instance)."""
         # Create a new pipeline instance for this process
         pipeline = RootTrackingPipeline(self.config)
+        pipeline.rsml_output = self.rsml_output
         return pipeline.process_series_wrapper(series)
 
 

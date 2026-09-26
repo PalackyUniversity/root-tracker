@@ -78,6 +78,9 @@ def save_series(series: ImageSeries, config: Config) -> Optional[Path]:
 
         # Per-image arrays
         for idx, img in enumerate(series.images):
+            if img.rsml_samples is not None:
+                for plant_id, points in img.rsml_samples.items():
+                    arrays[f"rsml_{idx}_{plant_id}"] = points
             for field_name in _ARRAY_FIELDS:
                 arr = getattr(img, field_name, None)
                 if arr is not None:
@@ -90,6 +93,7 @@ def save_series(series: ImageSeries, config: Config) -> Optional[Path]:
         # Build metadata dict
         state = series.pipeline_state
         metadata = {
+            "rsml_identity": _rsml_identity(series),
             "preprocess_config_hash": state.preprocess_config_hash,
             "tracking_config_hash": state.tracking_config_hash,
             "preprocessed": state.preprocessed,
@@ -102,7 +106,8 @@ def save_series(series: ImageSeries, config: Config) -> Optional[Path]:
         }
 
         for img in series.images:
-            img_meta = {}
+            img_meta = {"rsml_plant_ids": (list(img.rsml_samples)
+                        if img.rsml_samples is not None else None)}
             for field_name in _SCALAR_FIELDS:
                 img_meta[field_name] = getattr(img, field_name, None)
             for field_name in _LIST_FIELDS:
@@ -199,6 +204,8 @@ def load_series_state(series: ImageSeries, config: Config) -> bool:
             series.working_mask = series.user_mask.copy()
 
         data.close()
+        from .rsml_replacement import restore_measurements
+        restore_measurements(series)
         # logger.debug("Loaded cache state for series %s", series.group)
         return True
 
@@ -207,7 +214,7 @@ def load_series_state(series: ImageSeries, config: Config) -> bool:
         return False
 
 
-def load_series(series: ImageSeries, config: Config) -> bool:
+def load_series(series: ImageSeries, config: Config, *, require_identity: bool = False) -> bool:
     """
     Restore a series' arrays and metadata from a .npz cache file.
 
@@ -232,6 +239,10 @@ def load_series(series: ImageSeries, config: Config) -> bool:
 
         meta_bytes = data["_metadata"].tobytes()
         metadata = json.loads(meta_bytes.decode("utf-8"))
+        identity_matches = metadata.get("rsml_identity") == _rsml_identity(series)
+        if require_identity and not identity_matches:
+            data.close()
+            return False
 
         # Restore pipeline state
         state = series.pipeline_state
@@ -251,6 +262,12 @@ def load_series(series: ImageSeries, config: Config) -> bool:
                 key = f"{field_name}_{idx}"
                 if key in data:
                     setattr(img, field_name, data[key])
+
+            img.rsml_samples = None
+            if idx < len(images_meta):
+                plant_ids = images_meta[idx].get("rsml_plant_ids")
+                if plant_ids is not None and identity_matches:
+                    img.rsml_samples = {int(pid): data[f"rsml_{idx}_{pid}"] for pid in plant_ids}
 
             # Scalar + list + barcode metadata
             if idx < len(images_meta):
@@ -274,6 +291,8 @@ def load_series(series: ImageSeries, config: Config) -> bool:
             series.user_mask = data["user_mask"]
 
         data.close()
+        from .rsml_replacement import restore_measurements
+        restore_measurements(series)
         logger.debug("Loaded cache for series %s from %s", series.group, cache_path)
         return True
 
@@ -339,3 +358,12 @@ def _json_default(obj):
     if hasattr(obj, "isoformat"):
         return obj.isoformat()
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
+def _rsml_identity(series: ImageSeries) -> dict:
+    """Bind export-only geometry to its group and ordered image identities."""
+    return {
+        "group": series.group,
+        "images": [[str(Path(image.path).resolve()), image.date.isoformat()]
+                   for image in series.images],
+    }
