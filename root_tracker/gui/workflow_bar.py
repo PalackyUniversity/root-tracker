@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QPushButton, QLabel
 )
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QColor, QPalette
 
 
 class WorkflowStep(IntEnum):
@@ -45,6 +45,7 @@ class WorkflowBar(QWidget):
         
         self._current_step = WorkflowStep.LOAD
         self._step_buttons: dict[WorkflowStep, QPushButton] = {}
+        self._separators: list[QLabel] = []
         self._completed_steps: set[WorkflowStep] = set()
         
         self._setup_ui()
@@ -71,7 +72,7 @@ class WorkflowBar(QWidget):
             if step != WorkflowStep.TRACK:
                 sep = QLabel("›")
                 sep.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                sep.setStyleSheet("color: #666; font-size: 14px;")
+                self._separators.append(sep)
                 layout.addWidget(sep)
         
         # Set initial state
@@ -113,32 +114,48 @@ class WorkflowBar(QWidget):
     
     def _update_button_states(self) -> None:
         """Update button checked states and styling (Lightroom-style)."""
+        palette = self.palette()
+        foreground = palette.color(QPalette.ColorRole.WindowText)
+        background = palette.color(QPalette.ColorRole.Window)
+        muted = QColor.fromRgb(*(
+            round(fg * 0.72 + bg * 0.28)
+            for fg, bg in zip(foreground.getRgb()[:3], background.getRgb()[:3])
+        )).name()
+        for separator in self._separators:
+            separator.setStyleSheet(f"color: {muted}; font-size: 14px;")
         for step, btn in self._step_buttons.items():
             btn.setChecked(step == self._current_step)
             
             # Minimal, flat Lightroom-style buttons
             if step == self._current_step:
                 # Current step: underlined text, no background
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background: transparent;
-                        color: #fff;
+                        color: {foreground.name()};
                         font-weight: bold;
                         border: none;
-                        border-bottom: 2px solid #4a90d9;
+                        border-bottom: 2px solid palette(highlight);
+                        border-radius: 0px;
                         padding: 5px 10px;
-                    }
+                    }}
+                    QPushButton:hover {{
+                        background-color: palette(midlight);
+                    }}
                 """)
             else:
                 # Inactive step: dimmed
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background: transparent;
-                        color: #888;
+                        color: {muted};
                         border: none;
+                        border-radius: 0px;
                         padding: 5px 10px;
-                    }
-                    QPushButton:hover {
-                        color: #aaa;
-                    }
+                    }}
+                    QPushButton:hover {{
+                        color: {foreground.name()};
+                        background-color: palette(midlight);
+                        border-radius: 3px;
+                    }}
                 """)

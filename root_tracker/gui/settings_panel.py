@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QGroupBox, QLineEdit, QComboBox, QCheckBox, QButtonGroup, QRadioButton
 )
 from PySide6.QtCore import Signal
+from PySide6.QtGui import QPalette
 
 from ..config import Config
 from .workflow_bar import WorkflowStep
@@ -401,7 +402,9 @@ class SettingsPanel(QWidget):
             self._apply_btn.setEnabled(True)
             self._apply_btn.setToolTip("Apply changes to current group")
             self._status_indicator.setText("● Modified")
-            self._status_indicator.setStyleSheet("color: #f0ad4e; font-size: 11px;")
+            light_background = self.palette().color(QPalette.ColorRole.Window).lightness() >= 128
+            warning_color = "#9a5b00" if light_background else "#f0ad4e"
+            self._status_indicator.setStyleSheet(f"color: {warning_color}; font-size: 11px;")
         else:
             self._apply_btn.setEnabled(False)
             self._apply_btn.setToolTip("No changes to apply")

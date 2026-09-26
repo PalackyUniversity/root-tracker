@@ -7,12 +7,15 @@ Shows an empty state with load button when no images are loaded.
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem,
-    QLabel, QPushButton, QStackedWidget, QMenu, QHBoxLayout
+    QLabel, QPushButton, QStackedWidget, QHBoxLayout,
+    QToolButton, QStyle
 )
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtGui import QAction, QFont, QColor
+from PySide6.QtGui import QAction, QFont, QColor, QPalette
 
 from ..models import ImageSeries, ImageData
+from .menus import RoundedMenu
+from .theme import tree_stylesheet
 
 
 class ImageTree(QWidget):
@@ -56,46 +59,32 @@ class ImageTree(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
-        # Header widget with folder name and open button
+        # Source header above the image list
         self._header = QWidget()
+        self._header.setObjectName("imageTreeHeader")
         self._header.setStyleSheet("""
-            QWidget {
-                background-color: #2b2b2b;
-                border-bottom: 1px solid #3a3a3a;
+            QWidget#imageTreeHeader {
+                background-color: palette(base);
+                border-bottom: 1px solid palette(midlight);
             }
         """)
         header_layout = QHBoxLayout(self._header)
-        header_layout.setContentsMargins(8, 6, 8, 6)
+        header_layout.setContentsMargins(9, 6, 6, 6)
         header_layout.setSpacing(4)
-        
+
         self._folder_label = QLabel("No folder")
-        self._folder_label.setStyleSheet("color: #ffffff; font-size: 11px; border: none;")
+        self._folder_label.setStyleSheet("font-size: 13px; border: none;")
         self._folder_label.setWordWrap(False)
-        header_layout.addWidget(self._folder_label, 1)  # stretch to fill
-        
-        self._open_folder_btn = QPushButton("Open...")
-        self._open_folder_btn.setToolTip("Open different folder")
-        self._open_folder_btn.setFixedHeight(24)
+        header_layout.addWidget(self._folder_label, 1)
+
+        self._open_folder_btn = QToolButton()
+        self._open_folder_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        self._open_folder_btn.setAutoRaise(True)
+        self._open_folder_btn.setFixedSize(24, 24)
+        self._open_folder_btn.setToolTip("Change image folder")
+        self._open_folder_btn.setAccessibleName("Change image folder")
         self._open_folder_btn.clicked.connect(self.load_requested.emit)
-        self._open_folder_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #3a3a3a;
-                border: 1px solid #4a4a4a;
-                border-radius: 3px;
-                padding: 4px 8px;
-                color: #ccc;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #4a4a4a;
-                border: 1px solid #5a5a5a;
-                color: #fff;
-            }
-            QPushButton:pressed {
-                background-color: #2a2a2a;
-            }
-        """)
-        header_layout.addWidget(self._open_folder_btn, 0)
+        header_layout.addWidget(self._open_folder_btn)
         
         self._header.hide()  # Hidden by default until folder is loaded
         layout.addWidget(self._header)
@@ -114,7 +103,7 @@ class ImageTree(QWidget):
         # Container for centered content
         empty_label = QLabel("No images loaded")
         empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        empty_label.setStyleSheet("color: #888; font-size: 12px; margin-bottom: 10px;")
+        empty_label.setStyleSheet("font-size: 12px; margin-bottom: 10px;")
         empty_layout.addWidget(empty_label, 0, Qt.AlignmentFlag.AlignHCenter)
         
         load_btn = QPushButton("Open Folder...")
@@ -129,6 +118,7 @@ class ImageTree(QWidget):
         
         # Tree widget - single column
         self._tree = QTreeWidget()
+        self._tree.setStyleSheet(tree_stylesheet(self.palette()))
         self._tree.setHeaderHidden(True)
         self._tree.setColumnCount(1)
         self._tree.itemSelectionChanged.connect(self._on_selection_changed)
@@ -182,6 +172,8 @@ class ImageTree(QWidget):
     
     def _populate_tree(self) -> None:
         """Populate the tree with the current series data."""
+        light_background = self.palette().color(QPalette.ColorRole.Window).lightness() >= 128
+        warning_color = QColor("#9a5b00" if light_background else "#ffad42")
         for group_name, series in sorted(self._series_dict.items()):
             is_group_aside = series.is_set_aside
             
@@ -205,8 +197,7 @@ class ImageTree(QWidget):
             elif series.has_barcode_warning:
                 prefix = "⚠️ "
                 suffix = ""
-                # Orange-ish color for warning
-                color = QColor(255, 140, 0)
+                color = warning_color
                 tooltip = "Barcode not detected in some images"
             else:
                 suffix = ""
@@ -255,7 +246,7 @@ class ImageTree(QWidget):
                     img_tooltip = f"Barcode mismatch: Read '{image_data.barcode_read}', Expected '{image_data.barcode}'"
                 elif image_data.barcode_not_found and image_data.barcode_detected:
                     img_prefix = "⚠️ "
-                    img_color = QColor(255, 140, 0)
+                    img_color = warning_color
                     img_tooltip = "No barcode detected"
                 
                 image_item = QTreeWidgetItem([f"{img_prefix}{date_str}"])
@@ -421,8 +412,7 @@ class ImageTree(QWidget):
         if data is None:
             return
             
-        menu = QMenu(self)
-        menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        menu = RoundedMenu(self)
         
         # Determine if item is already set aside
         is_aside = data.is_set_aside

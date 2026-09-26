@@ -33,6 +33,8 @@ from .image_viewer import ImageViewer
 from .settings_panel import SettingsPanel
 from .dialogs import LoadDialog
 from .masking_tools import MaskTool
+from .menus import MenuBarPopup
+from .theme import button_stylesheet
 
 
 class ProcessingState(Enum):
@@ -263,6 +265,7 @@ class MainWindow(QMainWindow):
         
         self.setWindowTitle("Root Tracker")
         self.setMinimumSize(1200, 800)
+        self.setStyleSheet(button_stylesheet(self.palette()))
         
         self._setup_ui()
         self._setup_menu()
@@ -375,7 +378,7 @@ class MainWindow(QMainWindow):
         self._status_bar.addPermanentWidget(self._processing_label)
         
         self._progress_bar = QProgressBar()
-        self._progress_bar.setFixedSize(150, 18)
+        self._progress_bar.setFixedSize(150, 26)
         self._progress_bar.setMaximum(100)
         self._progress_bar.hide()
         self._status_bar.addPermanentWidget(self._progress_bar)
@@ -396,21 +399,18 @@ class MainWindow(QMainWindow):
         """Set up the menu bar."""
         menubar = self.menuBar()
         
-        # Style the menu bar to match workflow bar height and center items
+        # Center compact menu items beside the 42 px workflow bar.
+        menubar.setFixedHeight(42)
         menubar.setStyleSheet("""
-            QMenuBar {
-                background-color: transparent;
-                border-bottom: 1px solid #333;
-                min-height: 38px;
-            }
             QMenuBar::item {
-                height: 38px;
                 background: transparent;
                 font-size: 14px;
-                vertical-align: middle;
+                padding: 2px 4px;
+                margin: 8px 0px;
             }
             QMenuBar::item:selected {
-                background-color: #4a4a4a;
+                background-color: palette(highlight);
+                color: palette(highlighted-text);
                 border-radius: 3px;
             }
         """)
@@ -419,8 +419,8 @@ class MainWindow(QMainWindow):
         menubar.setCornerWidget(self._workflow_bar, Qt.Corner.TopRightCorner)
         
         # File menu
-        file_menu = menubar.addMenu("&File")
-        file_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        file_menu = MenuBarPopup(menubar, "&File")
+        menubar.addMenu(file_menu)
         
         load_action = QAction("&Open Folder...", self)
         load_action.setShortcut(QKeySequence.StandardKey.Open)
@@ -446,8 +446,8 @@ class MainWindow(QMainWindow):
         file_menu.addAction(quit_action)
         
         # View menu
-        view_menu = menubar.addMenu("&View")
-        view_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        view_menu = MenuBarPopup(menubar, "&View")
+        menubar.addMenu(view_menu)
         
         fit_action = QAction("&Fit Image", self)
         fit_action.setShortcut(QKeySequence("Ctrl+0"))
@@ -481,8 +481,8 @@ class MainWindow(QMainWindow):
         view_menu.addAction(self._detect_barcodes_action)
         
         # Help menu
-        help_menu = menubar.addMenu("&Help")
-        help_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        help_menu = MenuBarPopup(menubar, "&Help")
+        menubar.addMenu(help_menu)
         
         about_action = QAction("&About", self)
         about_action.triggered.connect(self._on_about)
@@ -1745,17 +1745,6 @@ class MainWindow(QMainWindow):
         # Next button: change to Cancel during processing
         self._next_step_btn.setText("Cancel")
         self._next_step_btn.setEnabled(True)
-        self._next_step_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #d9534f;
-                color: white;
-                font-weight: bold;
-                padding: 2px 12px;
-            }
-            QPushButton:hover {
-                background-color: #c9302c;
-            }
-        """)
         self._next_step_btn.setToolTip("Cancel current processing")
         
         # Zoom controls: always enabled when images are loaded (independent of lock state)
