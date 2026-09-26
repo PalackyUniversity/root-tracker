@@ -166,7 +166,7 @@ class RootLinker:
 
             # Consistency check: look for overlap with previous frame
             if previous_colored_samples and 'contour' in upper:
-                current_pixels = set(map(tuple, upper['contour'][:, 0]))
+                current_pixels = set(map(tuple, upper['contour'][:, 0].tolist()))
                 
                 # Check overlap with each plant from previous frame
                 for plant_id, prev_pixels in previous_colored_samples.items():
@@ -194,8 +194,8 @@ class RootLinker:
                     pairs.append((up_point, best_point))
                     
                     if 'contour' in upper:
-                        pixels = set(map(tuple, upper['contour'][:, 0]))
-                        colored_samples[forced_plant_id] = colored_samples[forced_plant_id].union(pixels)
+                        pixels = set(map(tuple, upper['contour'][:, 0].tolist()))
+                        colored_samples[forced_plant_id].update(pixels)
                         
                     continue
 
@@ -242,8 +242,8 @@ class RootLinker:
                     
                     # Track pixels for this plant
                     if 'contour' in upper:
-                        pixels = set(map(tuple, upper['contour'][:, 0]))
-                        colored_samples[plant_id] = colored_samples[plant_id].union(pixels)
+                        pixels = set(map(tuple, upper['contour'][:, 0].tolist()))
+                        colored_samples[plant_id].update(pixels)
         
         return pairs, colored, colored_samples
     

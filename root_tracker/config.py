@@ -20,6 +20,7 @@ class DataConfig:
     output: str = "result/"
     statistics: str = "statistics_in_vitro.csv"
     detect_barcodes: bool = True  # Enable/disable barcode detection
+    cache_compressed: bool = False  # Faster interactive saves; True saves disk space
 
     def resolve_paths(self, base_path: Path) -> None:
         """Resolve relative paths to absolute paths based on base_path."""

@@ -50,24 +50,16 @@ class CornerDetector:
         Returns:
             List of (x, y) coordinates of endpoints.
         """
-        corners = []
-        
-        for point in contour:
-            pixel_x, pixel_y = point[0]
-            neighbor_count = 0
-            
-            for dx, dy in NEIGHBOR_OFFSETS:
-                nx, ny = pixel_x + dx, pixel_y + dy
-                
-                # Check bounds
-                if 0 <= ny < skeleton.shape[0] and 0 <= nx < skeleton.shape[1]:
-                    if skeleton[ny, nx] > 0:
-                        neighbor_count += 1
-            
-            if neighbor_count == 1:
-                corners.append((pixel_x, pixel_y))
-        
-        return corners
+        points = contour[:, 0]
+        counts = np.zeros(len(points), dtype=np.uint8)
+        # Gather only contour neighbors; preserve duplicates and contour order.
+        # Explicit bounds retain the old behavior at image edges.
+        for dx, dy in NEIGHBOR_OFFSETS:
+            nx, ny = points[:, 0] + dx, points[:, 1] + dy
+            valid = ((nx >= 0) & (nx < skeleton.shape[1]) &
+                     (ny >= 0) & (ny < skeleton.shape[0]))
+            counts[valid] += skeleton[ny[valid], nx[valid]] > 0
+        return [tuple(point) for point in points[counts == 1]]
     
     def trace_from_endpoint(
         self, 
@@ -89,7 +81,7 @@ class CornerDetector:
             List of (x, y) coordinates along the trace.
         """
         trace = [start_point]
-        contour_set = {tuple(p[0]) for p in contour}
+        contour_set = set(map(tuple, contour[:, 0].tolist()))
         
         while len(trace) < max_length:
             current = trace[-1]

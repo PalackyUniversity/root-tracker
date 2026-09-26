@@ -62,24 +62,28 @@ class RootThresholder:
         # Keep contours that have significant high-threshold overlap
         thresh = np.zeros_like(thresh_low)
         to_draw = []
-        ignore = []
+        ignore = set()
         
         for cnt_n, (cnt, h) in enumerate(zip(contours, hierarchy[0])):
-            temp_mask = np.zeros_like(thresh_low)
-            cv2.drawContours(temp_mask, [cnt], 0, 255, cv2.FILLED)
-            
             # Check if this is an outer contour (not a hole)
             if h[3] == -1:
                 if len(cnt) > self.config.threshold.min_contour_length:
+                    # Only rasterize this contour's bounding box. The overlap
+                    # rule still includes its filled interior, including holes.
+                    x, y, w, height = cv2.boundingRect(cnt)
+                    temp_mask = np.zeros((height, w), dtype=np.uint8)
+                    cv2.drawContours(temp_mask, [cnt], 0, 255, cv2.FILLED,
+                                     offset=(-x, -y))
                     # Check if enough of the contour passes high threshold
-                    high_overlap = cv2.countNonZero(cv2.bitwise_and(thresh_high, temp_mask))
+                    high_overlap = cv2.countNonZero(cv2.bitwise_and(
+                        thresh_high[y:y + height, x:x + w], temp_mask))
                     total_area = cv2.countNonZero(temp_mask)
                     if total_area > 0 and high_overlap / total_area > 0.2:
                         to_draw.append(cnt)
                     else:
-                        ignore.append(cnt_n)
+                        ignore.add(cnt_n)
                 else:
-                    ignore.append(cnt_n)
+                    ignore.add(cnt_n)
         
         # Add holes of valid contours
         for cnt_n, (cnt, h) in enumerate(zip(contours, hierarchy[0])):

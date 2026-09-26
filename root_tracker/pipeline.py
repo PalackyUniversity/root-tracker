@@ -317,7 +317,7 @@ class RootTrackingPipeline:
             
             # Find and remove intersections
             intersections = self.skeletonizer.find_intersections(skeleton)
-            endpoints = self.skeletonizer.find_endpoints(skeleton)
+            endpoints = set(self.skeletonizer.find_endpoints(skeleton))
             skeleton_split, segment_contours = self.skeletonizer.split_at_intersections(
                 skeleton, intersections
             )
@@ -345,7 +345,7 @@ class RootTrackingPipeline:
                     upper_info['lower_point'] = lower_info['point']
                     upper_corners.append(upper_info)
                     
-                    if lower_info['point'] not in [e for e in endpoints]:
+                    if lower_info['point'] not in endpoints:
                         lower_corners.append(lower_info)
             
             # Retrieve previous colored samples for consistency

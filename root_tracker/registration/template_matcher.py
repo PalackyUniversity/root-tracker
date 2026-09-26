@@ -98,9 +98,7 @@ class ImageRegistrator:
                     continue
                     
                 # Compute difference image (simple subtraction)
-                diff = images[n + 1].process.astype(int) - images[n].process.astype(int)
-                diff[diff < 0] = 0
-                images[n + 1].diff = diff.astype(np.uint8)
+                images[n + 1].diff = cv2.subtract(images[n + 1].process, images[n].process)
             return
         
         for n in range(len(images) - 1):
@@ -129,6 +127,4 @@ class ImageRegistrator:
             images[n + 1].positions_y = [y + offset_y for y in images[n + 1].positions_y]
             
             # Compute difference image for new growth detection
-            diff = images[n + 1].process.astype(int) - images[n].process.astype(int)
-            diff[diff < 0] = 0
-            images[n + 1].diff = diff.astype(np.uint8)
+            images[n + 1].diff = cv2.subtract(images[n + 1].process, images[n].process)

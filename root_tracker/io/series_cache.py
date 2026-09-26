@@ -1,7 +1,7 @@
 """
 Disk-backed series cache for memory-bounded batch processing.
 
-Stores processed image arrays and metadata as compressed .npz files
+Stores processed image arrays and metadata as .npz files
 in a .root_tracker_cache/ directory next to the input images.
 """
 
@@ -60,7 +60,7 @@ def get_cache_path(series: ImageSeries, config: Config) -> Path:
 
 def save_series(series: ImageSeries, config: Config) -> Optional[Path]:
     """
-    Save a series' arrays and metadata to a compressed .npz cache file.
+    Save arrays and metadata to .npz (optionally compressed for smaller files).
 
     Args:
         series: The image series to cache.
@@ -120,7 +120,10 @@ def save_series(series: ImageSeries, config: Config) -> Optional[Path]:
         meta_json = json.dumps(metadata, default=_json_default)
         arrays["_metadata"] = np.frombuffer(meta_json.encode("utf-8"), dtype=np.uint8)
 
-        np.savez_compressed(str(cache_path), **arrays)
+        # Compression dominates interactive latency on full-resolution groups.
+        # Both variants are standard NPZ and remain readable by older versions.
+        save = np.savez_compressed if config.data.cache_compressed else np.savez
+        save(str(cache_path), **arrays)
         logger.debug("Saved cache for series %s to %s", series.group, cache_path)
         return cache_path
 

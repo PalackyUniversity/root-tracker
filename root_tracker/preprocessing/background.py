@@ -6,6 +6,9 @@ Removes background gradients and prepares images for root detection.
 
 import cv2
 import numpy as np
+import os
+from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import current_process
 
 from ..config import Config
 
@@ -40,12 +43,11 @@ class BackgroundRemover:
             Grayscale image with gradient removed.
         """
         # Compute gradient using median blur
-        blurred = cv2.medianBlur(image, self._blur_kernel_size)
+        blurred = self._median_background(image)
         
-        # Subtract gradient (convert to int to handle negatives)
-        diff = image.astype(int) - blurred.astype(int)
-        diff[diff < 0] = 0
-        diff = diff.astype(np.uint8)
+        # Saturated uint8 subtraction is identical to clipping negative values,
+        # without creating several full-resolution int64 arrays.
+        diff = cv2.subtract(image, blurred)
         
         # Smooth the result
         diff = cv2.medianBlur(diff, self._smooth_kernel_size)
@@ -55,6 +57,31 @@ class BackgroundRemover:
             diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
         
         return diff
+
+    def _median_background(self, image: np.ndarray) -> np.ndarray:
+        """Exact median in overlapping strips, bounded to four CPU workers.
+
+        Keep the full kernel radius around each strip so internal boundaries
+        never enter the returned pixels. Batch child processes already run in
+        parallel and use a single filter call to avoid nested worker pools.
+        """
+        workers = min(4, os.cpu_count() or 1)
+        if (workers == 1 or image.shape[0] < 1024 or
+                current_process().name != 'MainProcess'):
+            return cv2.medianBlur(image, self._blur_kernel_size)
+        radius = self._blur_kernel_size // 2
+        height = image.shape[0]
+        result = np.empty_like(image)
+
+        def filter_strip(index):
+            start, stop = height * index // workers, height * (index + 1) // workers
+            top, bottom = max(0, start - radius), min(height, stop + radius)
+            filtered = cv2.medianBlur(image[top:bottom], self._blur_kernel_size)
+            result[start:stop] = filtered[start - top:stop - top]
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            list(executor.map(filter_strip, range(workers)))
+        return result
     
     def compute_canny_edges(
         self, 

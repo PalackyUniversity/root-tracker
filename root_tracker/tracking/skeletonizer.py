@@ -47,7 +47,25 @@ class RootSkeletonizer:
         Returns:
             Skeleton image (float32, values 0 or 1).
         """
-        return skeletonize(mask).astype(np.float32)
+        if mask.size < 262144:
+            return skeletonize(mask).astype(np.float32)
+
+        # Disconnected components cannot affect one another's thinning. Avoid
+        # rescanning the large empty background on every Zhang-Suen iteration.
+        count, labels, stats, _ = cv2.connectedComponentsWithStats(
+            (mask != 0).astype(np.uint8), connectivity=8)
+        # Dense masks and many tiny components are cheaper in one native call.
+        box_pixels = np.sum(stats[1:, 2].astype(np.int64) * stats[1:, 3])
+        if count > 257 or box_pixels >= mask.size:
+            return skeletonize(mask).astype(np.float32)
+        result = np.zeros(mask.shape, dtype=np.float32)
+        for label in range(1, count):
+            x, y, w, h, _ = stats[label]
+            region = np.s_[y:y + h, x:x + w]
+            component = labels[region] == label
+            # Bounding boxes can overlap, so merge only foreground pixels.
+            result[region] += skeletonize(component)
+        return result
     
     def find_endpoints(self, skeleton: np.ndarray) -> list[tuple[int, int]]:
         """
@@ -111,9 +129,7 @@ class RootSkeletonizer:
             Tuple of (split skeleton, list of contours for each segment).
         """
         # Remove intersections from skeleton
-        split_skeleton = skeleton.astype(int) - intersections.astype(int)
-        split_skeleton[split_skeleton < 0] = 0
-        split_skeleton = split_skeleton.astype(np.uint8) * 255
+        split_skeleton = cv2.subtract(skeleton.astype(np.uint8), intersections) * 255
         
         # Find contours (each is a separate segment)
         contours, _ = cv2.findContours(
