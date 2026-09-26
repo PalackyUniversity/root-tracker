@@ -400,6 +400,7 @@ class MainWindow(QMainWindow):
         
         # Main content area with splitter
         self._splitter = QSplitter(Qt.Orientation.Horizontal)
+        self._splitter.setHandleWidth(1)
         
         # Left panel: Image tree only
         self._image_tree = ImageTree()
@@ -414,12 +415,12 @@ class MainWindow(QMainWindow):
         
         # Right panel: Settings
         self._settings_panel = SettingsPanel(self._config)
-        self._settings_panel.setMinimumWidth(280)
-        self._settings_panel.setMaximumWidth(350)
+        self._settings_panel.setMinimumWidth(360)
+        self._settings_panel.setMaximumWidth(480)
         self._splitter.addWidget(self._settings_panel)
         
         # Set splitter proportions
-        self._splitter.setSizes([200, 800, 300])
+        self._splitter.setSizes([200, 800, 360])
         
         main_layout.addWidget(self._splitter)
         
@@ -433,12 +434,12 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self._status_bar)
         # Left: Zoom controls (as regular widgets - stay on left)
         self._fit_btn = QPushButton("Fit")
-        self._fit_btn.setFixedSize(40, 26)
+        self._fit_btn.setMinimumSize(44, 32)
         self._fit_btn.clicked.connect(self._image_viewer.fit_in_view)
         self._status_bar.addWidget(self._fit_btn, 0)
         
         self._zoom_out_btn = QPushButton("−")
-        self._zoom_out_btn.setFixedSize(26, 26)
+        self._zoom_out_btn.setMinimumSize(32, 32)
         self._zoom_out_btn.clicked.connect(self._image_viewer.zoom_out)
         self._status_bar.addWidget(self._zoom_out_btn, 0)
         
@@ -448,7 +449,7 @@ class MainWindow(QMainWindow):
         self._status_bar.addWidget(self._zoom_label, 0)
         
         self._zoom_in_btn = QPushButton("+")
-        self._zoom_in_btn.setFixedSize(26, 26)
+        self._zoom_in_btn.setMinimumSize(32, 32)
         self._zoom_in_btn.clicked.connect(self._image_viewer.zoom_in)
         self._status_bar.addWidget(self._zoom_in_btn, 0)
         
@@ -462,14 +463,15 @@ class MainWindow(QMainWindow):
         self._status_bar.addPermanentWidget(self._processing_label)
         
         self._progress_bar = QProgressBar()
-        self._progress_bar.setFixedSize(150, 26)
+        self._progress_bar.setFixedWidth(150)
+        self._progress_bar.setFixedHeight(self._fit_btn.sizeHint().height())
         self._progress_bar.setMaximum(100)
         self._progress_bar.hide()
         self._status_bar.addPermanentWidget(self._progress_bar)
         
         # Next step button (rightmost)
         self._next_step_btn = QPushButton("Next")
-        self._next_step_btn.setFixedHeight(26)
+        self._next_step_btn.setMinimumHeight(32)
         self._next_step_btn.setToolTip("Go to next step (auto-processes current step if needed)")
         self._next_step_btn.clicked.connect(self._on_next_step_clicked)
         self._status_bar.addPermanentWidget(self._next_step_btn)

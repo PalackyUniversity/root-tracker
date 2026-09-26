@@ -6,10 +6,11 @@ Shows the 4 pipeline steps with minimal Lightroom-style buttons.
 
 from enum import IntEnum
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QPushButton, QLabel
+    QWidget, QHBoxLayout, QPushButton
 )
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtGui import QColor, QPalette, QPainter, QPen, QPainterPath
+from .theme import blend
 
 
 class WorkflowStep(IntEnum):
@@ -25,6 +26,27 @@ STEP_NAMES = {
     WorkflowStep.PREPROCESS: "Preprocess",
     WorkflowStep.TRACK: "Track",
 }
+
+
+class WorkflowChevron(QWidget):
+    """A soft, round-ended directional separator."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(14, 20)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        color = blend(self.palette().color(QPalette.ColorRole.Window),
+                      self.palette().color(QPalette.ColorRole.WindowText), .35)
+        painter.setPen(QPen(color, 1.5, Qt.PenStyle.SolidLine,
+                            Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        path = QPainterPath()
+        path.moveTo(5, 7)
+        path.lineTo(8, 10)
+        path.lineTo(5, 13)
+        painter.drawPath(path)
 
 
 class WorkflowBar(QWidget):
@@ -45,7 +67,7 @@ class WorkflowBar(QWidget):
         
         self._current_step = WorkflowStep.LOAD
         self._step_buttons: dict[WorkflowStep, QPushButton] = {}
-        self._separators: list[QLabel] = []
+        self._separators: list[WorkflowChevron] = []
         self._completed_steps: set[WorkflowStep] = set()
         
         self._setup_ui()
@@ -70,8 +92,7 @@ class WorkflowBar(QWidget):
             
             # Add separator between steps (except last)
             if step != WorkflowStep.TRACK:
-                sep = QLabel("›")
-                sep.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                sep = WorkflowChevron()
                 self._separators.append(sep)
                 layout.addWidget(sep)
         
@@ -121,41 +142,19 @@ class WorkflowBar(QWidget):
             round(fg * 0.72 + bg * 0.28)
             for fg, bg in zip(foreground.getRgb()[:3], background.getRgb()[:3])
         )).name()
-        for separator in self._separators:
-            separator.setStyleSheet(f"color: {muted}; font-size: 14px;")
+        accent = palette.color(QPalette.ColorRole.Highlight).name()
         for step, btn in self._step_buttons.items():
-            btn.setChecked(step == self._current_step)
-            
-            # Minimal, flat Lightroom-style buttons
-            if step == self._current_step:
-                # Current step: underlined text, no background
-                btn.setStyleSheet(f"""
-                    QPushButton {{
-                        background: transparent;
-                        color: {foreground.name()};
-                        font-weight: bold;
-                        border: none;
-                        border-bottom: 2px solid palette(highlight);
-                        border-radius: 0px;
-                        padding: 5px 10px;
-                    }}
-                    QPushButton:hover {{
-                        background-color: palette(midlight);
-                    }}
-                """)
-            else:
-                # Inactive step: dimmed
-                btn.setStyleSheet(f"""
-                    QPushButton {{
-                        background: transparent;
-                        color: {muted};
-                        border: none;
-                        border-radius: 0px;
-                        padding: 5px 10px;
-                    }}
-                    QPushButton:hover {{
-                        color: {foreground.name()};
-                        background-color: palette(midlight);
-                        border-radius: 3px;
-                    }}
-                """)
+            active = step == self._current_step
+            btn.setChecked(active)
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: transparent;
+                    color: {accent if active else muted};
+                    font-weight: normal;
+                    border: 1px solid {accent if active else "transparent"};
+                    border-radius: 5px;
+                    padding: 6px 10px;
+                }}
+                QPushButton:hover {{ background-color: palette(midlight); }}
+                QPushButton:focus {{ border: 1px solid palette(highlight); }}
+            """)

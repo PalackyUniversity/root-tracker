@@ -7,35 +7,140 @@ Shows an empty state with load button when no images are loaded.
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem,
-    QLabel, QPushButton, QStackedWidget, QHBoxLayout,
-    QToolButton, QStyle, QHeaderView, QStyleOption, QApplication
+    QLabel, QPushButton, QStackedWidget,
+    QStyle, QHeaderView, QStyleOptionViewItem, QStyledItemDelegate
 )
-from PySide6.QtCore import Signal, Qt, QRect
-from PySide6.QtGui import QAction, QFont, QColor, QPalette
+from PySide6.QtCore import Signal, Qt, QRectF, QPersistentModelIndex
+from PySide6.QtGui import QAction, QFont, QColor, QPalette, QPainter, QPen, QPainterPath
 
 from ..models import ImageSeries, ImageData
 from ..config import Config
 from .menus import RoundedMenu
-from .theme import tree_stylesheet
+from .theme import tree_stylesheet, blend, is_light
 from .workflow_bar import WorkflowStep, STEP_NAMES
+
+
+class NavigationRowDelegate(QStyledItemDelegate):
+    """Size rows from the tree font, never from a status glyph's fallback font."""
+
+    def paint(self, painter, option, index):
+        symbol = index.data(Qt.ItemDataRole.DisplayRole)
+        if index.column() != 1 or symbol not in {'✓', '○', '↻', '…', '—', '⚠', '●'}:
+            return super().paint(painter, option, index)
+        background_option = QStyleOptionViewItem(option)
+        self.initStyleOption(background_option, index)
+        background_option.text = ''
+        self.parent().style().drawControl(QStyle.ControlElement.CE_ItemViewItem,
+                                         background_option, painter, self.parent())
+        brush = index.data(Qt.ItemDataRole.ForegroundRole)
+        color = (option.palette.color(QPalette.ColorRole.HighlightedText)
+                 if option.state & QStyle.StateFlag.State_Selected else brush.color())
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.translate(option.rect.center())
+        painter.setPen(QPen(color, 1.6, Qt.PenStyle.SolidLine,
+                            Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        path = QPainterPath()
+        if symbol == '✓':
+            path.moveTo(-4, 0)
+            path.lineTo(-1, 3)
+            path.lineTo(5, -3)
+        elif symbol in {'○', '●'}:
+            if symbol == '●':
+                painter.setBrush(color)
+            painter.drawEllipse(QRectF(-4, -4, 8, 8))
+        elif symbol == '⚠':
+            path.moveTo(0, -5)
+            path.lineTo(5.5, 4.5)
+            path.lineTo(-5.5, 4.5)
+            path.closeSubpath()
+            path.moveTo(0, -1.5)
+            path.lineTo(0, .5)
+            painter.drawPoint(0, 3)
+        elif symbol == '↻':
+            painter.drawArc(QRectF(-4, -4, 8, 8), 45 * 16, 285 * 16)
+            path.moveTo(1, -5)
+            path.lineTo(4, -3)
+            path.lineTo(4, -6)
+        elif symbol == '…':
+            for x in (-4, 0, 4):
+                painter.drawPoint(x, 0)
+        else:
+            path.moveTo(-4, 0)
+            path.lineTo(4, 0)
+        painter.drawPath(path)
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        size = super().sizeHint(option, index)
+        size.setHeight(max(28, self.parent().fontMetrics().height() + 10))
+        return size
 
 
 class ImageNavigationTree(QTreeWidget):
     """Keep branch controls neutral and arrow navigation on visible images."""
 
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setItemDelegate(NavigationRowDelegate(self))
+        self.setUniformRowHeights(True)
+        self.setMouseTracking(True)
+        self._hovered_index = QPersistentModelIndex()
+
+    def mouseMoveEvent(self, event):
+        index = QPersistentModelIndex(self.indexAt(event.position().toPoint()).siblingAtColumn(0))
+        if index != self._hovered_index:
+            self._hovered_index = index
+            self.viewport().update()
+        super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event):
+        self._hovered_index = QPersistentModelIndex()
+        self.viewport().update()
+        super().leaveEvent(event)
+
+    def drawRow(self, painter, option, index):
+        selected = self.selectionModel().isRowSelected(index.row(), index.parent())
+        hovered = index.siblingAtColumn(0) == self._hovered_index
+        if selected or hovered:
+            base = self.palette().color(QPalette.ColorRole.Base)
+            accent = self.palette().color(QPalette.ColorRole.Highlight)
+            color = accent if selected else blend(base, accent, .08 if is_light(self.palette()) else .18)
+            # One continuous highlight across the name and status columns,
+            # leaving the disclosure-arrow gutter outside the selection.
+            left = self.visualRect(index.siblingAtColumn(0)).left()
+            rect = QRectF(left, option.rect.top()+1, self.viewport().width()-left-3, option.rect.height()-2)
+            painter.save()
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(color)
+            painter.drawRoundedRect(rect, 5, 5)
+            painter.restore()
+        super().drawRow(painter, option, index)
+
     def drawBranches(self, painter, rect, index):
         painter.fillRect(rect, self.palette().brush(QPalette.ColorRole.Base))
         if not self.model().hasChildren(index):
             return
-        option = QStyleOption()
-        option.initFrom(self)
-        option.rect = QRect(rect.right() - self.indentation() + 1, rect.top(),
-                            self.indentation(), rect.height())
-        option.state = QStyle.StateFlag.State_Enabled | QStyle.StateFlag.State_Children | QStyle.StateFlag.State_Item
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(self.palette().color(QPalette.ColorRole.Text), 1.5,
+                            Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
+                            Qt.PenJoinStyle.RoundJoin))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.translate(rect.right() - self.indentation() / 2 + 1, rect.center().y())
+        path = QPainterPath()
         if self.isExpanded(index):
-            option.state |= QStyle.StateFlag.State_Open
-        QApplication.style().drawPrimitive(QStyle.PrimitiveElement.PE_IndicatorBranch,
-                                   option, painter, self)
+            path.moveTo(-3, -1.5)
+            path.lineTo(0, 1.5)
+            path.lineTo(3, -1.5)
+        else:
+            path.moveTo(-1.5, -3)
+            path.lineTo(1.5, 0)
+            path.lineTo(-1.5, 3)
+        painter.drawPath(path)
+        painter.restore()
 
     def moveCursor(self, action, modifiers):
         if action not in (self.CursorAction.MoveUp, self.CursorAction.MoveDown):
@@ -105,24 +210,14 @@ class ImageTree(QWidget):
                 border-bottom: 1px solid palette(midlight);
             }
         """)
-        header_layout = QHBoxLayout(self._header)
+        header_layout = QVBoxLayout(self._header)
         header_layout.setContentsMargins(5, 6, 3, 6)
         header_layout.setSpacing(4)
 
-        self._folder_label = QLabel("No folder")
-        self._folder_label.setStyleSheet("font-size: 13px; border: none;")
-        self._folder_label.setWordWrap(False)
-        header_layout.addWidget(self._folder_label, 1)
+        self._folder_label = QLabel('No folder')
+        self._folder_label.setStyleSheet('border: none;')
+        header_layout.addWidget(self._folder_label)
 
-        self._open_folder_btn = QToolButton()
-        self._open_folder_btn.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
-        self._open_folder_btn.setAutoRaise(True)
-        self._open_folder_btn.setFixedSize(24, 24)
-        self._open_folder_btn.setToolTip("Change image folder")
-        self._open_folder_btn.setAccessibleName("Change image folder")
-        self._open_folder_btn.clicked.connect(self.load_requested.emit)
-        header_layout.addWidget(self._open_folder_btn)
-        
         self._header.hide()  # Hidden by default until folder is loaded
         layout.addWidget(self._header)
 

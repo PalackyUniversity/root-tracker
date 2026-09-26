@@ -19,7 +19,7 @@ class ColorRangeControl(QGroupBox):
         layout = QVBoxLayout(self)
         row = QHBoxLayout()
         self.swatch = QPushButton()
-        self.swatch.setFixedSize(64, 28)
+        self.swatch.setFixedSize(64, 32)
         self.swatch.setAccessibleName(f'{title}: adjust HSV range')
         self.swatch.setStatusTip('Selected hue range, shown at full saturation and brightness. Click to edit all HSV limits.')
         self.swatch.clicked.connect(self._open_picker)

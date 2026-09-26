@@ -10,12 +10,13 @@ from PySide6.QtWidgets import (
     QGraphicsSimpleTextItem, QGraphicsPolygonItem
 )
 from PySide6.QtCore import Qt, Signal, QPointF, QRectF
-from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent, QTransform, QPolygonF
+from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent, QTransform, QPolygonF, QPalette
 import math
 import numpy as np
 import cv2
 
 from .crop_overlay import CropOverlay
+from .theme import scrollbar_stylesheet, is_light
 
 from .masking_tools import (
     MaskTool, MaskOverlay, BrushCursor, RectanglePreview, BrushStrokePreview,
@@ -617,7 +618,15 @@ class ZoomableGraphicsView(QGraphicsView):
         # deferred appearance cannot resize/recenter the viewport on a click.
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        self.setBackgroundBrush(Qt.GlobalColor.darkGray)
+        palette = self.palette()
+        background = (QColor("#e5e5e5")
+                      if is_light(palette) else QColor(Qt.GlobalColor.darkGray))
+        self.setBackgroundBrush(background)
+        self.setStyleSheet(scrollbar_stylesheet(palette) + f"""
+            QGraphicsView {{ border: none; background-color: {background.name()}; }}
+            QScrollBar:vertical, QScrollBar:horizontal,
+            QAbstractScrollArea::corner {{ background-color: {background.name()}; }}
+        """)
     
     def ensure_pan_space(self, center=None):
         """Leave scrollable space around the image even below fit-to-view zoom.

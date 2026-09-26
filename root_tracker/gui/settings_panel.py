@@ -73,6 +73,7 @@ class SettingsPanel(QWidget):
         # Settings container (rebuilt per step)
         self._settings_container = QWidget()
         self._settings_layout = QVBoxLayout(self._settings_container)
+        self._settings_layout.setSpacing(16)
         self._settings_scroll = QScrollArea()
         self._settings_scroll.setWidgetResizable(True)
         self._settings_scroll.setFrameShape(QFrame.Shape.NoFrame)
