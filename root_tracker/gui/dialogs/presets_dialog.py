@@ -19,7 +19,7 @@ LABELS = {
     'margin_top': 'Top margin', 'margin_bottom': 'Bottom margin',
     'margin_left': 'Left margin', 'margin_right': 'Right margin',
     'min_count': 'Minimum contour points', 'min_area': 'Minimum leaf area (pixels)',
-    'top_ratio': 'Crop top (fraction)', 'bottom_ratio': 'Crop bottom (fraction)',
+    'top_ratio': 'Initial crop start (fraction)', 'bottom_ratio': 'Initial crop end (fraction)',
     'background_enabled': 'Enable plate search by color', 'background_region': 'Matching regions',
     'auto_apply': 'Auto-apply settings', 'load_crop_editing': 'Start Load with crop editing enabled',
     'preprocess_crop_editing': 'Start Preprocess with crop editing enabled',
@@ -137,6 +137,10 @@ class ConfigEditor(QTabWidget):
                     widget = QLineEdit('' if value is None else str(list(value)) if isinstance(value, (tuple, list)) else str(value))
                     reader = widget.text
                     form.addRow(label, widget)
+                if key in ('crop.top_ratio', 'crop.bottom_ratio'):
+                    widget.setStatusTip('Vertical start/end positions in the plate, before margins. Use 0 and 1 for the full plate; margins are then applied inside this range.')
+                elif key in ('margin_top', 'margin_bottom'):
+                    widget.setStatusTip('Fraction removed from this edge after the initial crop. With initial crop start 0 and end 1, this is a fraction of the full plate height.')
                 widget.setObjectName(key)
                 self._readers[key] = reader
             if prefix in ('green', 'crop'):

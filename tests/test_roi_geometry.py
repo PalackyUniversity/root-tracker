@@ -1,5 +1,6 @@
 """Crop geometry preserves pixels, coordinates and legacy automatic behavior."""
 import unittest
+from pathlib import Path
 import cv2
 import numpy as np
 from root_tracker.config import Config
@@ -9,6 +10,23 @@ from root_tracker.preprocessing.colors import color_mask
 
 
 class RoiGeometryTests(unittest.TestCase):
+    def test_bundled_default_crop_matches_plate_margins(self):
+        config = Config.from_yaml(Path(__file__).resolve().parents[1] / 'configs/in_vitro.yaml')
+        self.assertLessEqual(config.margin_bottom, .1)
+        for height, width in [(1000, 800), (2400, 3200)]:
+            with self.subTest(shape=(height, width)):
+                shape = (height, width)
+                box = ImageCropper(config).analysis_roi(shape)
+                points = roi.corners(box, shape)
+                np.testing.assert_allclose(points.min(axis=0),
+                                           [round(width * config.margin_left), round(height * config.margin_top)])
+                np.testing.assert_allclose(points.max(axis=0),
+                                           [width - round(width * config.margin_right), height - round(height * config.margin_bottom)])
+                image = np.arange(height * width, dtype=np.float32).reshape(shape)
+                actual, _ = roi.extract(image, box)
+                np.testing.assert_array_equal(actual, image[round(height * .1):round(height * .9),
+                                                            round(width * .03):round(width * .97)])
+
     def test_axis_aligned_crop_and_coordinates(self):
         image = np.arange(80*100, dtype=np.float32).reshape(80, 100)
         box = roi.from_bounds(10, 12, 60, 40, image.shape)
