@@ -762,15 +762,10 @@ class MainWindow(QMainWindow):
                 if rectangle is None:
                     self._image_viewer.clear_barcode_overlay()
                 else:
-                    self._image_viewer.set_barcode_overlay(rectangle, label, image_data.barcode_mismatch)
-            elif image_data.barcode_not_found and image_data.barcode_detected:
-                # Show generic warning overlay
-                self._image_viewer.set_barcode_overlay(
-                    None,
-                    "",
-                    is_mismatch=False,
-                    is_missing=True
-                )
+                    self._image_viewer.set_barcode_overlay(
+                        rectangle, label, image_data.barcode_mismatch,
+                        label_position=(self._roi_editor.load_preview_label_position(image_data.barcode_rect)
+                                        if editor_presented else None))
             else:
                 self._image_viewer.clear_barcode_overlay()
             

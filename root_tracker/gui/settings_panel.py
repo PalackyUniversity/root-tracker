@@ -16,6 +16,7 @@ from ..config import Config
 from .workflow_bar import WorkflowStep
 from .masking_tools import MaskTool
 from .color_range import ColorRangeControl
+from .right_checkbox import RightAlignedCheckBox
 
 
 class SettingsPanel(QWidget):
@@ -190,38 +191,42 @@ class SettingsPanel(QWidget):
                     label.setStatusTip(tip)
 
     def _create_crop_settings(self, *, load):
-        group = QGroupBox('Plate search area' if load else 'Crop within plate')
+        group = QGroupBox('Manual crop' if load else 'Crop within plate')
         layout = QVBoxLayout(group)
         self._crop_value = self._config.load_roi if load else self._config.preprocess_roi
         self._crop_summary = QLabel()
         self._crop_summary.setMinimumHeight(20)
         layout.addWidget(self._crop_summary)
+        self._crop_summary.setVisible(not load)
         self._crop_edit_btn = QPushButton('Edit crop')
         self._crop_edit_btn.setCheckable(True)
         self._crop_edit_btn.setChecked(load)
         self._crop_edit_btn.setStatusTip('Resize or move the box in the image. Drag just outside a corner or use the round handle to rotate. Rotation snaps every 15°; continue dragging to release a snap.')
         self._crop_edit_btn.toggled.connect(self._crop_edit_changed)
-        layout.addWidget(self._crop_edit_btn)
-        self._auto_crop_btn = QPushButton('Search whole image' if load else 'Reset crop')
-        self._auto_crop_btn.setStatusTip('Search the whole image for the plate.' if load else 'Restore the fixed crop margins relative to the detected plate.')
+        buttons = QHBoxLayout()
+        layout.addLayout(buttons)
+        buttons.addWidget(self._crop_edit_btn)
+        self._auto_crop_btn = QPushButton('Reset' if load else 'Reset crop')
+        self._auto_crop_btn.setStatusTip('Reset the manual crop to the whole image.' if load else 'Restore the fixed crop margins relative to the detected plate.')
         self._auto_crop_btn.clicked.connect(lambda: self.set_crop(None))
-        layout.addWidget(self._auto_crop_btn)
+        buttons.addWidget(self._auto_crop_btn)
         self._settings_layout.addWidget(group)
         lower, upper = ((self._config.crop.blue_hsv_lower, self._config.crop.blue_hsv_upper) if load else
                         (self._config.green.hsv_lower, self._config.green.hsv_upper))
-        self._color_control = ColorRangeControl('Background color' if load else 'Green plant parts', lower, upper)
+        self._color_control = ColorRangeControl('Plate search by color' if load else 'Green plant parts', lower, upper,
+                                                selector_label='Background color' if load else 'Plant color')
         self._color_control.setStatusTip('Detect the plate by color inside the Load search box using the selected region method.' if load else 'Select the green plant parts used to locate plant centers and exclude leaves from root detection.')
         self._color_control.range_changed.connect(self._color_range_changed)
         self._color_control.preview_changed.connect(self.color_preview_toggled)
         self._color_control.pick_requested.connect(self.color_pick_toggled)
         if load:
-            self._background_enabled = QCheckBox("Detect plate by background color")
+            self._background_enabled = RightAlignedCheckBox("Enable search")
             self._background_enabled.setChecked(self._config.crop.background_enabled)
             self._background_enabled.setStatusTip('Use color to refine the crop inside the box, or use only the box itself.')
             self._color_control.layout().insertWidget(0, self._background_enabled)
             form = QFormLayout()
             self._background_region = QComboBox()
-            self._background_region.addItems(['Largest matching region', 'All matching patches'])
+            self._background_region.addItems(['Largest matching', 'All matching'])
             self._background_region.setCurrentIndex(0 if self._config.crop.background_region == 'largest' else 1)
             self._background_region.setStatusTip('Choose the largest connected color region, or enclose all matching patches inside the box.')
             form.addRow('Region', self._background_region)
@@ -256,6 +261,7 @@ class SettingsPanel(QWidget):
         self.crop_edit_toggled.emit(enabled)
 
     def _update_crop_summary(self):
+        self._auto_crop_btn.setEnabled(self._crop_value is not None)
         self._crop_summary.setText(('Whole image' if self._current_step == WorkflowStep.LOAD else 'Fixed plate margins') if self._crop_value is None else
                                    f'Manual crop · {self._crop_value[4] % 360:.1f}°')
 
@@ -302,7 +308,7 @@ class SettingsPanel(QWidget):
         reg_group = QGroupBox("Registration of Images in a Group")
         reg_layout = QFormLayout(reg_group)
         
-        self._reg_enabled_cb = QCheckBox("Enable Registration")
+        self._reg_enabled_cb = RightAlignedCheckBox("Enable Registration")
         self._reg_enabled_cb.setChecked(self._config.registration.enabled)
         self._reg_enabled_cb.stateChanged.connect(self._on_setting_changed)
         self._reg_enabled_cb.stateChanged.connect(self._on_reg_enabled_changed)

@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch, Mock
 
 from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from root_tracker.config import Config
@@ -28,6 +29,28 @@ class TreeStatusTests(unittest.TestCase):
         self.tree = ImageTree()
         self.tree.set_series({'group': self.series})
         self.addCleanup(self.tree.close)
+
+    def test_arrow_navigation_skips_group_headers_and_keeps_boundaries(self):
+        second = ImageSeries('second', [ImageData(datetime(2026, 2, 1), '/second.jpg', 'second')])
+        self.tree.set_series({'group': self.series, 'second': second})
+        widget = self.tree._tree
+        widget.expandAll()
+        first, last = widget.topLevelItem(0), widget.topLevelItem(1)
+        widget.setCurrentItem(first.child(2))
+        QTest.keyClick(widget, Qt.Key.Key_Down)
+        self.assertIs(widget.currentItem(), last.child(0))
+        QTest.keyClick(widget, Qt.Key.Key_Up)
+        self.assertIs(widget.currentItem(), first.child(2))
+        widget.setCurrentItem(first.child(0))
+        QTest.keyClick(widget, Qt.Key.Key_Up)
+        self.assertIs(widget.currentItem(), first.child(0))
+        widget.setCurrentItem(last)
+        QTest.keyClick(widget, Qt.Key.Key_Down)
+        self.assertIs(widget.currentItem(), last.child(0))
+        last.setExpanded(False)
+        widget.setCurrentItem(first.child(2))
+        QTest.keyClick(widget, Qt.Key.Key_Down)
+        self.assertIs(widget.currentItem(), first.child(2))
 
     def status(self, index):
         return self.tree._tree.topLevelItem(0).child(index).data(1, Qt.ItemDataRole.UserRole)

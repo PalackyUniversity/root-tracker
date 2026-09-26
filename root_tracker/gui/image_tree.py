@@ -8,9 +8,9 @@ Shows an empty state with load button when no images are loaded.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem,
     QLabel, QPushButton, QStackedWidget, QHBoxLayout,
-    QToolButton, QStyle, QHeaderView
+    QToolButton, QStyle, QHeaderView, QStyleOption, QApplication
 )
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Signal, Qt, QRect
 from PySide6.QtGui import QAction, QFont, QColor, QPalette
 
 from ..models import ImageSeries, ImageData
@@ -18,6 +18,36 @@ from ..config import Config
 from .menus import RoundedMenu
 from .theme import tree_stylesheet
 from .workflow_bar import WorkflowStep, STEP_NAMES
+
+
+class ImageNavigationTree(QTreeWidget):
+    """Keep branch controls neutral and arrow navigation on visible images."""
+
+    def drawBranches(self, painter, rect, index):
+        painter.fillRect(rect, self.palette().brush(QPalette.ColorRole.Base))
+        if not self.model().hasChildren(index):
+            return
+        option = QStyleOption()
+        option.initFrom(self)
+        option.rect = QRect(rect.right() - self.indentation() + 1, rect.top(),
+                            self.indentation(), rect.height())
+        option.state = QStyle.StateFlag.State_Enabled | QStyle.StateFlag.State_Children | QStyle.StateFlag.State_Item
+        if self.isExpanded(index):
+            option.state |= QStyle.StateFlag.State_Open
+        QApplication.style().drawPrimitive(QStyle.PrimitiveElement.PE_IndicatorBranch,
+                                   option, painter, self)
+
+    def moveCursor(self, action, modifiers):
+        if action not in (self.CursorAction.MoveUp, self.CursorAction.MoveDown):
+            return super().moveCursor(action, modifiers)
+        current = self.currentItem()
+        direction = self.itemAbove if action == self.CursorAction.MoveUp else self.itemBelow
+        candidate = direction(current) if current is not None else self.topLevelItem(0)
+        while candidate is not None:
+            if candidate.parent() is not None and not candidate.isHidden():
+                return self.indexFromItem(candidate)
+            candidate = direction(candidate)
+        return self.currentIndex()
 
 
 class ImageTree(QWidget):
@@ -124,7 +154,7 @@ class ImageTree(QWidget):
         self._stack.addWidget(empty_widget)  # Index 0: empty state
         
         # A stable trailing column keeps completion separate from filenames and warnings.
-        self._tree = QTreeWidget()
+        self._tree = ImageNavigationTree()
         self._tree.setStyleSheet(tree_stylesheet(self.palette()))
         self._tree.setHeaderHidden(True)
         self._tree.setColumnCount(2)

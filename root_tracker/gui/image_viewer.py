@@ -172,7 +172,7 @@ class ImageViewer(QWidget):
     def set_plate_outline(self, points):
         self.clear_plate_outline()
         self._plate_outline = QGraphicsPolygonItem(QPolygonF([QPointF(float(x), float(y)) for x, y in points]))
-        pen = QPen(QColor('#22c55e'), 2, Qt.PenStyle.DashLine)
+        pen = QPen(QColor('#ff9800'), 2, Qt.PenStyle.DashLine)
         pen.setCosmetic(True)
         self._plate_outline.setPen(pen)
         self._plate_outline.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
@@ -259,7 +259,24 @@ class ImageViewer(QWidget):
         matrix[:2, 2] += .5 - matrix[:2, :2] @ np.array([.5, .5])
         mapping = QTransform(matrix[0, 0], matrix[1, 0], matrix[0, 1],
                              matrix[1, 1], matrix[0, 2], matrix[1, 2])
-        desired = mapping * old_viewport
+        self._set_viewport_transform(mapping * old_viewport)
+
+    def straighten_view(self):
+        """Align image axes to the screen, retaining zoom and the center pixel."""
+        current = self._view.viewportTransform()
+        if abs(current.m12()) < 1e-10 and abs(current.m21()) < 1e-10 and current.m11() > 0 and current.m22() > 0:
+            return
+        inverse, valid = current.inverted()
+        if not valid:
+            return
+        center = QRectF(self._view.viewport().rect()).center()
+        pixel = inverse.map(center)
+        scale = math.hypot(current.m11(), current.m12())
+        self._set_viewport_transform(QTransform(scale, 0, 0, scale,
+                                              center.x()-scale*pixel.x(),
+                                              center.y()-scale*pixel.y()))
+
+    def _set_viewport_transform(self, desired):
         inverse, valid = desired.inverted()
         if not valid:
             return
@@ -384,7 +401,7 @@ class ImageViewer(QWidget):
         rect: tuple[int, int, int, int] | None, 
         text: str, 
         is_mismatch: bool,
-        is_missing: bool = False
+        label_position: tuple[float, float] | None = None,
     ) -> None:
         """
         Display a barcode overlay that remains legible at any zoom.
@@ -393,28 +410,9 @@ class ImageViewer(QWidget):
             rect: (x, y, w, h) tuple or None.
             text: Text to display.
             is_mismatch: True if barcode does NOT match expected (Red).
-            is_missing: True if no barcode was detected at all (Orange).
         """
         self.clear_barcode_overlay()
         
-        if is_missing:
-            # Draw "NO BARCODE DETECTED" warning at top-left
-            color = QColor(255, 140, 0)
-            text_item = QGraphicsSimpleTextItem("⚠️ NO BARCODE DETECTED")
-            text_item.setBrush(QBrush(color))
-            # Position at top-left with some padding
-            text_item.setPos(20, 20)
-            text_item.setFlag(QGraphicsSimpleTextItem.GraphicsItemFlag.ItemIgnoresTransformations)
-            font = text_item.font()
-            font.setBold(True)
-            font.setPointSize(12)
-            text_item.setFont(font)
-            text_item.setZValue(100)  # Ensure warning is on top
-            
-            self._scene.addItem(text_item)
-            self._barcode_items.append(text_item)
-            return
-
         if rect is None:
             return
             
@@ -429,7 +427,7 @@ class ImageViewer(QWidget):
         # Position above the box
         # Since we use ItemIgnoresTransformations, the position is in scene coords
         # but the drawing of text happens at 1:1 screen scale.
-        text_item.setPos(x, y - 20) 
+        text_item.setPos(*(label_position if label_position is not None else (x, y - 20)))
         text_item.setFlag(QGraphicsSimpleTextItem.GraphicsItemFlag.ItemIgnoresTransformations)
         text_item.setZValue(50)  # Ensure text is on top of image
         

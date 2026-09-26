@@ -236,10 +236,22 @@ class RoiEditor(QObject):
         self.viewer.set_image(display, preserve_view=preserve_view, source_shape=canvas.shape)
         if box is not None:
             self.viewer.set_crop(canvas.shape, box)
-        if step == WorkflowStep.LOAD and self.panel.crop_editing() and config.crop.background_enabled and getattr(self, '_plate_points', None) is not None:
-            self.viewer.set_plate_outline(self._plate_points)
+        if step == WorkflowStep.LOAD and config.crop.background_enabled and getattr(self, '_plate_points', None) is not None:
+            self._show_plate_outline()
         self.viewer.set_color_picking(False)
         return True
+
+    def _show_plate_outline(self):
+        if self._plate_points is not None:
+            points = roi.transform_points(np.asarray(self._plate_points)-.5, self._frame_matrix[:2])+.5
+            self.viewer.set_plate_outline(points)
+
+    def load_preview_label_position(self, rectangle):
+        # Transform the original label anchor, not the axis-aligned/clipped
+        # rectangle: its top-left changes when the preview is rotated.
+        x, y, _, _ = rectangle
+        return tuple(roi.transform_points(np.array([[x, y-20]])-.5,
+                                          self._frame_matrix[:2])[0]+.5)
 
     def load_preview_rect(self, rectangle):
         """Map original-photo overlays into the currently displayed Load crop."""
@@ -341,6 +353,8 @@ class RoiEditor(QObject):
                 getattr(self, '_frame_scope', None) == scope and self._frame_matrix is not None and
                 not np.allclose(self._frame_matrix, frame_matrix)):
             self.viewer.preserve_frame_position(old_viewport, self._frame_matrix @ np.linalg.inv(frame_matrix))
+        if not editing:
+            self.viewer.straighten_view()
         self._frame_scope, self._frame_matrix = scope, frame_matrix
         if editing:
             self.viewer.set_crop(canvas.shape, box)
@@ -351,8 +365,8 @@ class RoiEditor(QObject):
             self.viewer.set_centroids(list(zip(image_data.positions_x, image_data.positions_y)))
         if step == WorkflowStep.LOAD:
             self._plate_points = self._source_plate_points
-            if editing and config.crop.background_enabled:
-                self.viewer.set_plate_outline(self._plate_points)
+            if config.crop.background_enabled:
+                self._show_plate_outline()
         self._prefetch_timer.start()
         self._displayed_scope = scope
         self.viewer.set_color_picking(control.pick_button.isChecked() and not self._locked)

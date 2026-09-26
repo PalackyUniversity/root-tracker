@@ -76,7 +76,9 @@ class PreviewCompletionTests(unittest.TestCase):
         image = self.series.images[0]
         self.window._current_image = image
         image.barcode_detected = True
-        image.barcode_not_found = True
+        image.barcode_not_found = False
+        image.barcode_read = image.barcode
+        image.barcode_rect = (5, 5, 10, 10)
         with patch.object(self.window._settings, 'setValue'), patch.object(self.window._pipeline, 'iter_detect_barcodes') as detect:
             self.window._on_detect_barcodes_toggled(True)
             self.assertTrue(self.window._image_viewer._barcode_items)
@@ -89,8 +91,7 @@ class PreviewCompletionTests(unittest.TestCase):
     def test_first_selection_populates_preview_after_barcode_detection(self):
         self.click_and_wait()
         self.assert_blue_preview()
-        self.assertTrue(self.window._image_viewer._barcode_items)
-        self.assertIn('NO BARCODE DETECTED', self.window._image_viewer._barcode_items[0].text())
+        self.assertEqual(self.window._image_viewer._barcode_items, [])
 
     def test_new_selection_replaces_previous_preview_after_barcode_detection(self):
         self.window._image_viewer.set_image(np.full((40, 60, 3), (0, 0, 255), dtype=np.uint8))

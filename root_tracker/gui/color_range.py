@@ -1,8 +1,9 @@
 """Compact hue-range summary with a single dialog for editing both HSV limits."""
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox
+from PySide6.QtWidgets import QGroupBox, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox, QLabel
 from .color_picker import HsvPicker
+from .right_checkbox import RightAlignedCheckBox
 
 
 class ColorRangeControl(QGroupBox):
@@ -10,7 +11,7 @@ class ColorRangeControl(QGroupBox):
     preview_changed = Signal(bool)
     pick_requested = Signal(bool)
 
-    def __init__(self, title, lower, upper, parent=None):
+    def __init__(self, title, lower, upper, parent=None, *, selector_label=None):
         super().__init__(title, parent)
         self._picker = None
         self.sample_index = None
@@ -23,6 +24,12 @@ class ColorRangeControl(QGroupBox):
         self.swatch.setStatusTip('Selected hue range, shown at full saturation and brightness. Click to edit all HSV limits.')
         self.swatch.clicked.connect(self._open_picker)
         self.swatches = [self.swatch]
+        if selector_label:
+            label = QLabel(selector_label)
+            label.setBuddy(self.swatch)
+            label.setStatusTip(self.swatch.statusTip())
+            row.addWidget(label)
+            row.addStretch()
         row.addWidget(self.swatch)
         layout.addLayout(row)
         # Sampling remains available from the range dialog; this hidden toggle
@@ -31,11 +38,14 @@ class ColorRangeControl(QGroupBox):
         self.pick_button.setCheckable(True)
         self.pick_button.toggled.connect(self.pick_requested)
         self.pick_button.hide()
-        self.preview = QCheckBox('Show segmentation')
+        self.preview = RightAlignedCheckBox('Show segmentation')
         self.preview.setStatusTip('Highlight pixels selected by this range, with the same cleanup used during processing.')
         self.preview.toggled.connect(self.preview_changed)
-        row.addWidget(self.preview)
-        row.addStretch()
+        if selector_label:
+            layout.addWidget(self.preview)
+        else:
+            row.addWidget(self.preview)
+            row.addStretch()
         self._update_swatch()
 
     def values(self):

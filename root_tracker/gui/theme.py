@@ -87,5 +87,4 @@ def tree_stylesheet(palette: QPalette) -> str:
             background-color: palette(highlight);
             color: palette(highlighted-text);
         }}
-        QTreeWidget::branch:selected {{ background-color: palette(base); }}
     """

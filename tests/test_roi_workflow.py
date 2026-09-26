@@ -363,7 +363,7 @@ class RoiWorkflowTests(unittest.TestCase):
         self.assertLess(plate_bounds.bottom(), 235)
         panel._crop_edit_btn.setChecked(False)
         self.w._roi_editor.refresh()
-        self.assertIsNone(viewer._plate_outline)
+        self.assertIsNotNone(viewer._plate_outline)
         self.assertIsNone(viewer._crop_overlay)
         self.assertLess(viewer._pixmap_item.pixmap().width(), self.source.shape[1])
 
@@ -464,6 +464,62 @@ class RoiWorkflowTests(unittest.TestCase):
         self.assertIs(self.w._roi_editor._canvas, canvas)
         np.testing.assert_array_equal(self.w._roi_editor._canvas, expected)
         np.testing.assert_allclose(self.w._roi_editor._frame_matrix[:2], matrix)
+
+    def test_reset_state_and_overlays_survive_rotated_load_crop(self):
+        self.show_window()
+        panel, viewer = self.w._settings_panel, self.w._image_viewer
+        self.assertFalse(panel._auto_crop_btn.isEnabled())
+        panel.set_crop((.5, .5, .9, .9, 25.))
+        self.assertTrue(panel._auto_crop_btn.isEnabled())
+        image = self.w._current_image
+        image.barcode_rect = (100, 80, 60, 30)
+        image.barcode_read = 'sample'
+        self.w._config.data.detect_barcodes = True
+        self.w._roi_editor.refresh()
+        panel._crop_edit_btn.setChecked(False)
+        self.w._roi_editor.refresh()
+        before = viewer._view.viewportTransform().map(viewer._barcode_items[0].pos())
+        plate_before = [viewer._view.viewportTransform().map(p) for p in viewer._plate_outline.polygon()]
+        for editing in (True, False):
+            panel._crop_edit_btn.setChecked(editing)
+            self.w._roi_editor.refresh()
+            after = viewer._view.viewportTransform().map(viewer._barcode_items[0].pos())
+            self.assertAlmostEqual(before.x(), after.x(), places=5)
+            self.assertAlmostEqual(before.y(), after.y(), places=5)
+            self.assertIsNotNone(viewer._plate_outline)
+            for actual, expected in zip(viewer._plate_outline.polygon(), plate_before):
+                point = viewer._view.viewportTransform().map(actual)
+                self.assertAlmostEqual(point.x(), expected.x(), places=5)
+                self.assertAlmostEqual(point.y(), expected.y(), places=5)
+        panel._auto_crop_btn.click()
+        self.assertFalse(panel._auto_crop_btn.isEnabled())
+
+    def test_finishing_rotated_crop_straightens_view_and_edit_keeps_orientation(self):
+        from root_tracker.preprocessing import roi
+        self.show_window()
+        panel, viewer = self.w._settings_panel, self.w._image_viewer
+        for step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS):
+            if step == WorkflowStep.PREPROCESS:
+                self.enter_preprocess()
+            panel._crop_edit_btn.setChecked(True)
+            panel.set_crop((.5, .5, .7, .7, 32.))
+            self.w._roi_editor.refresh()
+            panel._crop_edit_btn.setChecked(False)
+            self.w._roi_editor.refresh()
+            transform = viewer._view.viewportTransform()
+            self.assertAlmostEqual(transform.m12(), 0., places=8)
+            self.assertAlmostEqual(transform.m21(), 0., places=8)
+            self.assertGreater(transform.m11(), 0.)
+            self.assertGreater(transform.m22(), 0.)
+            points = np.array([[100., 100.], [130., 120.]])
+            cropped = roi.transform_points(points, self.w._roi_editor._frame_matrix[:2])
+            expected = [transform.map(QPointF(*(point+.5))) for point in cropped]
+            panel._crop_edit_btn.setChecked(True)
+            self.w._roi_editor.refresh()
+            for point, previous in zip(points, expected):
+                actual = viewer._view.viewportTransform().map(QPointF(*(point+.5)))
+                self.assertAlmostEqual(actual.x(), previous.x(), places=5)
+                self.assertAlmostEqual(actual.y(), previous.y(), places=5)
 
 
 if __name__ == '__main__':
