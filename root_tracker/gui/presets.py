@@ -61,3 +61,13 @@ class PresetStore:
             elif self.path('Defaults').exists() and (bundled_directory / 'in_vitro.yaml').exists():
                 self.save('Defaults', Config.from_yaml(bundled_directory / 'in_vitro.yaml'))
             migration.touch()
+        date_migration = self.directory / '.defaults-year-month-day'
+        if not date_migration.exists():
+            # Repair the shipped date order without replacing other preset edits.
+            if self.path('Defaults').exists():
+                config = self.load('Defaults')
+                if (config.data.filename_template == '{group}.{date}'
+                        and config.data.date_format == '%d-%m-%y'):
+                    config.data.date_format = '%y-%m-%d'
+                    self.save('Defaults', config)
+            date_migration.touch()

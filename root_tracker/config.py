@@ -16,7 +16,7 @@ import math
 class DataConfig:
     """Configuration for data paths and file patterns."""
     filename_template: str = "{group}.{date}"
-    date_format: str = "%d-%m-%y"
+    date_format: str = "%y-%m-%d"
     input: str = "data_in_vitro/"
     output: str = "result/"
     statistics: str = "statistics_in_vitro.csv"
@@ -228,6 +228,7 @@ class Config:
         """Hash of config values that affect preprocessing."""
         values = (
             "plate-search-fixed-analysis-v2",
+            self.data.filename_template, self.data.date_format,
             self.rotation, self.n_clusters,
             self.margin_top, self.margin_bottom, self.margin_left, self.margin_right,
             self.green.min_count, self.green.min_area,
@@ -248,6 +249,7 @@ class Config:
     def tracking_config_hash(self) -> str:
         """Hash of config values that affect tracking."""
         values = (
+            self.data.filename_template, self.data.date_format,
             self.threshold.low, self.threshold.high,
             self.threshold.min_contour_area, self.threshold.min_contour_length,
             self.n_clusters,

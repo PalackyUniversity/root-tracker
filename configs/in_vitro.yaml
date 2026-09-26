@@ -5,7 +5,7 @@
 
 data:
   filename_template: "{group}.{date}"
-  date_format: "%d-%m-%y"
+  date_format: "%y-%m-%d"
   input: "data_in_vitro/"
   output: "result/"
   statistics: "statistics_in_vitro.csv"

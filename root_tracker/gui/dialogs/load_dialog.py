@@ -27,7 +27,7 @@ class LoadDialog(QDialog):
         parent=None, 
         initial_path: str = "",
         initial_template: str = "{group}.{date}",
-        initial_date_format: str = "%d-%m-%y",
+        initial_date_format: str = "%y-%m-%d",
         initial_detect_barcodes: bool = True
     ) -> None:
         super().__init__(parent)
@@ -49,6 +49,7 @@ class LoadDialog(QDialog):
         
         # Common date formats with examples
         self._date_formats = [
+            ("%y-%m-%d", "%y-%m-%d (e.g., 26-04-27 = 27 April 2026)"),
             ("%Y-%m-%d", "%Y-%m-%d (e.g., 2022-09-25)"),
             ("%Y%m%d", "%Y%m%d (e.g., 20220925)"),
             ("%Y-%m-%d_%H-%M-%S", "%Y-%m-%d_%H-%M-%S (e.g., 2022-09-25_14-30-45)"),
