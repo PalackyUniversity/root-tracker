@@ -8,10 +8,11 @@ Settings are applied to the entire group on Apply button click.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QSpinBox, QDoubleSpinBox, QPushButton,
-    QGroupBox, QLineEdit, QComboBox, QCheckBox, QScrollArea, QFrame
+    QGroupBox, QLineEdit, QCheckBox, QScrollArea, QFrame
 )
 from PySide6.QtCore import Signal, Qt
 
+from .combo_box import RoundedComboBox as QComboBox
 from ..config import Config
 from .workflow_bar import WorkflowStep
 from .mask_controls import MaskControls

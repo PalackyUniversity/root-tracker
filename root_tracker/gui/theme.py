@@ -93,7 +93,7 @@ def button_stylesheet(palette: QPalette) -> str:
             combobox-popup: 0;
             background-color: {surface.name()}; color: {text.name()};
             border: 1px solid {border}; border-radius: 5px;
-            padding: 3px 24px 3px 8px; min-height: 18px;
+            padding: 5px 24px 6px 8px; min-height: 18px;
         }}
         QComboBox:hover {{ background-color: {hover}; border-color: {hover_border}; }}
         QComboBox:focus {{ border-color: {accent.name()}; }}

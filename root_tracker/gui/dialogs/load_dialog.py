@@ -4,8 +4,9 @@ Load dialog for selecting input folder.
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QFileDialog, QFormLayout, QComboBox, QCheckBox
+    QLineEdit, QPushButton, QFileDialog, QFormLayout, QCheckBox
 )
+from ..combo_box import RoundedComboBox as QComboBox
 from PySide6.QtCore import Qt
 from datetime import datetime
 

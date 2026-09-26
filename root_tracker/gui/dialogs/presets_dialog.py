@@ -2,11 +2,12 @@
 from copy import deepcopy
 from dataclasses import fields
 from pathlib import Path
+from ..combo_box import RoundedComboBox as QComboBox
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog, QHBoxLayout, QVBoxLayout, QListWidget, QPushButton, QTabWidget,
     QWidget, QFormLayout, QScrollArea, QLineEdit, QSpinBox, QDoubleSpinBox,
-    QLabel, QComboBox, QFileDialog, QInputDialog, QMessageBox, QGroupBox, QStyle, QFrame,
+    QLabel, QFileDialog, QInputDialog, QMessageBox, QGroupBox, QStyle, QFrame,
 )
 from ...config import Config
 from ..color_range import ColorRangeControl
