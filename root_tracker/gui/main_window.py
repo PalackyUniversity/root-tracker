@@ -2646,40 +2646,12 @@ class MainWindow(QMainWindow):
                                  self, image_index=index).exec()
 
     def _on_export_results(self) -> None:
-        """Handle export results action."""
+        """Use the same complete-dataset export as the workflow button."""
         if self._pipeline is None or not self._series_dict:
             QMessageBox.warning(self, "No Data", "No data loaded to export.")
             return
 
-        # Default filename
-        default_name = "statistics.csv"
-        default_path = os.path.join(self._config.data.input, default_name)
-        
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export Results",
-            default_path,
-            "CSV Files (*.csv);;All Files (*)"
-        )
-        
-        if not file_path:
-            return
-
-        try:
-            # Export statistics
-            stats_df = self._pipeline.export_statistics(self._series_dict)
-            stats_df.to_csv(file_path, index=False)
-            
-            QMessageBox.information(
-                self, 
-                "Export Complete",
-                f"Results exported to:\n{file_path}"
-            )
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Export failed:\n{e}")
-        finally:
-            self._processing_label.hide()
-            QApplication.restoreOverrideCursor()
+        self._track_all_and_export()
     
     def _on_zoom_changed(self, percentage: int) -> None:
         """Handle zoom level change - update bottom bar label."""
