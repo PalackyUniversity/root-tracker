@@ -698,9 +698,10 @@ class ZoomableGraphicsView(QGraphicsView):
             kind = event.type()
             if kind in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease, QEvent.Type.ShortcutOverride):
                 if event.key() == Qt.Key.Key_Alt:
+                    viewer = self.parent()
+                    crop_active = isinstance(viewer, ImageViewer) and viewer._crop_overlay is not None
                     if kind == QEvent.Type.ShortcutOverride:
-                        viewer = self.parent()
-                        if self._pan_previous is not None or (isinstance(viewer, ImageViewer)
+                        if crop_active or self._pan_previous is not None or (isinstance(viewer, ImageViewer)
                                 and viewer._mask_tool not in (MaskTool.NONE, MaskTool.MOVE)):
                             event.accept()
                             return True
@@ -709,7 +710,7 @@ class ZoomableGraphicsView(QGraphicsView):
                         self._alt_held = kind == QEvent.Type.KeyPress
                         if self._alt_held or not self._pan_dragging:
                             self._temporary_pan(self._alt_held)
-                        if self._pan_previous is not None or was_panning:
+                        if crop_active or self._pan_previous is not None or was_panning:
                             event.accept()
                             return True
             elif kind == QEvent.Type.WindowDeactivate:

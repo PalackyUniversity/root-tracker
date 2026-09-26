@@ -4,6 +4,7 @@ import numpy as np
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QPoint, QPointF, Qt
 from PySide6.QtGui import QWheelEvent
+from PySide6.QtTest import QTest
 from root_tracker.gui.image_viewer import ImageViewer
 
 
@@ -58,3 +59,39 @@ class ViewNavigationTests(unittest.TestCase):
         after = viewer._view.mapToScene(viewer._view.viewport().rect().center())
         self.assertAlmostEqual(viewer._view.transform().m11(), before_scale)
         self.assertLessEqual((after - before).manhattanLength(), 1)
+
+    def test_alt_drag_over_crop_and_handles_pans_without_editing(self):
+        viewer = self.viewer
+        view = viewer._view
+        box = (.5, .5, .4, .4, 0.)
+        viewer.set_crop((400, 600), box)
+        crop = viewer._crop_overlay
+        points = [QPointF(300, 200), crop.handles['se'].scenePos(),
+                  crop.handles['rotate'].scenePos(),
+                  crop.handles['nw'].scenePos() - QPointF(13, 13) / view.transform().m11()]
+        changes = []
+        viewer.crop_changed.connect(changes.append)
+        for point in points:
+            with self.subTest(point=point):
+                start = view.mapFromScene(point)
+                end = start + QPoint(40, 25)
+                before = view.mapToScene(view.viewport().rect().center())
+                QTest.mouseMove(view.viewport(), start)
+                QTest.keyPress(view, Qt.Key.Key_Alt)
+                QTest.mousePress(view.viewport(), Qt.MouseButton.LeftButton,
+                                 Qt.KeyboardModifier.AltModifier, start)
+                QTest.mouseMove(view.viewport(), end, delay=10)
+                QTest.keyRelease(view, Qt.Key.Key_Alt)
+                end += QPoint(10, 5)
+                QTest.mouseMove(view.viewport(), end, delay=10)
+                QTest.mouseRelease(view.viewport(), Qt.MouseButton.LeftButton, pos=end)
+                self.assertEqual(crop.box, box)
+                after = view.mapToScene(view.viewport().rect().center())
+                self.assertGreater((after - before).manhattanLength(), 10)
+        self.assertEqual(changes, [])
+        # A normal drag still edits the crop after releasing Alt.
+        start = view.mapFromScene(QPointF(300, 200))
+        QTest.mousePress(view.viewport(), Qt.MouseButton.LeftButton, pos=start)
+        QTest.mouseMove(view.viewport(), start + QPoint(30, 20), delay=10)
+        QTest.mouseRelease(view.viewport(), Qt.MouseButton.LeftButton, pos=start + QPoint(30, 20))
+        self.assertNotEqual(crop.box, box)

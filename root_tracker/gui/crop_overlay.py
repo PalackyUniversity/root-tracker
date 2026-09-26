@@ -71,7 +71,9 @@ class CropHandle(QGraphicsRectItem):
         super().hoverLeaveEvent(event)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
+        # Let the view handle Alt-drag as panning, including over handles.
+        if (event.button() == Qt.MouseButton.LeftButton
+                and not event.modifiers() & Qt.KeyboardModifier.AltModifier):
             self.owner.begin_drag(self.kind, event.scenePos())
             event.accept()
         else:
@@ -134,7 +136,9 @@ class CornerRotationZone(QGraphicsPathItem):
         super().hoverLeaveEvent(event)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
+        # Let the view handle Alt-drag as panning, including over handles.
+        if (event.button() == Qt.MouseButton.LeftButton
+                and not event.modifiers() & Qt.KeyboardModifier.AltModifier):
             self.owner.begin_drag('rotate', event.scenePos())
             event.accept()
         else:
@@ -317,7 +321,9 @@ class CropOverlay(QGraphicsObject):
                 self.changed.emit(self.box)
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
+        # Let the view handle Alt-drag as panning, including over handles.
+        if (event.button() == Qt.MouseButton.LeftButton
+                and not event.modifiers() & Qt.KeyboardModifier.AltModifier):
             self.begin_drag('move', event.scenePos())
             event.accept()
         else:
