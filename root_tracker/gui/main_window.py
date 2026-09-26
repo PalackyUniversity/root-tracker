@@ -2288,7 +2288,7 @@ class MainWindow(QMainWindow):
                 shutil.rmtree(cache_dir)
                 # Reload to reflect cleared state
                 self._reload_images()
-                QMessageBox.information(self, "Success", "Cache cleared and reloaded successfully.")
+                self._status_bar.showMessage("Cache cleared.", 5000)
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to clear cache:\n{e}")
         
