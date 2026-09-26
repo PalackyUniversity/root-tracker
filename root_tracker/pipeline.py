@@ -10,6 +10,8 @@ import numpy as np
 import cv2
 import pandas as pd
 from multiprocessing import freeze_support
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
+from collections.abc import Callable, Iterator
 from tqdm.contrib.concurrent import process_map
 
 from .config import Config
@@ -115,12 +117,8 @@ class RootTrackingPipeline:
         """
         try:
             # Read barcode from original image (decoupled from preprocessing rotation)
-            image = cv2.imread(image_data.path)
-            if image is None:
-                return False
-            
             # Read barcode with bounding box (use fast method)
-            barcode_text, rect = self.barcode_reader.read_fast(image)
+            barcode_text, rect = self.barcode_reader.read_file(image_data.path)
             
             image_data.barcode_read = barcode_text
             image_data.barcode_rect = rect
@@ -145,6 +143,61 @@ class RootTrackingPipeline:
             image_data.barcode_detected = True  # Mark as detected even on failure
             return False
     
+    def iter_detect_barcodes(
+        self, images: list[ImageData], *,
+        cancelled: Callable[[], bool] | None = None,
+        max_workers: int = 4,
+    ) -> Iterator[ImageData]:
+        """Yield checked images as they finish, using at most four native readers.
+
+        JPEG decoding and ZBar release the GIL. Each task owns its image and
+        decoder; no Qt or cache writes run in these threads. Keep only one task
+        per worker in flight so cancellation does not leave a dataset queued.
+        Already checked images are yielded without reading them again. Closing
+        the iterator waits for active reads, preventing mutations after cleanup.
+        Process-pool pipeline workers retain their serial barcode loop to avoid
+        nested parallelism.
+        """
+        if max_workers < 1:
+            raise ValueError('max_workers must be positive')
+        is_cancelled = cancelled or (lambda: False)
+        pending = []
+        for image in images:
+            if is_cancelled():
+                return
+            if image.barcode_detected:
+                yield image
+            else:
+                pending.append(image)
+        if not pending or is_cancelled():
+            return
+        workers = min(max_workers, 4, os.cpu_count() or 1, len(pending))
+        remaining = iter(pending)
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix='barcode') as executor:
+            futures = {}
+            try:
+                for _ in range(workers):
+                    if is_cancelled():
+                        return
+                    image = next(remaining)
+                    futures[executor.submit(self.detect_barcode_in_image, image)] = image
+                while futures and not is_cancelled():
+                    done, _ = wait(futures, timeout=0.05, return_when=FIRST_COMPLETED)
+                    for future in done:
+                        if is_cancelled():
+                            return
+                        image = futures.pop(future)
+                        future.result()
+                        yield image
+                        if is_cancelled():
+                            return
+                        following = next(remaining, None)
+                        if following is not None:
+                            futures[executor.submit(self.detect_barcode_in_image, following)] = following
+            finally:
+                for future in futures:
+                    future.cancel()
+
     def preprocess_image(self, image_data: ImageData) -> None:
         """
         Preprocess a single image.

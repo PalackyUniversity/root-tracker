@@ -164,6 +164,9 @@ class ProcessWorker(QThread):
     
     def _run_preprocess(self):
         """Run preprocessing on the series."""
+        if self._cancelled:
+            return
+        self.series.pipeline_state.invalidate_from('preprocess')
         total_images = len(self.series.images)
         for i, image_data in enumerate(self.series.images):
             if self._cancelled:
@@ -186,6 +189,10 @@ class ProcessWorker(QThread):
     
     def _run_track(self):
         """Run tracking on the series."""
+        if self._cancelled:
+            return
+        self.series.pipeline_state.invalidate_from('track')
+
         def progress_callback(current, total):
             if self._cancelled:
                 raise InterruptedError("Cancelled")
@@ -209,11 +216,8 @@ class ProcessWorker(QThread):
     def _run_barcode_detection(self):
         """Run barcode detection on the series."""
         total_images = len(self.series.images)
-        for i, image_data in enumerate(self.series.images):
-            if self._cancelled:
-                break
-            if not image_data.barcode_detected:
-                self.pipeline.detect_barcode_in_image(image_data)
+        for i, image_data in enumerate(self.pipeline.iter_detect_barcodes(
+                self.series.images, cancelled=lambda: self._cancelled)):
             self.progress.emit(i + 1, total_images)
         
         if not self._cancelled:
@@ -278,9 +282,8 @@ class MainWindow(QMainWindow):
         # Set initial button states (no images loaded yet)
         self._update_initial_ui_state()
         
-        # Start maximized
-        self.showMaximized()
-        
+        # Finish startup while hidden. The launcher shows the normal window
+        # once, without an early maximize request racing the first titlebar drag.
         # Load last folder if available
         self._load_last_folder()
     
@@ -321,6 +324,7 @@ class MainWindow(QMainWindow):
         
         # Left panel: Image tree only
         self._image_tree = ImageTree()
+        self._image_tree.set_step(WorkflowStep.LOAD, self._config)
         self._image_tree.setMinimumWidth(180)
         # Max width will be set dynamically based on whether images are loaded
         self._splitter.addWidget(self._image_tree)
@@ -813,6 +817,7 @@ class MainWindow(QMainWindow):
             self._settings_panel.set_step(step)
             
         # Update tree filtering: show aside items ONLY in LOAD step
+        self._image_tree.set_step(step, self._config)
         self._image_tree.set_filter_aside(step != WorkflowStep.LOAD)
 
         # Step-specific auto-processing
@@ -960,6 +965,8 @@ class MainWindow(QMainWindow):
             elif self._current_image:
                 self._display_image(self._current_image)
 
+        self._refresh_tree_status()
+
     def _on_apply_all_settings(self) -> None:
         """Handle Apply All button - propagate settings to ALL groups.
 
@@ -999,6 +1006,8 @@ class MainWindow(QMainWindow):
                 self._on_track_roots()
             elif self._current_image:
                 self._display_image(self._current_image)
+
+        self._refresh_tree_status()
 
     def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
         """Handle centroid drag - update image data and enable Re-detect."""
@@ -1041,6 +1050,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Detection failed:\n{e}")
         finally:
+            self._refresh_tree_status()
             self._processing_label.hide()
             QApplication.restoreOverrideCursor()
     
@@ -1052,6 +1062,7 @@ class MainWindow(QMainWindow):
     def _on_detect_barcodes_toggled(self, enabled: bool) -> None:
         """Handle Detect Barcodes menu toggle."""
         self._config.data.detect_barcodes = enabled
+        self._refresh_tree_status()
         # Save to settings for persistence
         self._settings.setValue("detect_barcodes", enabled)
         # Note: This will take effect on next image load/reload
@@ -1333,7 +1344,7 @@ class MainWindow(QMainWindow):
         total_images = sum(len(s.images) for s in undetected_groups)
         
         # Create processing context
-        self._context = ProcessingContext(self, ProcessingState.BARCODE_DETECTION)
+        self._context = ProcessingContext(self, ProcessingState.BARCODE_DETECTION, undetected_groups)
         self._context.__enter__()
         
         # Setup cumulative progress bar
@@ -1347,16 +1358,17 @@ class MainWindow(QMainWindow):
 
         try:
             for series in undetected_groups:
-                for image_data in series.images:
-                    if not image_data.barcode_detected:
-                        self._pipeline.detect_barcode_in_image(image_data)
-
+                if self._cancel_requested.is_set():
+                    break
+                for image_data in self._pipeline.iter_detect_barcodes(
+                        series.images, cancelled=self._cancel_requested.is_set):
                     current_image_count += 1
                     self._update_progress_label(start_time, current_image_count, total_images)
                     self._progress_bar.setValue(current_image_count)
+                    self._image_tree.refresh_status()
                     QApplication.processEvents()
                 
-                # Save this series to cache after all its barcodes are detected
+                # Persist completed reads, including partial progress on cancellation.
                 series_cache.save_series(series, self._config)
                 
             # Update tree to show warning icons (refresh preserves selection)
@@ -1404,7 +1416,9 @@ class MainWindow(QMainWindow):
         total_images = sum(len(s.images) for s in unprocessed_groups)
 
         # Create processing context for batch operation
-        self._context = ProcessingContext(self, ProcessingState.BATCH_PREPROCESS)
+        for series in unprocessed_groups:
+            series.pipeline_state.invalidate_from('preprocess')
+        self._context = ProcessingContext(self, ProcessingState.BATCH_PREPROCESS, unprocessed_groups)
         self._context.__enter__()
 
         # Progress bar tracks completed images
@@ -1468,8 +1482,14 @@ class MainWindow(QMainWindow):
                             series.pipeline_state.preprocessed = True
                             series.pipeline_state.preprocess_config_hash = current_hash
                             series.pipeline_state.invalidate_from('track')
+                            # Read only lightweight per-image metadata for status;
+                            # processed arrays remain on disk until selected.
+                            series_cache.load_series_state(series, self._config)
+                            self._image_tree.refresh_status()
                         except Exception as e:
                             print(f"Error preprocessing {series.group}: {e}")
+                        self._context.series = list(futures.values())
+                        self._refresh_tree_status()
                     
                     # Update ETA even if no progress, to handle coasting
                     if completed_images > 0:
@@ -1551,6 +1571,7 @@ class MainWindow(QMainWindow):
 
     def _on_worker_progress(self, current: int, total: int) -> None:
         """Handle progress updates from worker thread."""
+        self._image_tree.refresh_status()
         # Check if we're in percentage mode (tracking) or count mode (preprocessing/barcode)
         if self._progress_bar.maximum() == 100:
             # Tracking mode - convert to percentage
@@ -1737,6 +1758,7 @@ class MainWindow(QMainWindow):
     
     def _lock_ui(self) -> None:
         """Lock UI during processing. Called by ProcessingContext.__enter__."""
+        self._refresh_tree_status()
         # Disable main interactive elements
         self._image_tree.setEnabled(False)
         self._settings_panel.setEnabled(False)
@@ -1896,8 +1918,22 @@ class MainWindow(QMainWindow):
 
     # Removed _is_operation_running - replaced by checking _state != ProcessingState.IDLE
     
+    def _refresh_tree_status(self) -> None:
+        """Keep the tree in sync without rebuilding navigation rows."""
+        self._image_tree.set_step(self._workflow_bar.get_current_step(), self._config)
+        operation_step = {
+            ProcessingState.BARCODE_DETECTION: WorkflowStep.LOAD,
+            ProcessingState.PREPROCESSING: WorkflowStep.PREPROCESS,
+            ProcessingState.TRACKING: WorkflowStep.TRACK,
+            ProcessingState.BATCH_PREPROCESS: WorkflowStep.PREPROCESS,
+            ProcessingState.BATCH_TRACK: WorkflowStep.TRACK,
+        }.get(self._state)
+        series = self._context.series if self._context else None
+        self._image_tree.set_processing(series, operation_step)
+
     def _update_process_button_states(self) -> None:
         """Update UI states based on current step and processing status."""
+        self._refresh_tree_status()
         step = self._workflow_bar.get_current_step()
         
         # Next/Export button: Don't override if any operation is running
@@ -2011,7 +2047,9 @@ class MainWindow(QMainWindow):
                 self._free_series_arrays(series)
 
         # Create processing context for batch operation
-        self._context = ProcessingContext(self, ProcessingState.BATCH_TRACK)
+        for series in untracked:
+            series.pipeline_state.invalidate_from('track')
+        self._context = ProcessingContext(self, ProcessingState.BATCH_TRACK, untracked)
         self._context.__enter__()
 
         self._progress_bar.setRange(0, total_images)
@@ -2076,8 +2114,12 @@ class MainWindow(QMainWindow):
                             series.pipeline_state.tracked = state_dict['tracked']
                             series.pipeline_state.tracking_config_hash = state_dict['tracking_config_hash']
                             series.pipeline_state.last_statistics = stats_dicts
+                            series_cache.load_series_state(series, self._config)
+                            self._image_tree.refresh_status()
                         except Exception as e:
                             print(f"Error tracking {series.group}: {e}")
+                        self._context.series = list(futures.values())
+                        self._refresh_tree_status()
 
                     # Update ETA even if no progress, to handle coasting
                     if completed_images > 0:
@@ -2209,6 +2251,8 @@ class MainWindow(QMainWindow):
 
         # Save to cache (tracking results are now cleared)
         series_cache.save_series(self._current_series, self._config)
+
+        self._refresh_tree_status()
 
     def _load_last_folder(self) -> None:
         """Load the last opened folder if it exists."""

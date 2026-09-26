@@ -79,8 +79,8 @@ def tree_stylesheet(palette: QPalette) -> str:
         }}
         QTreeWidget::item {{
             padding: 3px 2px;
-            margin: 1px 3px;
-            border-radius: 4px;
+            margin: 1px 0px;
+            border-radius: 0px;
         }}
         QTreeWidget::item:hover:!selected {{ background-color: {hover}; }}
         QTreeWidget::item:selected {{

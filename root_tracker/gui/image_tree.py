@@ -8,14 +8,16 @@ Shows an empty state with load button when no images are loaded.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem,
     QLabel, QPushButton, QStackedWidget, QHBoxLayout,
-    QToolButton, QStyle
+    QToolButton, QStyle, QHeaderView, QSizePolicy
 )
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QAction, QFont, QColor, QPalette
 
 from ..models import ImageSeries, ImageData
+from ..config import Config
 from .menus import RoundedMenu
 from .theme import tree_stylesheet
+from .workflow_bar import WorkflowStep, STEP_NAMES
 
 
 class ImageTree(QWidget):
@@ -50,6 +52,10 @@ class ImageTree(QWidget):
         self._item_to_data: dict[int, ImageData | ImageSeries] = {}
         self._filter_aside: bool = False  # If True, hide items that are set aside
         self._current_folder: str = ""
+        self._step = WorkflowStep.LOAD
+        self._status_config = Config()
+        self._processing_series_ids = set()
+        self._processing_step = None
         
         self._setup_ui()
     
@@ -88,6 +94,14 @@ class ImageTree(QWidget):
         
         self._header.hide()  # Hidden by default until folder is loaded
         layout.addWidget(self._header)
+
+        self._status_label = QLabel()
+        self._status_label.setStyleSheet(
+            'background: palette(base); color: palette(text); padding: 5px 9px; font-size: 11px;')
+        self._status_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        self._status_label.setAccessibleName('Progress for the selected workflow step')
+        self._status_label.hide()
+        layout.addWidget(self._status_label)
         
         # Stacked widget for empty state vs tree
         self._stack = QStackedWidget()
@@ -116,11 +130,16 @@ class ImageTree(QWidget):
         
         self._stack.addWidget(empty_widget)  # Index 0: empty state
         
-        # Tree widget - single column
+        # A stable trailing column keeps completion separate from filenames and warnings.
         self._tree = QTreeWidget()
         self._tree.setStyleSheet(tree_stylesheet(self.palette()))
         self._tree.setHeaderHidden(True)
-        self._tree.setColumnCount(1)
+        self._tree.setColumnCount(2)
+        self._tree.setHeaderLabels(['Image', 'Step status'])
+        self._tree.header().setStretchLastSection(False)
+        self._tree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self._tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        self._tree.setColumnWidth(1, 64)
         self._tree.itemSelectionChanged.connect(self._on_selection_changed)
         self._tree.setIndentation(20)
         
@@ -155,10 +174,115 @@ class ImageTree(QWidget):
         if not series_dict:
             self._stack.setCurrentIndex(0)  # Show empty state
             self._header.hide()
+            self._status_label.hide()
         else:
             self._stack.setCurrentIndex(1)  # Show tree
             self._header.show()
+            self._status_label.show()
             self._populate_tree()
+
+    def set_step(self, step: WorkflowStep, config: Config) -> None:
+        """Display completion for the selected step and applied configuration."""
+        self._step = step
+        self._status_config = config
+        self.refresh_status()
+
+    def set_processing(self, series: ImageSeries | list[ImageSeries] | None, step: WorkflowStep | None) -> None:
+        """Mark queued/running groups without reporting partial results as done."""
+        groups = series if isinstance(series, list) else ([series] if series else [])
+        self._processing_series_ids = {id(group) for group in groups}
+        self._processing_step = step
+        self.refresh_status()
+
+    def _image_status(self, image, series, preprocess_hash, tracking_hash):
+        if image.is_set_aside:
+            return 'excluded', 'Set aside; excluded from processing'
+        if self._step == WorkflowStep.LOAD:
+            if not self._status_config.data.detect_barcodes:
+                return 'done', 'Image loaded; barcode checking is disabled'
+            if image.barcode_detected:
+                return 'done', 'Barcode checked; see any barcode warning beside the image'
+        if id(series) in self._processing_series_ids and self._step == self._processing_step:
+            return 'running', 'Queued or processing this group; waiting for the step to finish'
+        if self._step == WorkflowStep.LOAD:
+            return 'pending', 'Barcode not checked yet'
+
+        state = series.pipeline_state
+        prepared = state.preprocessed and bool(image.positions_x)
+        if self._step == WorkflowStep.PREPROCESS:
+            has_result = prepared
+            current = state.preprocess_config_hash == preprocess_hash
+        else:
+            has_result = state.tracked and image.total_length is not None
+            current = (prepared and state.preprocess_config_hash == preprocess_hash and
+                       state.tracking_config_hash == tracking_hash)
+        if has_result and current:
+            return 'done', 'Complete with the current settings'
+        if has_result:
+            return 'outdated', 'Settings changed; run this step again'
+        return 'pending', 'Not processed for this step'
+
+    def refresh_status(self) -> None:
+        """Update only status cells; preserve focus, selection, expansion and scroll."""
+        config = self._status_config
+        preprocess_hash = config.preprocess_config_hash()
+        tracking_hash = config.tracking_config_hash()
+        label = STEP_NAMES[self._step]
+        verb = 'done'
+        if self._step == WorkflowStep.LOAD:
+            label = 'Barcodes' if config.data.detect_barcodes else 'Load'
+            verb = 'checked' if config.data.detect_barcodes else 'loaded'
+        light = self.palette().color(QPalette.ColorRole.Base).lightness() >= 128
+        colors = {
+            'done': QColor('#237a45' if light else '#74c69d'),
+            'pending': self.palette().color(QPalette.ColorRole.PlaceholderText),
+            'outdated': QColor('#9a5b00' if light else '#ffad42'),
+            'running': QColor('#1766a5' if light else '#80bfff'),
+            'excluded': self.palette().color(QPalette.ColorRole.PlaceholderText),
+        }
+        symbols = {'done': '✓', 'pending': '○', 'outdated': '↻', 'running': '…', 'excluded': '—'}
+        total_done = total_images = 0
+        for index in range(self._tree.topLevelItemCount()):
+            group = self._tree.topLevelItem(index)
+            series = self._item_to_data[id(group)]
+            statuses = []
+            for child_index in range(group.childCount()):
+                child = group.child(child_index)
+                image = self._item_to_data[id(child)]
+                status, detail = self._image_status(image, series, preprocess_hash, tracking_hash)
+                statuses.append(status)
+                child.setText(1, symbols[status])
+                child.setTextAlignment(1, Qt.AlignmentFlag.AlignCenter)
+                child.setForeground(1, colors[status])
+                child.setData(1, Qt.ItemDataRole.UserRole, status)
+                child.setToolTip(1, f'{label}: {detail}')
+                child.setData(1, Qt.ItemDataRole.AccessibleTextRole, f'{image.filename}: {label}. {detail}')
+            count = sum(s != 'excluded' for s in statuses)
+            done = statuses.count('done')
+            total_done += done
+            total_images += count
+            status = ('excluded' if not count else 'done' if done == count else
+                      'running' if 'running' in statuses else
+                      'outdated' if 'outdated' in statuses else 'pending')
+            text = '—' if not count else f'{done}/{count}'
+            if status in ('done', 'running', 'outdated'):
+                text = f'{symbols[status]} {text}'
+            group.setText(1, text)
+            group.setTextAlignment(1, Qt.AlignmentFlag.AlignCenter)
+            group.setForeground(1, colors[status])
+            group.setData(1, Qt.ItemDataRole.UserRole, status)
+            detail = f'{label}: {done} of {count} images {verb}' if count else 'Set aside; excluded from processing'
+            if status == 'running':
+                detail += '; queued or processing'
+            elif status == 'outdated':
+                detail += '; settings changed'
+            group.setToolTip(1, detail)
+            group.setData(1, Qt.ItemDataRole.AccessibleTextRole, f'{series.group}: {detail}')
+        self._status_label.setText(f'{label} · {total_done}/{total_images} {verb}')
+        self._status_label.setToolTip(
+            f'{label}: {total_done} of {total_images} images {verb}.\n'
+            '✓ Complete   ○ Pending   ↻ Settings changed   … Processing group\n'
+            'Set-aside images are excluded. Barcode warnings are shown separately.')
     
     def set_folder_path(self, folder_path: str) -> None:
         """Set the current folder path to display in the header."""
@@ -202,7 +326,7 @@ class ImageTree(QWidget):
             else:
                 suffix = ""
             
-            group_text = f"{prefix}{group_name} ({len(series.images)}){suffix}"
+            group_text = f"{prefix}{group_name}{suffix}"
             group_item = QTreeWidgetItem([group_text])
             group_item.setFlags(group_item.flags() | Qt.ItemFlag.ItemIsSelectable)
             
@@ -275,6 +399,7 @@ class ImageTree(QWidget):
         
         # Show tree
         self._stack.setCurrentIndex(1)
+        self.refresh_status()
     
     def _on_selection_changed(self) -> None:
         """Handle tree selection change."""

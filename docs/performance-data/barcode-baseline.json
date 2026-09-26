@@ -1,0 +1,5712 @@
+[
+  {
+    "path": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+    "expected": "RT_26_2-1",
+    "text": "RT_26_2-1",
+    "rect": [
+      2775,
+      3297,
+      1182,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1144432040018728,
+    "decode_seconds": 0.11287010699743405,
+    "total_seconds": 0.22731331099930685
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+    "expected": "RT_26_2-1",
+    "text": "RT_26_2-1",
+    "rect": [
+      2784,
+      3309,
+      1182,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11853313499887008,
+    "decode_seconds": 0.11348751701007131,
+    "total_seconds": 0.2320206520089414
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+    "expected": "RT_26_2-1",
+    "text": "RT_26_2-1",
+    "rect": [
+      2796,
+      3303,
+      1176,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10588271899905521,
+    "decode_seconds": 0.10148072900483385,
+    "total_seconds": 0.20736344800388906
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+    "expected": "RT_26_2-1",
+    "text": "RT_26_2-1",
+    "rect": [
+      2790,
+      3303,
+      1176,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10501803399529308,
+    "decode_seconds": 0.10485283000161871,
+    "total_seconds": 0.2098708639969118
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-10.26-04-27.JPG",
+    "expected": "RT_26_2-10",
+    "text": "RT_26_2-10",
+    "rect": [
+      2661,
+      3294,
+      1278,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11758426399319433,
+    "decode_seconds": 0.11559153501002584,
+    "total_seconds": 0.23317579900322016
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-10.26-04-28.JPG",
+    "expected": "RT_26_2-10",
+    "text": "RT_26_2-10",
+    "rect": [
+      2667,
+      3297,
+      1278,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1142165479977848,
+    "decode_seconds": 0.11386403799406253,
+    "total_seconds": 0.22808058599184733
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-10.26-04-29.JPG",
+    "expected": "RT_26_2-10",
+    "text": "RT_26_2-10",
+    "rect": [
+      2664,
+      3294,
+      1278,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10448213099152781,
+    "decode_seconds": 0.10334662400418893,
+    "total_seconds": 0.20782875499571674
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-10.26-04-30.JPG",
+    "expected": "RT_26_2-10",
+    "text": "RT_26_2-10",
+    "rect": [
+      2664,
+      3297,
+      1275,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10784629099362064,
+    "decode_seconds": 0.10566692100837827,
+    "total_seconds": 0.2135132120019989
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-11.26-04-27.JPG",
+    "expected": "RT_26_2-11",
+    "text": "RT_26_2-11",
+    "rect": [
+      2748,
+      3291,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11910539500240702,
+    "decode_seconds": 0.1201034090045141,
+    "total_seconds": 0.23920880400692113
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-11.26-04-28.JPG",
+    "expected": "RT_26_2-11",
+    "text": "RT_26_2-11",
+    "rect": [
+      2751,
+      3291,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11432610999327153,
+    "decode_seconds": 0.11395803300547414,
+    "total_seconds": 0.22828414299874566
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-11.26-04-29.JPG",
+    "expected": "RT_26_2-11",
+    "text": "RT_26_2-11",
+    "rect": [
+      2751,
+      3291,
+      1272,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10903817201324273,
+    "decode_seconds": 0.10770875899470411,
+    "total_seconds": 0.21674693100794684
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-11.26-04-30.JPG",
+    "expected": "RT_26_2-11",
+    "text": "RT_26_2-11",
+    "rect": [
+      2751,
+      3291,
+      1272,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11134600199875422,
+    "decode_seconds": 0.10712049099674914,
+    "total_seconds": 0.21846649299550336
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-12.26-04-27.JPG",
+    "expected": "RT_26_2-12",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11904586901073344,
+    "decode_seconds": 0.25496803599526174,
+    "total_seconds": 0.3740139050059952
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-12.26-04-28.JPG",
+    "expected": "RT_26_2-12",
+    "text": "RT_26_2-12",
+    "rect": [
+      2694,
+      3315,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11569036300352309,
+    "decode_seconds": 0.11448534000373911,
+    "total_seconds": 0.2301757030072622
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-12.26-04-29.JPG",
+    "expected": "RT_26_2-12",
+    "text": "RT_26_2-12",
+    "rect": [
+      2694,
+      3318,
+      1272,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10599069099407643,
+    "decode_seconds": 0.10522460300126113,
+    "total_seconds": 0.21121529399533756
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-12.26-04-30.JPG",
+    "expected": "RT_26_2-12",
+    "text": "RT_26_2-12",
+    "rect": [
+      2694,
+      3315,
+      1272,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10782867998932488,
+    "decode_seconds": 0.1044351330056088,
+    "total_seconds": 0.2122638129949337
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-13.26-04-27.JPG",
+    "expected": "RT_26_2-13",
+    "text": "RT_26_2-13",
+    "rect": [
+      2649,
+      3321,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11709662200883031,
+    "decode_seconds": 0.11835546599468216,
+    "total_seconds": 0.23545208800351247
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-13.26-04-28.JPG",
+    "expected": "RT_26_2-13",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11403232198790647,
+    "decode_seconds": 0.2481666460080305,
+    "total_seconds": 0.362198967995937
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-13.26-04-29.JPG",
+    "expected": "RT_26_2-13",
+    "text": "RT_26_2-13",
+    "rect": [
+      2652,
+      3318,
+      1275,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10541387199191377,
+    "decode_seconds": 0.09816314600175247,
+    "total_seconds": 0.20357701799366623
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-13.26-04-30.JPG",
+    "expected": "RT_26_2-13",
+    "text": "RT_26_2-13",
+    "rect": [
+      2646,
+      3321,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10596843798703048,
+    "decode_seconds": 0.10098647300037555,
+    "total_seconds": 0.20695491098740604
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-14.26-04-27.JPG",
+    "expected": "RT_26_2-14",
+    "text": "RT_26_2-14",
+    "rect": [
+      2685,
+      3303,
+      1275,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11940493900328875,
+    "decode_seconds": 0.12078846999793313,
+    "total_seconds": 0.24019340900122188
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-14.26-04-28.JPG",
+    "expected": "RT_26_2-14",
+    "text": "RT_26_2-14",
+    "rect": [
+      2688,
+      3300,
+      1278,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1147509629954584,
+    "decode_seconds": 0.11415528001089115,
+    "total_seconds": 0.22890624300634954
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-14.26-04-29.JPG",
+    "expected": "RT_26_2-14",
+    "text": "RT_26_2-14",
+    "rect": [
+      2688,
+      3300,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11099236000154633,
+    "decode_seconds": 0.11026395299995784,
+    "total_seconds": 0.22125631300150417
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-14.26-04-30.JPG",
+    "expected": "RT_26_2-14",
+    "text": "RT_26_2-14",
+    "rect": [
+      2685,
+      3303,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11069244099780917,
+    "decode_seconds": 0.10773277300177142,
+    "total_seconds": 0.2184252139995806
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-15.26-04-27.JPG",
+    "expected": "RT_26_2-15",
+    "text": "RT_26_2-15",
+    "rect": [
+      2658,
+      3288,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11753855299321003,
+    "decode_seconds": 0.11946098199405242,
+    "total_seconds": 0.23699953498726245
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-15.26-04-28.JPG",
+    "expected": "RT_26_2-15",
+    "text": "RT_26_2-15",
+    "rect": [
+      2655,
+      3294,
+      1284,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11329083499731496,
+    "decode_seconds": 0.1112140890036244,
+    "total_seconds": 0.22450492400093935
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-15.26-04-29.JPG",
+    "expected": "RT_26_2-15",
+    "text": "RT_26_2-15",
+    "rect": [
+      2661,
+      3291,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11017125300713815,
+    "decode_seconds": 0.10783678299048916,
+    "total_seconds": 0.2180080359976273
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-15.26-04-30.JPG",
+    "expected": "RT_26_2-15",
+    "text": "RT_26_2-15",
+    "rect": [
+      2658,
+      3291,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11153534099867102,
+    "decode_seconds": 0.10648697199940216,
+    "total_seconds": 0.21802231299807318
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-16.26-04-27.JPG",
+    "expected": "RT_26_2-16",
+    "text": "RT_26_2-16",
+    "rect": [
+      2721,
+      3294,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12787859998934437,
+    "decode_seconds": 0.11690502900455613,
+    "total_seconds": 0.2447836289939005
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-16.26-04-28.JPG",
+    "expected": "RT_26_2-16",
+    "text": "RT_26_2-16",
+    "rect": [
+      2724,
+      3297,
+      1275,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12642237600812223,
+    "decode_seconds": 0.11471531698771287,
+    "total_seconds": 0.2411376929958351
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-16.26-04-29.JPG",
+    "expected": "RT_26_2-16",
+    "text": "RT_26_2-16",
+    "rect": [
+      2721,
+      3294,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11692459598998539,
+    "decode_seconds": 0.10125895201053936,
+    "total_seconds": 0.21818354800052475
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-16.26-04-30.JPG",
+    "expected": "RT_26_2-16",
+    "text": "RT_26_2-16",
+    "rect": [
+      2721,
+      3294,
+      1272,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1174063320067944,
+    "decode_seconds": 0.10932096900069155,
+    "total_seconds": 0.22672730100748595
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-17.26-04-27.JPG",
+    "expected": "RT_26_2-17",
+    "text": "RT_26_2-17",
+    "rect": [
+      2664,
+      3267,
+      1278,
+      54
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12492118400405161,
+    "decode_seconds": 0.11239372800628189,
+    "total_seconds": 0.2373149120103335
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-17.26-04-28.JPG",
+    "expected": "RT_26_2-17",
+    "text": "RT_26_2-17",
+    "rect": [
+      2670,
+      3315,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12353493701084517,
+    "decode_seconds": 0.10931302499375306,
+    "total_seconds": 0.23284796200459823
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-17.26-04-29.JPG",
+    "expected": "RT_26_2-17",
+    "text": "RT_26_2-17",
+    "rect": [
+      2673,
+      3315,
+      1272,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13138182600960135,
+    "decode_seconds": 0.10288030900119338,
+    "total_seconds": 0.23426213501079474
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-17.26-04-30.JPG",
+    "expected": "RT_26_2-17",
+    "text": "RT_26_2-17",
+    "rect": [
+      2670,
+      3315,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11851650099561084,
+    "decode_seconds": 0.10875085199950263,
+    "total_seconds": 0.22726735299511347
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-18.26-04-27.JPG",
+    "expected": "RT_26_2-18",
+    "text": "RT_26_2-18",
+    "rect": [
+      2640,
+      3294,
+      1278,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12664086399308871,
+    "decode_seconds": 0.11570264100737404,
+    "total_seconds": 0.24234350500046276
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-18.26-04-28.JPG",
+    "expected": "RT_26_2-18",
+    "text": "RT_26_2-18",
+    "rect": [
+      2643,
+      3294,
+      1278,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12445202100207098,
+    "decode_seconds": 0.11336228200525511,
+    "total_seconds": 0.2378143030073261
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-18.26-04-29.JPG",
+    "expected": "RT_26_2-18",
+    "text": "RT_26_2-18",
+    "rect": [
+      2646,
+      3294,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11528149800142273,
+    "decode_seconds": 0.10316661199613009,
+    "total_seconds": 0.21844810999755282
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-18.26-04-30.JPG",
+    "expected": "RT_26_2-18",
+    "text": "RT_26_2-18",
+    "rect": [
+      2643,
+      3294,
+      1278,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11692681700515095,
+    "decode_seconds": 0.10754035199352074,
+    "total_seconds": 0.2244671689986717
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-19.26-04-27.JPG",
+    "expected": "RT_26_2-19",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13076688000001013,
+    "decode_seconds": 0.27106397099851165,
+    "total_seconds": 0.4018308509985218
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-19.26-04-28.JPG",
+    "expected": "RT_26_2-19",
+    "text": "RT_26_2-19",
+    "rect": [
+      2772,
+      3279,
+      1278,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.14448407701274846,
+    "decode_seconds": 0.11854686799051706,
+    "total_seconds": 0.2630309450032655
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-19.26-04-29.JPG",
+    "expected": "RT_26_2-19",
+    "text": "RT_26_2-19",
+    "rect": [
+      2772,
+      3327,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12287917699723039,
+    "decode_seconds": 0.1098338689917,
+    "total_seconds": 0.2327130459889304
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-19.26-04-30.JPG",
+    "expected": "RT_26_2-19",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1333052480040351,
+    "decode_seconds": 0.23640306100423913,
+    "total_seconds": 0.3697083090082742
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-2.26-04-27.JPG",
+    "expected": "RT_26_2-2",
+    "text": "RT_26_2-2",
+    "rect": [
+      2793,
+      3291,
+      1179,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12871133199951146,
+    "decode_seconds": 0.1127815619984176,
+    "total_seconds": 0.24149289399792906
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-2.26-04-28.JPG",
+    "expected": "RT_26_2-2",
+    "text": "RT_26_2-2",
+    "rect": [
+      2811,
+      3303,
+      1179,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12127058999612927,
+    "decode_seconds": 0.10811937801190652,
+    "total_seconds": 0.2293899680080358
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-2.26-04-29.JPG",
+    "expected": "RT_26_2-2",
+    "text": "RT_26_2-2",
+    "rect": [
+      2811,
+      3300,
+      1173,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12025992199778557,
+    "decode_seconds": 0.10875896899960935,
+    "total_seconds": 0.22901889099739492
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-2.26-04-30.JPG",
+    "expected": "RT_26_2-2",
+    "text": "RT_26_2-2",
+    "rect": [
+      2808,
+      3300,
+      1176,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11727484600851312,
+    "decode_seconds": 0.10389713800395839,
+    "total_seconds": 0.2211719840124715
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-20.26-04-27.JPG",
+    "expected": "RT_26_2-20",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11819099700369406,
+    "decode_seconds": 0.25739672299823724,
+    "total_seconds": 0.3755877200019313
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-20.26-04-28.JPG",
+    "expected": "RT_26_2-20",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11084966699127108,
+    "decode_seconds": 0.23922209000738803,
+    "total_seconds": 0.3500717569986591
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-20.26-04-29.JPG",
+    "expected": "RT_26_2-20",
+    "text": "RT_26_2-20",
+    "rect": [
+      2610,
+      3321,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10680670400324743,
+    "decode_seconds": 0.10330666600202676,
+    "total_seconds": 0.2101133700052742
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-20.26-04-30.JPG",
+    "expected": "RT_26_2-20",
+    "text": "RT_26_2-20",
+    "rect": [
+      2610,
+      3327,
+      1272,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11163927998859435,
+    "decode_seconds": 0.10720868800126482,
+    "total_seconds": 0.21884796798985917
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-21.26-04-27.JPG",
+    "expected": "RT_26_2-21",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.14522655100154225,
+    "decode_seconds": 0.261277900004643,
+    "total_seconds": 0.40650445100618526
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-21.26-04-28.JPG",
+    "expected": "RT_26_2-21",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1290175000031013,
+    "decode_seconds": 0.26055032199656125,
+    "total_seconds": 0.38956782199966256
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-21.26-04-29.JPG",
+    "expected": "RT_26_2-21",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11934375099372119,
+    "decode_seconds": 0.22943706200749148,
+    "total_seconds": 0.34878081300121266
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-21.26-04-30.JPG",
+    "expected": "RT_26_2-21",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11983028800750617,
+    "decode_seconds": 0.23350525999558158,
+    "total_seconds": 0.35333554800308775
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-22.26-04-27.JPG",
+    "expected": "RT_26_2-22",
+    "text": "RT_26_2-22",
+    "rect": [
+      2706,
+      3297,
+      1278,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13030407798942178,
+    "decode_seconds": 0.12118670200288761,
+    "total_seconds": 0.2514907799923094
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-22.26-04-28.JPG",
+    "expected": "RT_26_2-22",
+    "text": "RT_26_2-22",
+    "rect": [
+      2715,
+      3303,
+      1275,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1371541789994808,
+    "decode_seconds": 0.110417938005412,
+    "total_seconds": 0.2475721170048928
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-22.26-04-29.JPG",
+    "expected": "RT_26_2-22",
+    "text": "RT_26_2-22",
+    "rect": [
+      2718,
+      3303,
+      1272,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11480853898683563,
+    "decode_seconds": 0.09966075500415172,
+    "total_seconds": 0.21446929399098735
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-22.26-04-30.JPG",
+    "expected": "RT_26_2-22",
+    "text": "RT_26_2-22",
+    "rect": [
+      2712,
+      3300,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11519761600357015,
+    "decode_seconds": 0.10314372200809885,
+    "total_seconds": 0.218341338011669
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-23.26-04-27.JPG",
+    "expected": "RT_26_2-23",
+    "text": "RT_26_2-23",
+    "rect": [
+      2754,
+      3312,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.15772619099880103,
+    "decode_seconds": 0.1185630309919361,
+    "total_seconds": 0.27628922199073713
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-23.26-04-28.JPG",
+    "expected": "RT_26_2-23",
+    "text": "RT_26_2-23",
+    "rect": [
+      2757,
+      3318,
+      1275,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1273210510116769,
+    "decode_seconds": 0.11650492199987639,
+    "total_seconds": 0.2438259730115533
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-23.26-04-29.JPG",
+    "expected": "RT_26_2-23",
+    "text": "RT_26_2-23",
+    "rect": [
+      2754,
+      3318,
+      1275,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12413440599630121,
+    "decode_seconds": 0.11188791500171646,
+    "total_seconds": 0.23602232099801768
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-23.26-04-30.JPG",
+    "expected": "RT_26_2-23",
+    "text": "RT_26_2-23",
+    "rect": [
+      2754,
+      3318,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11973929501255043,
+    "decode_seconds": 0.10667268899851479,
+    "total_seconds": 0.22641198401106521
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-24.26-04-27.JPG",
+    "expected": "RT_26_2-24",
+    "text": "RT_26_2-24",
+    "rect": [
+      2697,
+      3321,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1285670939978445,
+    "decode_seconds": 0.11704255099175498,
+    "total_seconds": 0.24560964498959947
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-24.26-04-28.JPG",
+    "expected": "RT_26_2-24",
+    "text": "RT_26_2-24",
+    "rect": [
+      2697,
+      3318,
+      1278,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.14000712099368684,
+    "decode_seconds": 0.11504762299591675,
+    "total_seconds": 0.2550547439896036
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-24.26-04-29.JPG",
+    "expected": "RT_26_2-24",
+    "text": "RT_26_2-24",
+    "rect": [
+      2700,
+      3318,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1157991759973811,
+    "decode_seconds": 0.09990010398905724,
+    "total_seconds": 0.21569927998643834
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-24.26-04-30.JPG",
+    "expected": "RT_26_2-24",
+    "text": "RT_26_2-24",
+    "rect": [
+      2697,
+      3321,
+      1275,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11969428799056914,
+    "decode_seconds": 0.1073472880088957,
+    "total_seconds": 0.22704157599946484
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-25.26-04-27.JPG",
+    "expected": "RT_26_2-25",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12765121899428777,
+    "decode_seconds": 0.260684577995562,
+    "total_seconds": 0.38833579698984977
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-25.26-04-28.JPG",
+    "expected": "RT_26_2-25",
+    "text": "RT_26_2-25",
+    "rect": [
+      4023,
+      3330,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1260690990020521,
+    "decode_seconds": 0.11525307099509519,
+    "total_seconds": 0.24132216999714728
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-25.26-04-29.JPG",
+    "expected": "RT_26_2-25",
+    "text": "RT_26_2-25",
+    "rect": [
+      2751,
+      3330,
+      1272,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11468913599674124,
+    "decode_seconds": 0.10178391999215819,
+    "total_seconds": 0.21647305598889943
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-25.26-04-30.JPG",
+    "expected": "RT_26_2-25",
+    "text": "RT_26_2-25",
+    "rect": [
+      2745,
+      3330,
+      1272,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.118279860005714,
+    "decode_seconds": 0.10505130198725965,
+    "total_seconds": 0.22333116199297365
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-26.26-04-27.JPG",
+    "expected": "RT_26_2-26",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12644276701030321,
+    "decode_seconds": 0.2513717189867748,
+    "total_seconds": 0.377814485997078
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-26.26-04-28.JPG",
+    "expected": "RT_26_2-26",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13048154099669773,
+    "decode_seconds": 0.25869727600365877,
+    "total_seconds": 0.3891788170003565
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-26.26-04-29.JPG",
+    "expected": "RT_26_2-26",
+    "text": "RT_26_2-26",
+    "rect": [
+      2781,
+      3330,
+      1272,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12423769700399134,
+    "decode_seconds": 0.11153552299947478,
+    "total_seconds": 0.23577322000346612
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-26.26-04-30.JPG",
+    "expected": "RT_26_2-26",
+    "text": "RT_26_2-26",
+    "rect": [
+      2778,
+      3333,
+      1272,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11770190398965497,
+    "decode_seconds": 0.10895430100208614,
+    "total_seconds": 0.2266562049917411
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-27.26-04-27.JPG",
+    "expected": "RT_26_2-27",
+    "text": "RT_26_2-27",
+    "rect": [
+      2727,
+      3303,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12936744101170916,
+    "decode_seconds": 0.12401404499541968,
+    "total_seconds": 0.25338148600712884
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-27.26-04-28.JPG",
+    "expected": "RT_26_2-27",
+    "text": "RT_26_2-27",
+    "rect": [
+      2730,
+      3306,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12779621599474922,
+    "decode_seconds": 0.11984027099970262,
+    "total_seconds": 0.24763648699445184
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-27.26-04-29.JPG",
+    "expected": "RT_26_2-27",
+    "text": "RT_26_2-27",
+    "rect": [
+      2730,
+      3303,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12119723699288443,
+    "decode_seconds": 0.11627938800666016,
+    "total_seconds": 0.23747662499954458
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-27.26-04-30.JPG",
+    "expected": "RT_26_2-27",
+    "text": "RT_26_2-27",
+    "rect": [
+      2727,
+      3303,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12767979499767534,
+    "decode_seconds": 0.11821924599644262,
+    "total_seconds": 0.24589904099411797
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-28.26-04-27.JPG",
+    "expected": "RT_26_2-28",
+    "text": "RT_26_2-28",
+    "rect": [
+      2745,
+      3291,
+      1275,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12831489900418092,
+    "decode_seconds": 0.11595274999854155,
+    "total_seconds": 0.24426764900272246
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-28.26-04-28.JPG",
+    "expected": "RT_26_2-28",
+    "text": "RT_26_2-28",
+    "rect": [
+      2748,
+      3291,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12555011999211274,
+    "decode_seconds": 0.11424061800062191,
+    "total_seconds": 0.23979073799273465
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-28.26-04-29.JPG",
+    "expected": "RT_26_2-28",
+    "text": "RT_26_2-28",
+    "rect": [
+      2748,
+      3297,
+      1278,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12355062000278849,
+    "decode_seconds": 0.11137110898562241,
+    "total_seconds": 0.2349217289884109
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-28.26-04-30.JPG",
+    "expected": "RT_26_2-28",
+    "text": "RT_26_2-28",
+    "rect": [
+      2745,
+      3291,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11933146600495093,
+    "decode_seconds": 0.10800247600127477,
+    "total_seconds": 0.2273339420062257
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-29.26-04-27.JPG",
+    "expected": "RT_26_2-29",
+    "text": "RT_26_2-29",
+    "rect": [
+      2775,
+      3321,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12531377701088786,
+    "decode_seconds": 0.11488442499830853,
+    "total_seconds": 0.2401982020091964
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-29.26-04-28.JPG",
+    "expected": "RT_26_2-29",
+    "text": "RT_26_2-29",
+    "rect": [
+      2781,
+      3321,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12633238900161814,
+    "decode_seconds": 0.11472910900192801,
+    "total_seconds": 0.24106149800354615
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-29.26-04-29.JPG",
+    "expected": "RT_26_2-29",
+    "text": "RT_26_2-29",
+    "rect": [
+      2778,
+      3321,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11549546000605915,
+    "decode_seconds": 0.10036209499230608,
+    "total_seconds": 0.21585755499836523
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-29.26-04-30.JPG",
+    "expected": "RT_26_2-29",
+    "text": "RT_26_2-29",
+    "rect": [
+      2778,
+      3321,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12931907799793407,
+    "decode_seconds": 0.1022710450051818,
+    "total_seconds": 0.23159012300311588
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-3.26-04-27.JPG",
+    "expected": "RT_26_2-3",
+    "text": "RT_26_2-3",
+    "rect": [
+      2808,
+      3288,
+      1179,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12299445799726527,
+    "decode_seconds": 0.11049887200351804,
+    "total_seconds": 0.23349333000078332
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-3.26-04-28.JPG",
+    "expected": "RT_26_2-3",
+    "text": "RT_26_2-3",
+    "rect": [
+      2823,
+      3297,
+      1176,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12404958599654492,
+    "decode_seconds": 0.11242055900220294,
+    "total_seconds": 0.23647014499874786
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-3.26-04-29.JPG",
+    "expected": "RT_26_2-3",
+    "text": "RT_26_2-3",
+    "rect": [
+      2829,
+      3297,
+      1173,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13944631699996535,
+    "decode_seconds": 0.099710309994407,
+    "total_seconds": 0.23915662699437235
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-3.26-04-30.JPG",
+    "expected": "RT_26_2-3",
+    "text": "RT_26_2-3",
+    "rect": [
+      2823,
+      3294,
+      1173,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11510669099516235,
+    "decode_seconds": 0.10295927700644825,
+    "total_seconds": 0.2180659680016106
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-30.26-04-27.JPG",
+    "expected": "RT_26_2-30",
+    "text": "RT_26_2-30",
+    "rect": [
+      2787,
+      3288,
+      1275,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1285830669949064,
+    "decode_seconds": 0.12027794501045719,
+    "total_seconds": 0.2488610120053636
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-30.26-04-28.JPG",
+    "expected": "RT_26_2-30",
+    "text": "RT_26_2-30",
+    "rect": [
+      2790,
+      3306,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12667794499429874,
+    "decode_seconds": 0.11618508100218605,
+    "total_seconds": 0.2428630259964848
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-30.26-04-29.JPG",
+    "expected": "RT_26_2-30",
+    "text": "RT_26_2-30",
+    "rect": [
+      2790,
+      3306,
+      1275,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11572284199064597,
+    "decode_seconds": 0.1023918160062749,
+    "total_seconds": 0.21811465799692087
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-30.26-04-30.JPG",
+    "expected": "RT_26_2-30",
+    "text": "RT_26_2-30",
+    "rect": [
+      2784,
+      3309,
+      1275,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11831999200512655,
+    "decode_seconds": 0.10773933700693306,
+    "total_seconds": 0.2260593290120596
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-31.26-04-27.JPG",
+    "expected": "RT_26_2-31",
+    "text": "RT_26_2-31",
+    "rect": [
+      2712,
+      3300,
+      1284,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12431406699761283,
+    "decode_seconds": 0.11330247099976987,
+    "total_seconds": 0.2376165379973827
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-31.26-04-28.JPG",
+    "expected": "RT_26_2-31",
+    "text": "RT_26_2-31",
+    "rect": [
+      2733,
+      3300,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1245478839991847,
+    "decode_seconds": 0.11181747699447442,
+    "total_seconds": 0.23636536099365912
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-31.26-04-29.JPG",
+    "expected": "RT_26_2-31",
+    "text": "RT_26_2-31",
+    "rect": [
+      2733,
+      3300,
+      1278,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11744774899852928,
+    "decode_seconds": 0.10446581400174182,
+    "total_seconds": 0.2219135630002711
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-31.26-04-30.JPG",
+    "expected": "RT_26_2-31",
+    "text": "RT_26_2-31",
+    "rect": [
+      2733,
+      3303,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13935603700520005,
+    "decode_seconds": 0.10803002800093964,
+    "total_seconds": 0.2473860650061397
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-32.26-04-27.JPG",
+    "expected": "RT_26_2-32",
+    "text": "RT_26_2-32",
+    "rect": [
+      2781,
+      3291,
+      1281,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12366714100062381,
+    "decode_seconds": 0.1141403670044383,
+    "total_seconds": 0.23780750800506212
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-32.26-04-28.JPG",
+    "expected": "RT_26_2-32",
+    "text": "RT_26_2-32",
+    "rect": [
+      2802,
+      3294,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13694836899230722,
+    "decode_seconds": 0.11292431999754626,
+    "total_seconds": 0.2498726889898535
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-32.26-04-29.JPG",
+    "expected": "RT_26_2-32",
+    "text": "RT_26_2-32",
+    "rect": [
+      2802,
+      3294,
+      1272,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12705135000578593,
+    "decode_seconds": 0.09964818599110004,
+    "total_seconds": 0.22669953599688597
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-32.26-04-30.JPG",
+    "expected": "RT_26_2-32",
+    "text": "RT_26_2-32",
+    "rect": [
+      2802,
+      3297,
+      1272,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11822499800473452,
+    "decode_seconds": 0.10828102199593559,
+    "total_seconds": 0.2265060200006701
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-33.26-04-27.JPG",
+    "expected": "RT_26_2-33",
+    "text": "RT_26_2-33",
+    "rect": [
+      2745,
+      3297,
+      1281,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1410903759970097,
+    "decode_seconds": 0.11504636199970264,
+    "total_seconds": 0.2561367379967123
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-33.26-04-28.JPG",
+    "expected": "RT_26_2-33",
+    "text": "RT_26_2-33",
+    "rect": [
+      2766,
+      3291,
+      1278,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12954338199051563,
+    "decode_seconds": 0.12378206200082786,
+    "total_seconds": 0.2533254439913435
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-33.26-04-29.JPG",
+    "expected": "RT_26_2-33",
+    "text": "RT_26_2-33",
+    "rect": [
+      2769,
+      3294,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13698662500246428,
+    "decode_seconds": 0.10575840900128242,
+    "total_seconds": 0.2427450340037467
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-33.26-04-30.JPG",
+    "expected": "RT_26_2-33",
+    "text": "RT_26_2-33",
+    "rect": [
+      2763,
+      3303,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11922066600527614,
+    "decode_seconds": 0.10796758999640588,
+    "total_seconds": 0.22718825600168202
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-34.26-04-27.JPG",
+    "expected": "RT_26_2-34",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12408793800568674,
+    "decode_seconds": 0.24985727500461508,
+    "total_seconds": 0.3739452130103018
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-34.26-04-28.JPG",
+    "expected": "RT_26_2-34",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12745295600325335,
+    "decode_seconds": 0.256097019999288,
+    "total_seconds": 0.38354997600254137
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-34.26-04-29.JPG",
+    "expected": "RT_26_2-34",
+    "text": "RT_26_2-34",
+    "rect": [
+      2775,
+      3333,
+      1272,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11702537500241306,
+    "decode_seconds": 0.1038150459935423,
+    "total_seconds": 0.22084042099595536
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-34.26-04-30.JPG",
+    "expected": "RT_26_2-34",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11658325900498312,
+    "decode_seconds": 0.22719893300381955,
+    "total_seconds": 0.34378219200880267
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-35.26-04-27.JPG",
+    "expected": "RT_26_2-35",
+    "text": "RT_26_2-35",
+    "rect": [
+      2751,
+      3306,
+      1284,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11466225500043947,
+    "decode_seconds": 0.1124568300001556,
+    "total_seconds": 0.22711908500059508
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-35.26-04-28.JPG",
+    "expected": "RT_26_2-35",
+    "text": "RT_26_2-35",
+    "rect": [
+      2775,
+      3306,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11851127000409178,
+    "decode_seconds": 0.12769111500529107,
+    "total_seconds": 0.24620238500938285
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-35.26-04-29.JPG",
+    "expected": "RT_26_2-35",
+    "text": "RT_26_2-35",
+    "rect": [
+      2772,
+      3309,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11302034600521438,
+    "decode_seconds": 0.1156949239957612,
+    "total_seconds": 0.22871527000097558
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-35.26-04-30.JPG",
+    "expected": "RT_26_2-35",
+    "text": "RT_26_2-35",
+    "rect": [
+      2772,
+      3309,
+      1272,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11136239299958106,
+    "decode_seconds": 0.1684315059974324,
+    "total_seconds": 0.27979389899701346
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-36.26-04-27.JPG",
+    "expected": "RT_26_2-36",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12970139499520883,
+    "decode_seconds": 0.2510762150050141,
+    "total_seconds": 0.3807776100002229
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-36.26-04-28.JPG",
+    "expected": "RT_26_2-36",
+    "text": "RT_26_2-36",
+    "rect": [
+      2811,
+      3327,
+      1275,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12521964400366414,
+    "decode_seconds": 0.13470470000174828,
+    "total_seconds": 0.2599243440054124
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-36.26-04-29.JPG",
+    "expected": "RT_26_2-36",
+    "text": "RT_26_2-36",
+    "rect": [
+      2811,
+      3324,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12512026001058985,
+    "decode_seconds": 0.11211099798674695,
+    "total_seconds": 0.2372312579973368
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-36.26-04-30.JPG",
+    "expected": "RT_26_2-36",
+    "text": "RT_26_2-36",
+    "rect": [
+      2805,
+      3327,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11807029700139537,
+    "decode_seconds": 0.1043965790013317,
+    "total_seconds": 0.22246687600272708
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-37.26-04-27.JPG",
+    "expected": "RT_26_2-37",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11532790500496048,
+    "decode_seconds": 0.24981300700164866,
+    "total_seconds": 0.36514091200660914
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-37.26-04-28.JPG",
+    "expected": "RT_26_2-37",
+    "text": "RT_26_2-37",
+    "rect": [
+      2757,
+      3327,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11691616800089832,
+    "decode_seconds": 0.11419159799697809,
+    "total_seconds": 0.2311077659978764
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-37.26-04-29.JPG",
+    "expected": "RT_26_2-37",
+    "text": "RT_26_2-37",
+    "rect": [
+      2754,
+      3327,
+      1272,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11262860700662713,
+    "decode_seconds": 0.10856245800096076,
+    "total_seconds": 0.2211910650075879
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-37.26-04-30.JPG",
+    "expected": "RT_26_2-37",
+    "text": "RT_26_2-37",
+    "rect": [
+      2751,
+      3327,
+      1272,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10798464898834936,
+    "decode_seconds": 0.1054431610100437,
+    "total_seconds": 0.21342780999839306
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-38.26-04-27.JPG",
+    "expected": "RT_26_2-38",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12482928900863044,
+    "decode_seconds": 0.24876519999816082,
+    "total_seconds": 0.37359448900679126
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-38.26-04-28.JPG",
+    "expected": "RT_26_2-38",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13009893499838654,
+    "decode_seconds": 0.2619830480107339,
+    "total_seconds": 0.39208198300912045
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-38.26-04-29.JPG",
+    "expected": "RT_26_2-38",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11603993500466458,
+    "decode_seconds": 0.2186137789976783,
+    "total_seconds": 0.3346537140023429
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-38.26-04-30.JPG",
+    "expected": "RT_26_2-38",
+    "text": "RT_26_2-38",
+    "rect": [
+      2817,
+      3336,
+      1275,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11999625799944624,
+    "decode_seconds": 0.10840790899237618,
+    "total_seconds": 0.22840416699182242
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-39.26-04-27.JPG",
+    "expected": "RT_26_2-39",
+    "text": "RT_26_2-39",
+    "rect": [
+      2787,
+      3315,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11456397599249613,
+    "decode_seconds": 0.11126542200508993,
+    "total_seconds": 0.22582939799758606
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-39.26-04-28.JPG",
+    "expected": "RT_26_2-39",
+    "text": "RT_26_2-39",
+    "rect": [
+      2808,
+      3321,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11493834899738431,
+    "decode_seconds": 0.11422677100927103,
+    "total_seconds": 0.22916512000665534
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-39.26-04-29.JPG",
+    "expected": "RT_26_2-39",
+    "text": "RT_26_2-39",
+    "rect": [
+      2808,
+      3303,
+      1275,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1077626810001675,
+    "decode_seconds": 0.1039512349962024,
+    "total_seconds": 0.2117139159963699
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-39.26-04-30.JPG",
+    "expected": "RT_26_2-39",
+    "text": "RT_26_2-39",
+    "rect": [
+      2802,
+      3315,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11496117600472644,
+    "decode_seconds": 0.11057011000229977,
+    "total_seconds": 0.2255312860070262
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-4.26-04-28.JPG",
+    "expected": "RT_26_2-4",
+    "text": "RT_26_2-4",
+    "rect": [
+      2781,
+      3321,
+      1176,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11018248500477057,
+    "decode_seconds": 0.10856253499514423,
+    "total_seconds": 0.2187450199999148
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-4.26-04-29.JPG",
+    "expected": "RT_26_2-4",
+    "text": "RT_26_2-4",
+    "rect": [
+      2781,
+      3321,
+      1173,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10573146099341102,
+    "decode_seconds": 0.09899147700343747,
+    "total_seconds": 0.2047229379968485
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-4.26-04-30.JPG",
+    "expected": "RT_26_2-4",
+    "text": "RT_26_2-4",
+    "rect": [
+      2781,
+      3321,
+      1173,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10694434099423233,
+    "decode_seconds": 0.10561312100617215,
+    "total_seconds": 0.21255746200040448
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-40.26-04-27.JPG",
+    "expected": "RT_26_2-40",
+    "text": "RT_26_2-40",
+    "rect": [
+      2682,
+      3309,
+      1278,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1146081890037749,
+    "decode_seconds": 0.11142676598683465,
+    "total_seconds": 0.22603495499060955
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-40.26-04-28.JPG",
+    "expected": "RT_26_2-40",
+    "text": "RT_26_2-40",
+    "rect": [
+      2700,
+      3312,
+      1275,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11433178200968541,
+    "decode_seconds": 0.11671008799748961,
+    "total_seconds": 0.23104187000717502
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-40.26-04-29.JPG",
+    "expected": "RT_26_2-40",
+    "text": "RT_26_2-40",
+    "rect": [
+      2703,
+      3309,
+      1272,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11459000399918295,
+    "decode_seconds": 0.10901460101013072,
+    "total_seconds": 0.22360460500931367
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-40.26-04-30.JPG",
+    "expected": "RT_26_2-40",
+    "text": "RT_26_2-40",
+    "rect": [
+      2700,
+      3312,
+      1272,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10856778800371103,
+    "decode_seconds": 0.10572564200265333,
+    "total_seconds": 0.21429343000636436
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-41.26-04-27.JPG",
+    "expected": "RT_26_2-41",
+    "text": "RT_26_2-41",
+    "rect": [
+      2589,
+      3291,
+      1278,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1388876739947591,
+    "decode_seconds": 0.11575012400862761,
+    "total_seconds": 0.2546377980033867
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-41.26-04-28.JPG",
+    "expected": "RT_26_2-41",
+    "text": "RT_26_2-41",
+    "rect": [
+      2607,
+      3291,
+      1275,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1275578630011296,
+    "decode_seconds": 0.11680341100145597,
+    "total_seconds": 0.24436127400258556
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-41.26-04-29.JPG",
+    "expected": "RT_26_2-41",
+    "text": "RT_26_2-41",
+    "rect": [
+      2613,
+      3291,
+      1272,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12831246299901977,
+    "decode_seconds": 0.09785750800801907,
+    "total_seconds": 0.22616997100703884
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-41.26-04-30.JPG",
+    "expected": "RT_26_2-41",
+    "text": "RT_26_2-41",
+    "rect": [
+      2607,
+      3297,
+      1272,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1204313549969811,
+    "decode_seconds": 0.10807884599489626,
+    "total_seconds": 0.22851020099187735
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-42.26-04-27.JPG",
+    "expected": "RT_26_2-42",
+    "text": "RT_26_2-42",
+    "rect": [
+      2652,
+      3297,
+      1281,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1260507279948797,
+    "decode_seconds": 0.11407743200834375,
+    "total_seconds": 0.24012816000322346
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-42.26-04-28.JPG",
+    "expected": "RT_26_2-42",
+    "text": "RT_26_2-42",
+    "rect": [
+      2670,
+      3303,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1250287489965558,
+    "decode_seconds": 0.11276719599845819,
+    "total_seconds": 0.237795944995014
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-42.26-04-29.JPG",
+    "expected": "RT_26_2-42",
+    "text": "RT_26_2-42",
+    "rect": [
+      2673,
+      3303,
+      1272,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11480819999997038,
+    "decode_seconds": 0.10429578299226705,
+    "total_seconds": 0.21910398299223743
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-42.26-04-30.JPG",
+    "expected": "RT_26_2-42",
+    "text": "RT_26_2-42",
+    "rect": [
+      2670,
+      3303,
+      1275,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.116475087008439,
+    "decode_seconds": 0.10344392199476715,
+    "total_seconds": 0.21991900900320616
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-43.26-04-27.JPG",
+    "expected": "RT_26_2-43",
+    "text": "RT_26_2-43",
+    "rect": [
+      2727,
+      3321,
+      1281,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.15257550800743047,
+    "decode_seconds": 0.12103894099709578,
+    "total_seconds": 0.27361444900452625
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-43.26-04-28.JPG",
+    "expected": "RT_26_2-43",
+    "text": "RT_26_2-43",
+    "rect": [
+      2748,
+      3327,
+      1278,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12020708600175567,
+    "decode_seconds": 0.10798445199907292,
+    "total_seconds": 0.2281915380008286
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-43.26-04-29.JPG",
+    "expected": "RT_26_2-43",
+    "text": "RT_26_2-43",
+    "rect": [
+      2748,
+      3327,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11736550400382839,
+    "decode_seconds": 0.10474826900463086,
+    "total_seconds": 0.22211377300845925
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-43.26-04-30.JPG",
+    "expected": "RT_26_2-43",
+    "text": "RT_26_2-43",
+    "rect": [
+      2745,
+      3324,
+      1275,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13070395999238826,
+    "decode_seconds": 0.10827423899900168,
+    "total_seconds": 0.23897819899138995
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-44.26-04-27.JPG",
+    "expected": "RT_26_2-44",
+    "text": "RT_26_2-44",
+    "rect": [
+      2781,
+      3288,
+      1281,
+      51
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12369527800183278,
+    "decode_seconds": 0.10920807100774255,
+    "total_seconds": 0.23290334900957532
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-44.26-04-28.JPG",
+    "expected": "RT_26_2-44",
+    "text": "RT_26_2-44",
+    "rect": [
+      2805,
+      3291,
+      1281,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12463810198823921,
+    "decode_seconds": 0.11416024500795174,
+    "total_seconds": 0.23879834699619096
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-44.26-04-29.JPG",
+    "expected": "RT_26_2-44",
+    "text": "RT_26_2-44",
+    "rect": [
+      2805,
+      3288,
+      1278,
+      48
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12254387600114569,
+    "decode_seconds": 0.10811117399134673,
+    "total_seconds": 0.23065504999249242
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-44.26-04-30.JPG",
+    "expected": "RT_26_2-44",
+    "text": "RT_26_2-44",
+    "rect": [
+      2805,
+      3288,
+      1275,
+      45
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1176619370089611,
+    "decode_seconds": 0.10467031699954532,
+    "total_seconds": 0.22233225400850642
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-45.26-04-27.JPG",
+    "expected": "RT_26_2-45",
+    "text": "RT_26_2-45",
+    "rect": [
+      2694,
+      3261,
+      1281,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11304711899720132,
+    "decode_seconds": 0.10123280801053625,
+    "total_seconds": 0.21427992700773757
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-45.26-04-28.JPG",
+    "expected": "RT_26_2-45",
+    "text": "RT_26_2-45",
+    "rect": [
+      2727,
+      3318,
+      1275,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12355593100073747,
+    "decode_seconds": 0.11157268600072712,
+    "total_seconds": 0.2351286170014646
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-45.26-04-29.JPG",
+    "expected": "RT_26_2-45",
+    "text": "RT_26_2-45",
+    "rect": [
+      2724,
+      3315,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11415242998918984,
+    "decode_seconds": 0.10554776800563559,
+    "total_seconds": 0.21970019799482543
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-45.26-04-30.JPG",
+    "expected": "RT_26_2-45",
+    "text": "RT_26_2-45",
+    "rect": [
+      2724,
+      3318,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13256570699741133,
+    "decode_seconds": 0.11958685801073443,
+    "total_seconds": 0.25215256500814576
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-46.26-04-27.JPG",
+    "expected": "RT_26_2-46",
+    "text": "RT_26_2-46",
+    "rect": [
+      2628,
+      3282,
+      1281,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12618722299521323,
+    "decode_seconds": 0.12395235399890225,
+    "total_seconds": 0.2501395769941155
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-46.26-04-28.JPG",
+    "expected": "RT_26_2-46",
+    "text": "RT_26_2-46",
+    "rect": [
+      2646,
+      3294,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12445052700059023,
+    "decode_seconds": 0.1155667159910081,
+    "total_seconds": 0.24001724299159832
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-46.26-04-29.JPG",
+    "expected": "RT_26_2-46",
+    "text": "RT_26_2-46",
+    "rect": [
+      2646,
+      3291,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1213430670031812,
+    "decode_seconds": 0.10980728700815234,
+    "total_seconds": 0.23115035401133355
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-46.26-04-30.JPG",
+    "expected": "RT_26_2-46",
+    "text": "RT_26_2-46",
+    "rect": [
+      2646,
+      3291,
+      1272,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11608073700335808,
+    "decode_seconds": 0.10502907999034505,
+    "total_seconds": 0.22110981699370313
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-47.26-04-28.JPG",
+    "expected": "RT_26_2-47",
+    "text": "RT_26_2-47",
+    "rect": [
+      2685,
+      3300,
+      1275,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1226806289923843,
+    "decode_seconds": 0.11489808499754872,
+    "total_seconds": 0.23757871398993302
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-47.26-04-29.JPG",
+    "expected": "RT_26_2-47",
+    "text": "RT_26_2-47",
+    "rect": [
+      2688,
+      3300,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11236996900697704,
+    "decode_seconds": 0.10175315299420618,
+    "total_seconds": 0.21412312200118322
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-47.26-04-30.JPG",
+    "expected": "RT_26_2-47",
+    "text": "RT_26_2-47",
+    "rect": [
+      2685,
+      3303,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13072412900510244,
+    "decode_seconds": 0.10549118698691018,
+    "total_seconds": 0.23621531599201262
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-48.26-04-27.JPG",
+    "expected": "RT_26_2-48",
+    "text": "RT_26_2-48",
+    "rect": [
+      2655,
+      3309,
+      1281,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12185217400838155,
+    "decode_seconds": 0.11117501299304422,
+    "total_seconds": 0.23302718700142577
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-48.26-04-28.JPG",
+    "expected": "RT_26_2-48",
+    "text": "RT_26_2-48",
+    "rect": [
+      2673,
+      3318,
+      1278,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12512144399806857,
+    "decode_seconds": 0.11568534601246938,
+    "total_seconds": 0.24080679001053795
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-48.26-04-29.JPG",
+    "expected": "RT_26_2-48",
+    "text": "RT_26_2-48",
+    "rect": [
+      2676,
+      3309,
+      1275,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1357199650083203,
+    "decode_seconds": 0.10798147199966479,
+    "total_seconds": 0.24370143700798508
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-48.26-04-30.JPG",
+    "expected": "RT_26_2-48",
+    "text": "RT_26_2-48",
+    "rect": [
+      2676,
+      3312,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11501103799673729,
+    "decode_seconds": 0.10198072000639513,
+    "total_seconds": 0.21699175800313242
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-49.26-04-27.JPG",
+    "expected": "RT_26_2-49",
+    "text": "RT_26_2-49",
+    "rect": [
+      2673,
+      3312,
+      1281,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11888182000257075,
+    "decode_seconds": 0.1179041079885792,
+    "total_seconds": 0.23678592799114995
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-49.26-04-28.JPG",
+    "expected": "RT_26_2-49",
+    "text": "RT_26_2-49",
+    "rect": [
+      2691,
+      3312,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12315442899125628,
+    "decode_seconds": 0.11200206499779597,
+    "total_seconds": 0.23515649398905225
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-49.26-04-29.JPG",
+    "expected": "RT_26_2-49",
+    "text": "RT_26_2-49",
+    "rect": [
+      2691,
+      3312,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12749572900065687,
+    "decode_seconds": 0.11590671099838801,
+    "total_seconds": 0.24340243999904487
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-49.26-04-30.JPG",
+    "expected": "RT_26_2-49",
+    "text": "RT_26_2-49",
+    "rect": [
+      2688,
+      3312,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11857748999318574,
+    "decode_seconds": 0.10553081201214809,
+    "total_seconds": 0.22410830200533383
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-5.26-04-27.JPG",
+    "expected": "RT_26_2-5",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13672598599805497,
+    "decode_seconds": 0.24427044099138584,
+    "total_seconds": 0.3809964269894408
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-5.26-04-28.JPG",
+    "expected": "RT_26_2-5",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12248506999458186,
+    "decode_seconds": 0.24412698899686802,
+    "total_seconds": 0.3666120589914499
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-5.26-04-29.JPG",
+    "expected": "RT_26_2-5",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12790889300231356,
+    "decode_seconds": 0.20954127199365757,
+    "total_seconds": 0.33745016499597114
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-5.26-04-30.JPG",
+    "expected": "RT_26_2-5",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11378592500113882,
+    "decode_seconds": 0.22174207800708245,
+    "total_seconds": 0.3355280030082213
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-50.26-04-27.JPG",
+    "expected": "RT_26_2-50",
+    "text": "RT_26_2-50",
+    "rect": [
+      2754,
+      3309,
+      1278,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12824695000017527,
+    "decode_seconds": 0.1219222100044135,
+    "total_seconds": 0.2501691600045888
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-50.26-04-28.JPG",
+    "expected": "RT_26_2-50",
+    "text": "RT_26_2-50",
+    "rect": [
+      2772,
+      3312,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1260982569947373,
+    "decode_seconds": 0.1142013430071529,
+    "total_seconds": 0.2402996000018902
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-50.26-04-29.JPG",
+    "expected": "RT_26_2-50",
+    "text": "RT_26_2-50",
+    "rect": [
+      2772,
+      3315,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1164424790040357,
+    "decode_seconds": 0.10193610200076364,
+    "total_seconds": 0.21837858100479934
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-50.26-04-30.JPG",
+    "expected": "RT_26_2-50",
+    "text": "RT_26_2-50",
+    "rect": [
+      2769,
+      3315,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1345737110095797,
+    "decode_seconds": 0.10827062900352757,
+    "total_seconds": 0.24284434001310728
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-51.26-04-27.JPG",
+    "expected": "RT_26_2-51",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1282220180000877,
+    "decode_seconds": 0.25623337700380944,
+    "total_seconds": 0.38445539500389714
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-51.26-04-28.JPG",
+    "expected": "RT_26_2-51",
+    "text": "RT_26_2-51",
+    "rect": [
+      2769,
+      3321,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12313840299611911,
+    "decode_seconds": 0.11358434899011627,
+    "total_seconds": 0.23672275198623538
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-51.26-04-29.JPG",
+    "expected": "RT_26_2-51",
+    "text": "RT_26_2-51",
+    "rect": [
+      2769,
+      3321,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13225310100824572,
+    "decode_seconds": 0.10042467399034649,
+    "total_seconds": 0.2326777749985922
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-51.26-04-30.JPG",
+    "expected": "RT_26_2-51",
+    "text": "RT_26_2-51",
+    "rect": [
+      2769,
+      3321,
+      1272,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11716956000600476,
+    "decode_seconds": 0.10613822800223716,
+    "total_seconds": 0.22330778800824191
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-52.26-04-27.JPG",
+    "expected": "RT_26_2-52",
+    "text": "RT_26_2-52",
+    "rect": [
+      2790,
+      3291,
+      1284,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12797594100993592,
+    "decode_seconds": 0.11962157099333126,
+    "total_seconds": 0.24759751200326718
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-52.26-04-28.JPG",
+    "expected": "RT_26_2-52",
+    "text": "RT_26_2-52",
+    "rect": [
+      2808,
+      3294,
+      1278,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.14114026800962165,
+    "decode_seconds": 0.11512895399937406,
+    "total_seconds": 0.2562692220089957
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-52.26-04-29.JPG",
+    "expected": "RT_26_2-52",
+    "text": "RT_26_2-52",
+    "rect": [
+      2814,
+      3288,
+      1275,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11510932999954093,
+    "decode_seconds": 0.09935469900665339,
+    "total_seconds": 0.21446402900619432
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-52.26-04-30.JPG",
+    "expected": "RT_26_2-52",
+    "text": "RT_26_2-52",
+    "rect": [
+      2808,
+      3294,
+      1278,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11933459900319576,
+    "decode_seconds": 0.10559390400885604,
+    "total_seconds": 0.2249285030120518
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-53.26-04-27.JPG",
+    "expected": "RT_26_2-53",
+    "text": "RT_26_2-53",
+    "rect": [
+      2799,
+      3303,
+      1281,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.15128539000579622,
+    "decode_seconds": 0.11704947298858315,
+    "total_seconds": 0.26833486299437936
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-53.26-04-28.JPG",
+    "expected": "RT_26_2-53",
+    "text": "RT_26_2-53",
+    "rect": [
+      2817,
+      3306,
+      1278,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1262092270044377,
+    "decode_seconds": 0.11788412799069192,
+    "total_seconds": 0.24409335499512963
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-53.26-04-29.JPG",
+    "expected": "RT_26_2-53",
+    "text": "RT_26_2-53",
+    "rect": [
+      2817,
+      3306,
+      1275,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13601630199991632,
+    "decode_seconds": 0.11478099599480629,
+    "total_seconds": 0.2507972979947226
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-53.26-04-30.JPG",
+    "expected": "RT_26_2-53",
+    "text": "RT_26_2-53",
+    "rect": [
+      2814,
+      3306,
+      1278,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11902205500518903,
+    "decode_seconds": 0.10655448699253611,
+    "total_seconds": 0.22557654199772514
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-54.26-04-27.JPG",
+    "expected": "RT_26_2-54",
+    "text": "RT_26_2-54",
+    "rect": [
+      2733,
+      3312,
+      1284,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1267440119991079,
+    "decode_seconds": 0.11569673899793997,
+    "total_seconds": 0.24244075099704787
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-54.26-04-28.JPG",
+    "expected": "RT_26_2-54",
+    "text": "RT_26_2-54",
+    "rect": [
+      2751,
+      3315,
+      1278,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12556415300059598,
+    "decode_seconds": 0.11479479700210504,
+    "total_seconds": 0.24035895000270102
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-54.26-04-29.JPG",
+    "expected": "RT_26_2-54",
+    "text": "RT_26_2-54",
+    "rect": [
+      2754,
+      3312,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.115157641004771,
+    "decode_seconds": 0.10072337799647357,
+    "total_seconds": 0.21588101900124457
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-54.26-04-30.JPG",
+    "expected": "RT_26_2-54",
+    "text": "RT_26_2-54",
+    "rect": [
+      2754,
+      3309,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12015199300367385,
+    "decode_seconds": 0.11658021800394636,
+    "total_seconds": 0.2367322110076202
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-55.26-04-27.JPG",
+    "expected": "RT_26_2-55",
+    "text": "RT_26_2-55",
+    "rect": [
+      2730,
+      3303,
+      1281,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12861326198617462,
+    "decode_seconds": 0.11893292800232302,
+    "total_seconds": 0.24754618998849764
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-55.26-04-28.JPG",
+    "expected": "RT_26_2-55",
+    "text": "RT_26_2-55",
+    "rect": [
+      2748,
+      3309,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11520781899162102,
+    "decode_seconds": 0.1123272279946832,
+    "total_seconds": 0.22753504698630422
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-55.26-04-29.JPG",
+    "expected": "RT_26_2-55",
+    "text": "RT_26_2-55",
+    "rect": [
+      2748,
+      3309,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11964666799758561,
+    "decode_seconds": 0.10405002599873114,
+    "total_seconds": 0.22369669399631675
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-55.26-04-30.JPG",
+    "expected": "RT_26_2-55",
+    "text": "RT_26_2-55",
+    "rect": [
+      2748,
+      3309,
+      1275,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11968887600232847,
+    "decode_seconds": 0.10894150199601427,
+    "total_seconds": 0.22863037799834274
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-56.26-04-27.JPG",
+    "expected": "RT_26_2-56",
+    "text": "RT_26_2-56",
+    "rect": [
+      2793,
+      3309,
+      1278,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12664925400167704,
+    "decode_seconds": 0.11569775399402715,
+    "total_seconds": 0.2423470079957042
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-56.26-04-28.JPG",
+    "expected": "RT_26_2-56",
+    "text": "RT_26_2-56",
+    "rect": [
+      2796,
+      3312,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12183480800013058,
+    "decode_seconds": 0.10942245999467559,
+    "total_seconds": 0.23125726799480617
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-56.26-04-29.JPG",
+    "expected": "RT_26_2-56",
+    "text": "RT_26_2-56",
+    "rect": [
+      2796,
+      3312,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1140280090039596,
+    "decode_seconds": 0.09935622400371358,
+    "total_seconds": 0.21338423300767317
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-56.26-04-30.JPG",
+    "expected": "RT_26_2-56",
+    "text": "RT_26_2-56",
+    "rect": [
+      2796,
+      3312,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11908988701179624,
+    "decode_seconds": 0.1060046839993447,
+    "total_seconds": 0.22509457101114094
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-57.26-04-27.JPG",
+    "expected": "RT_26_2-57",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12813170498702675,
+    "decode_seconds": 0.25601367600029334,
+    "total_seconds": 0.3841453809873201
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-57.26-04-28.JPG",
+    "expected": "RT_26_2-57",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12287197400291916,
+    "decode_seconds": 0.2424796389968833,
+    "total_seconds": 0.36535161299980246
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-57.26-04-29.JPG",
+    "expected": "RT_26_2-57",
+    "text": "RT_26_2-57",
+    "rect": [
+      2706,
+      3333,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11401759200089145,
+    "decode_seconds": 0.10560156300198287,
+    "total_seconds": 0.21961915500287432
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-57.26-04-30.JPG",
+    "expected": "RT_26_2-57",
+    "text": "RT_26_2-57",
+    "rect": [
+      2706,
+      3333,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11729535899939947,
+    "decode_seconds": 0.10290699399774894,
+    "total_seconds": 0.2202023529971484
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-58.26-04-27.JPG",
+    "expected": "RT_26_2-58",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1283552250097273,
+    "decode_seconds": 0.25539104398922063,
+    "total_seconds": 0.3837462689989479
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-58.26-04-28.JPG",
+    "expected": "RT_26_2-58",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12516110700380523,
+    "decode_seconds": 0.2522630959865637,
+    "total_seconds": 0.37742420299036894
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-58.26-04-29.JPG",
+    "expected": "RT_26_2-58",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12167431300622411,
+    "decode_seconds": 0.23703081299026962,
+    "total_seconds": 0.35870512599649373
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-58.26-04-30.JPG",
+    "expected": "RT_26_2-58",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13643998900079168,
+    "decode_seconds": 0.2610170090047177,
+    "total_seconds": 0.3974569980055094
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-59.26-04-27.JPG",
+    "expected": "RT_26_2-59",
+    "text": "RT_26_2-59",
+    "rect": [
+      2763,
+      3321,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13209784601349384,
+    "decode_seconds": 0.12116128999332432,
+    "total_seconds": 0.25325913600681815
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-59.26-04-28.JPG",
+    "expected": "RT_26_2-59",
+    "text": "RT_26_2-59",
+    "rect": [
+      2784,
+      3321,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12478274600289296,
+    "decode_seconds": 0.11256294799386524,
+    "total_seconds": 0.2373456939967582
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-59.26-04-29.JPG",
+    "expected": "RT_26_2-59",
+    "text": "RT_26_2-59",
+    "rect": [
+      2781,
+      3327,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13765546800277662,
+    "decode_seconds": 0.11193729599472135,
+    "total_seconds": 0.24959276399749797
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-59.26-04-30.JPG",
+    "expected": "RT_26_2-59",
+    "text": "RT_26_2-59",
+    "rect": [
+      2778,
+      3324,
+      1275,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1326585269998759,
+    "decode_seconds": 0.1047979309951188,
+    "total_seconds": 0.2374564579949947
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-6.26-04-27.JPG",
+    "expected": "RT_26_2-6",
+    "text": "RT_26_2-6",
+    "rect": [
+      2793,
+      3288,
+      1182,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1235779900016496,
+    "decode_seconds": 0.11071786399406847,
+    "total_seconds": 0.23429585399571806
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-6.26-04-28.JPG",
+    "expected": "RT_26_2-6",
+    "text": "RT_26_2-6",
+    "rect": [
+      2817,
+      3255,
+      1173,
+      72
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1250874359975569,
+    "decode_seconds": 0.11466599100094754,
+    "total_seconds": 0.23975342699850444
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-6.26-04-29.JPG",
+    "expected": "RT_26_2-6",
+    "text": "RT_26_2-6",
+    "rect": [
+      2817,
+      3291,
+      1173,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1310687139921356,
+    "decode_seconds": 0.10462746801204048,
+    "total_seconds": 0.23569618200417608
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-6.26-04-30.JPG",
+    "expected": "RT_26_2-6",
+    "text": "RT_26_2-6",
+    "rect": [
+      2811,
+      3294,
+      1176,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10993642399262171,
+    "decode_seconds": 0.10177941300207749,
+    "total_seconds": 0.2117158369946992
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-60.26-04-27.JPG",
+    "expected": "RT_26_2-60",
+    "text": "RT_26_2-60",
+    "rect": [
+      2868,
+      3306,
+      1281,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11769255599938333,
+    "decode_seconds": 0.11778336499992292,
+    "total_seconds": 0.23547592099930625
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-60.26-04-28.JPG",
+    "expected": "RT_26_2-60",
+    "text": "RT_26_2-60",
+    "rect": [
+      2883,
+      3312,
+      1278,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11126553200301714,
+    "decode_seconds": 0.10971398599212989,
+    "total_seconds": 0.22097951799514703
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-60.26-04-29.JPG",
+    "expected": "RT_26_2-60",
+    "text": "RT_26_2-60",
+    "rect": [
+      2883,
+      3306,
+      1278,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10343157900206279,
+    "decode_seconds": 0.11914612499822397,
+    "total_seconds": 0.22257770400028676
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-60.26-04-30.JPG",
+    "expected": "RT_26_2-60",
+    "text": "RT_26_2-60",
+    "rect": [
+      2883,
+      3312,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10768698599713389,
+    "decode_seconds": 0.11675086899776943,
+    "total_seconds": 0.22443785499490332
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-61.26-04-27.JPG",
+    "expected": "RT_26_2-61",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1289263270009542,
+    "decode_seconds": 0.2545158799912315,
+    "total_seconds": 0.3834422069921857
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-61.26-04-28.JPG",
+    "expected": "RT_26_2-61",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1273234239924932,
+    "decode_seconds": 0.25803486999939196,
+    "total_seconds": 0.38535829399188515
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-61.26-04-29.JPG",
+    "expected": "RT_26_2-61",
+    "text": "RT_26_2-61",
+    "rect": [
+      2778,
+      3333,
+      1272,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11989017999439966,
+    "decode_seconds": 0.1072854450030718,
+    "total_seconds": 0.22717562499747146
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-61.26-04-30.JPG",
+    "expected": "RT_26_2-61",
+    "text": "RT_26_2-61",
+    "rect": [
+      2775,
+      3333,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12859266299346928,
+    "decode_seconds": 0.10761401501076762,
+    "total_seconds": 0.2362066780042369
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-62.26-04-27.JPG",
+    "expected": "RT_26_2-62",
+    "text": "RT_26_2-62",
+    "rect": [
+      2802,
+      3321,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12288965001062024,
+    "decode_seconds": 0.11308227099652868,
+    "total_seconds": 0.23597192100714892
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-62.26-04-28.JPG",
+    "expected": "RT_26_2-62",
+    "text": "RT_26_2-62",
+    "rect": [
+      2820,
+      3324,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12704444999690168,
+    "decode_seconds": 0.1167315589991631,
+    "total_seconds": 0.24377600899606477
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-62.26-04-29.JPG",
+    "expected": "RT_26_2-62",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11500607299967669,
+    "decode_seconds": 0.22117531900585163,
+    "total_seconds": 0.3361813920055283
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-62.26-04-30.JPG",
+    "expected": "RT_26_2-62",
+    "text": "RT_26_2-62",
+    "rect": [
+      2817,
+      3324,
+      1275,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13476296099543106,
+    "decode_seconds": 0.10552414100675378,
+    "total_seconds": 0.24028710200218484
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-63.26-04-27.JPG",
+    "expected": "RT_26_2-63",
+    "text": "RT_26_2-63",
+    "rect": [
+      2748,
+      3312,
+      1281,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12905364100879524,
+    "decode_seconds": 0.11884467799973208,
+    "total_seconds": 0.24789831900852732
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-63.26-04-28.JPG",
+    "expected": "RT_26_2-63",
+    "text": "RT_26_2-63",
+    "rect": [
+      2769,
+      3318,
+      1272,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13573203000123613,
+    "decode_seconds": 0.11310491600306705,
+    "total_seconds": 0.24883694600430317
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-63.26-04-29.JPG",
+    "expected": "RT_26_2-63",
+    "text": "RT_26_2-63",
+    "rect": [
+      2766,
+      3318,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12472422799328342,
+    "decode_seconds": 0.11356945699662901,
+    "total_seconds": 0.23829368498991244
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-63.26-04-30.JPG",
+    "expected": "RT_26_2-63",
+    "text": "RT_26_2-63",
+    "rect": [
+      2766,
+      3321,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11591126599523704,
+    "decode_seconds": 0.10846052200940903,
+    "total_seconds": 0.22437178800464608
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-64.26-04-27.JPG",
+    "expected": "RT_26_2-64",
+    "text": "RT_26_2-64",
+    "rect": [
+      2598,
+      3309,
+      1278,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12474590398778673,
+    "decode_seconds": 0.11418730999866966,
+    "total_seconds": 0.2389332139864564
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-64.26-04-28.JPG",
+    "expected": "RT_26_2-64",
+    "text": "RT_26_2-64",
+    "rect": [
+      2601,
+      3303,
+      1275,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12210716999834403,
+    "decode_seconds": 0.11035997500584926,
+    "total_seconds": 0.2324671450041933
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-64.26-04-29.JPG",
+    "expected": "RT_26_2-64",
+    "text": "RT_26_2-64",
+    "rect": [
+      2601,
+      3306,
+      1275,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13057615399884526,
+    "decode_seconds": 0.10343425400787964,
+    "total_seconds": 0.2340104080067249
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-64.26-04-30.JPG",
+    "expected": "RT_26_2-64",
+    "text": "RT_26_2-64",
+    "rect": [
+      2598,
+      3306,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11650794999150094,
+    "decode_seconds": 0.10556677100248635,
+    "total_seconds": 0.22207472099398728
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-65.26-04-27.JPG",
+    "expected": "RT_26_2-65",
+    "text": "RT_26_2-65",
+    "rect": [
+      2670,
+      3312,
+      1278,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.14144468599988613,
+    "decode_seconds": 0.11458064799080603,
+    "total_seconds": 0.25602533399069216
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-65.26-04-28.JPG",
+    "expected": "RT_26_2-65",
+    "text": "RT_26_2-65",
+    "rect": [
+      2673,
+      3312,
+      1275,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.14149347700004,
+    "decode_seconds": 0.11514710199844558,
+    "total_seconds": 0.2566405789984856
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-65.26-04-29.JPG",
+    "expected": "RT_26_2-65",
+    "text": "RT_26_2-65",
+    "rect": [
+      2676,
+      3306,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13342370399914216,
+    "decode_seconds": 0.10365952699794434,
+    "total_seconds": 0.2370832309970865
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-65.26-04-30.JPG",
+    "expected": "RT_26_2-65",
+    "text": "RT_26_2-65",
+    "rect": [
+      2673,
+      3309,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11933725299604703,
+    "decode_seconds": 0.1054955540021183,
+    "total_seconds": 0.22483280699816532
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-66.26-04-27.JPG",
+    "expected": "RT_26_2-66",
+    "text": "RT_26_2-66",
+    "rect": [
+      2757,
+      3315,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12642184899596032,
+    "decode_seconds": 0.11689467201358639,
+    "total_seconds": 0.2433165210095467
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-66.26-04-28.JPG",
+    "expected": "RT_26_2-66",
+    "text": "RT_26_2-66",
+    "rect": [
+      2757,
+      3300,
+      1275,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12384162899979856,
+    "decode_seconds": 0.11631550299352966,
+    "total_seconds": 0.24015713199332822
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-66.26-04-29.JPG",
+    "expected": "RT_26_2-66",
+    "text": "RT_26_2-66",
+    "rect": [
+      2760,
+      3315,
+      1272,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12158237400581129,
+    "decode_seconds": 0.11254108899447601,
+    "total_seconds": 0.2341234630002873
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-66.26-04-30.JPG",
+    "expected": "RT_26_2-66",
+    "text": "RT_26_2-66",
+    "rect": [
+      2760,
+      3315,
+      1272,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10804839400225319,
+    "decode_seconds": 0.10383068599912804,
+    "total_seconds": 0.21187908000138123
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-67.26-04-27.JPG",
+    "expected": "RT_26_2-67",
+    "text": "RT_26_2-67",
+    "rect": [
+      2652,
+      3303,
+      1275,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12426235699967947,
+    "decode_seconds": 0.11098974400374573,
+    "total_seconds": 0.2352521010034252
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-67.26-04-28.JPG",
+    "expected": "RT_26_2-67",
+    "text": "RT_26_2-67",
+    "rect": [
+      2658,
+      3306,
+      1275,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13819927899749018,
+    "decode_seconds": 0.11490671698993538,
+    "total_seconds": 0.25310599598742556
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-67.26-04-29.JPG",
+    "expected": "RT_26_2-67",
+    "text": "RT_26_2-67",
+    "rect": [
+      2658,
+      3300,
+      1272,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11534002899134066,
+    "decode_seconds": 0.10015474401006941,
+    "total_seconds": 0.21549477300141007
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-67.26-04-30.JPG",
+    "expected": "RT_26_2-67",
+    "text": "RT_26_2-67",
+    "rect": [
+      2655,
+      3306,
+      1272,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11682695199851878,
+    "decode_seconds": 0.10546037599851843,
+    "total_seconds": 0.2222873279970372
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-68.26-04-27.JPG",
+    "expected": "RT_26_2-68",
+    "text": "RT_26_2-68",
+    "rect": [
+      2799,
+      3282,
+      1275,
+      51
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1252921670093201,
+    "decode_seconds": 0.11397130099066999,
+    "total_seconds": 0.2392634679999901
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-68.26-04-28.JPG",
+    "expected": "RT_26_2-68",
+    "text": "RT_26_2-68",
+    "rect": [
+      2799,
+      3285,
+      1278,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12642674999369774,
+    "decode_seconds": 0.11718052400101442,
+    "total_seconds": 0.24360727399471216
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-68.26-04-29.JPG",
+    "expected": "RT_26_2-68",
+    "text": "RT_26_2-68",
+    "rect": [
+      2802,
+      3282,
+      1275,
+      63
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11456447099044453,
+    "decode_seconds": 0.10175040800822899,
+    "total_seconds": 0.21631487899867352
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-68.26-04-30.JPG",
+    "expected": "RT_26_2-68",
+    "text": "RT_26_2-68",
+    "rect": [
+      2799,
+      3285,
+      1275,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11845484501100145,
+    "decode_seconds": 0.10825361400202382,
+    "total_seconds": 0.22670845901302528
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-69.26-04-27.JPG",
+    "expected": "RT_26_2-69",
+    "text": "RT_26_2-69",
+    "rect": [
+      2637,
+      3300,
+      1275,
+      18
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.15549934600130655,
+    "decode_seconds": 0.12069223100843374,
+    "total_seconds": 0.2761915770097403
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-69.26-04-28.JPG",
+    "expected": "RT_26_2-69",
+    "text": "RT_26_2-69",
+    "rect": [
+      2640,
+      3297,
+      1275,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13487142299709376,
+    "decode_seconds": 0.10786904099222738,
+    "total_seconds": 0.24274046398932114
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-69.26-04-29.JPG",
+    "expected": "RT_26_2-69",
+    "text": "RT_26_2-69",
+    "rect": [
+      2640,
+      3303,
+      1275,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1141259819996776,
+    "decode_seconds": 0.10113976699358318,
+    "total_seconds": 0.21526574899326079
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-69.26-04-30.JPG",
+    "expected": "RT_26_2-69",
+    "text": "RT_26_2-69",
+    "rect": [
+      2637,
+      3303,
+      1272,
+      24
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11863332100620028,
+    "decode_seconds": 0.10875244899943937,
+    "total_seconds": 0.22738577000563964
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-7.26-04-27.JPG",
+    "expected": "RT_26_2-7",
+    "text": "RT_26_2-7",
+    "rect": [
+      2811,
+      3270,
+      1176,
+      45
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12747364000824746,
+    "decode_seconds": 0.11723930499283597,
+    "total_seconds": 0.24471294500108343
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-7.26-04-28.JPG",
+    "expected": "RT_26_2-7",
+    "text": "RT_26_2-7",
+    "rect": [
+      2814,
+      3273,
+      1173,
+      54
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13965501499478705,
+    "decode_seconds": 0.11022262100595981,
+    "total_seconds": 0.24987763600074686
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-7.26-04-29.JPG",
+    "expected": "RT_26_2-7",
+    "text": "RT_26_2-7",
+    "rect": [
+      2814,
+      3273,
+      1173,
+      66
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12001090800913516,
+    "decode_seconds": 0.1074230669910321,
+    "total_seconds": 0.22743397500016727
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-7.26-04-30.JPG",
+    "expected": "RT_26_2-7",
+    "text": "RT_26_2-7",
+    "rect": [
+      2814,
+      3273,
+      1173,
+      66
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11605811800109223,
+    "decode_seconds": 0.10282854799879715,
+    "total_seconds": 0.21888666599988937
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-70.26-04-27.JPG",
+    "expected": "RT_26_2-70",
+    "text": "RT_26_2-70",
+    "rect": [
+      2682,
+      3288,
+      1281,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12631443100690376,
+    "decode_seconds": 0.11332638199382927,
+    "total_seconds": 0.23964081300073303
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-70.26-04-28.JPG",
+    "expected": "RT_26_2-70",
+    "text": "RT_26_2-70",
+    "rect": [
+      2700,
+      3267,
+      1275,
+      54
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12455200299154967,
+    "decode_seconds": 0.11546533700311556,
+    "total_seconds": 0.24001733999466524
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-70.26-04-29.JPG",
+    "expected": "RT_26_2-70",
+    "text": "RT_26_2-70",
+    "rect": [
+      2700,
+      3294,
+      1278,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1143375859974185,
+    "decode_seconds": 0.10048064299917314,
+    "total_seconds": 0.21481822899659164
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-70.26-04-30.JPG",
+    "expected": "RT_26_2-70",
+    "text": "RT_26_2-70",
+    "rect": [
+      2697,
+      3294,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1201594240119448,
+    "decode_seconds": 0.10951896698679775,
+    "total_seconds": 0.22967839099874254
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-71.26-04-27.JPG",
+    "expected": "RT_26_2-71",
+    "text": "",
+    "rect": null,
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1376580470096087,
+    "decode_seconds": 0.2577400709997164,
+    "total_seconds": 0.3953981180093251
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-71.26-04-28.JPG",
+    "expected": "RT_26_2-71",
+    "text": "RT_26_2-71",
+    "rect": [
+      2670,
+      3321,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1439958559931256,
+    "decode_seconds": 0.11711496699717827,
+    "total_seconds": 0.26111082299030386
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-71.26-04-29.JPG",
+    "expected": "RT_26_2-71",
+    "text": "RT_26_2-71",
+    "rect": [
+      2667,
+      3327,
+      1275,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11440444100298919,
+    "decode_seconds": 0.10161337499448564,
+    "total_seconds": 0.21601781599747483
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-71.26-04-30.JPG",
+    "expected": "RT_26_2-71",
+    "text": "RT_26_2-71",
+    "rect": [
+      2670,
+      3327,
+      1272,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11575263900158461,
+    "decode_seconds": 0.10548734599433374,
+    "total_seconds": 0.22123998499591835
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-72.26-04-27.JPG",
+    "expected": "RT_26_2-72",
+    "text": "RT_26_2-72",
+    "rect": [
+      2583,
+      3306,
+      1281,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11433056800160557,
+    "decode_seconds": 0.11057748600433115,
+    "total_seconds": 0.22490805400593672
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-72.26-04-28.JPG",
+    "expected": "RT_26_2-72",
+    "text": "RT_26_2-72",
+    "rect": [
+      2604,
+      3312,
+      1275,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.14354955800808966,
+    "decode_seconds": 0.11582052099402063,
+    "total_seconds": 0.2593700790021103
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-72.26-04-29.JPG",
+    "expected": "RT_26_2-72",
+    "text": "RT_26_2-72",
+    "rect": [
+      2604,
+      3315,
+      1272,
+      9
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1393448669987265,
+    "decode_seconds": 0.11431476200232282,
+    "total_seconds": 0.2536596290010493
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-72.26-04-30.JPG",
+    "expected": "RT_26_2-72",
+    "text": "RT_26_2-72",
+    "rect": [
+      2604,
+      3312,
+      1272,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11933504798798822,
+    "decode_seconds": 0.10790010800701566,
+    "total_seconds": 0.22723515599500388
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-73.26-04-27.JPG",
+    "expected": "RT_26_2-73",
+    "text": "RT_26_2-73",
+    "rect": [
+      2637,
+      3258,
+      1281,
+      66
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13134896699921228,
+    "decode_seconds": 0.12079873200855218,
+    "total_seconds": 0.25214769900776446
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-73.26-04-28.JPG",
+    "expected": "RT_26_2-73",
+    "text": "RT_26_2-73",
+    "rect": [
+      2661,
+      3255,
+      1272,
+      72
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13894089400127996,
+    "decode_seconds": 0.11044737900374457,
+    "total_seconds": 0.24938827300502453
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-73.26-04-29.JPG",
+    "expected": "RT_26_2-73",
+    "text": "RT_26_2-73",
+    "rect": [
+      2661,
+      3255,
+      1275,
+      84
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11342269300075714,
+    "decode_seconds": 0.09950937100802548,
+    "total_seconds": 0.21293206400878262
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-73.26-04-30.JPG",
+    "expected": "RT_26_2-73",
+    "text": "RT_26_2-73",
+    "rect": [
+      2661,
+      3255,
+      1272,
+      78
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11594276000687387,
+    "decode_seconds": 0.10330771299777552,
+    "total_seconds": 0.2192504730046494
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-74.26-04-27.JPG",
+    "expected": "RT_26_2-74",
+    "text": "RT_26_2-74",
+    "rect": [
+      2691,
+      3285,
+      1281,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12668072899396066,
+    "decode_seconds": 0.11545513200690039,
+    "total_seconds": 0.24213586100086104
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-74.26-04-28.JPG",
+    "expected": "RT_26_2-74",
+    "text": "RT_26_2-74",
+    "rect": [
+      2712,
+      3291,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12533922500733752,
+    "decode_seconds": 0.11348004099272657,
+    "total_seconds": 0.2388192660000641
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-74.26-04-29.JPG",
+    "expected": "RT_26_2-74",
+    "text": "RT_26_2-74",
+    "rect": [
+      2712,
+      3288,
+      1278,
+      51
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12376267398940399,
+    "decode_seconds": 0.11262437100231182,
+    "total_seconds": 0.2363870449917158
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-74.26-04-30.JPG",
+    "expected": "RT_26_2-74",
+    "text": "RT_26_2-74",
+    "rect": [
+      2709,
+      3291,
+      1275,
+      48
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11767154499830212,
+    "decode_seconds": 0.104755138992914,
+    "total_seconds": 0.22242668399121612
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-75.26-04-27.JPG",
+    "expected": "RT_26_2-75",
+    "text": "RT_26_2-75",
+    "rect": [
+      2730,
+      3288,
+      1284,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11370613200415391,
+    "decode_seconds": 0.11532579100457951,
+    "total_seconds": 0.22903192300873343
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-75.26-04-28.JPG",
+    "expected": "RT_26_2-75",
+    "text": "RT_26_2-75",
+    "rect": [
+      2751,
+      3291,
+      1275,
+      33
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11526110699924175,
+    "decode_seconds": 0.11486265400890261,
+    "total_seconds": 0.23012376100814436
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-75.26-04-29.JPG",
+    "expected": "RT_26_2-75",
+    "text": "RT_26_2-75",
+    "rect": [
+      2748,
+      3294,
+      1278,
+      39
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10541185499459971,
+    "decode_seconds": 0.10446167500049341,
+    "total_seconds": 0.20987352999509312
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-75.26-04-30.JPG",
+    "expected": "RT_26_2-75",
+    "text": "RT_26_2-75",
+    "rect": [
+      2751,
+      3291,
+      1275,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1063179949996993,
+    "decode_seconds": 0.1053504010051256,
+    "total_seconds": 0.2116683960048249
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-76.26-04-27.JPG",
+    "expected": "RT_26_2-76",
+    "text": "RT_26_2-76",
+    "rect": [
+      2667,
+      3273,
+      1281,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11459162599931005,
+    "decode_seconds": 0.1146495030116057,
+    "total_seconds": 0.22924112901091576
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-76.26-04-28.JPG",
+    "expected": "RT_26_2-76",
+    "text": "RT_26_2-76",
+    "rect": [
+      2688,
+      3279,
+      1275,
+      36
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11549243399349507,
+    "decode_seconds": 0.11335463299474213,
+    "total_seconds": 0.2288470669882372
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-76.26-04-29.JPG",
+    "expected": "RT_26_2-76",
+    "text": "RT_26_2-76",
+    "rect": [
+      2688,
+      3279,
+      1275,
+      48
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10395424699527211,
+    "decode_seconds": 0.1007518970000092,
+    "total_seconds": 0.2047061439952813
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-76.26-04-30.JPG",
+    "expected": "RT_26_2-76",
+    "text": "RT_26_2-76",
+    "rect": [
+      2688,
+      3282,
+      1278,
+      51
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.10699315799865872,
+    "decode_seconds": 0.10320321600011084,
+    "total_seconds": 0.21019637399876956
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-77.26-04-27.JPG",
+    "expected": "RT_26_2-77",
+    "text": "RT_26_2-77",
+    "rect": [
+      2553,
+      3291,
+      1278,
+      15
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12717101800080854,
+    "decode_seconds": 0.11653947000741027,
+    "total_seconds": 0.24371048800821882
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-77.26-04-28.JPG",
+    "expected": "RT_26_2-77",
+    "text": "RT_26_2-77",
+    "rect": [
+      2577,
+      3303,
+      1272,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12215191900031641,
+    "decode_seconds": 0.10977845199522562,
+    "total_seconds": 0.23193037099554203
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-77.26-04-29.JPG",
+    "expected": "RT_26_2-77",
+    "text": "RT_26_2-77",
+    "rect": [
+      2571,
+      3306,
+      1275,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11430086300242692,
+    "decode_seconds": 0.10324565399787389,
+    "total_seconds": 0.2175465170003008
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-77.26-04-30.JPG",
+    "expected": "RT_26_2-77",
+    "text": "RT_26_2-77",
+    "rect": [
+      2571,
+      3306,
+      1275,
+      27
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11699630100338254,
+    "decode_seconds": 0.10892621098901145,
+    "total_seconds": 0.225922511992394
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-78.26-04-27.JPG",
+    "expected": "RT_26_2-78",
+    "text": "RT_26_2-78",
+    "rect": [
+      2619,
+      3273,
+      1278,
+      42
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12658276600996032,
+    "decode_seconds": 0.11546374300087336,
+    "total_seconds": 0.2420465090108337
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-78.26-04-28.JPG",
+    "expected": "RT_26_2-78",
+    "text": "RT_26_2-78",
+    "rect": [
+      2634,
+      3279,
+      1275,
+      48
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1245897530025104,
+    "decode_seconds": 0.11289757399936207,
+    "total_seconds": 0.23748732700187247
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-78.26-04-29.JPG",
+    "expected": "RT_26_2-78",
+    "text": "RT_26_2-78",
+    "rect": [
+      2640,
+      3276,
+      1275,
+      45
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11464551799872424,
+    "decode_seconds": 0.1100589930138085,
+    "total_seconds": 0.22470451101253275
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-78.26-04-30.JPG",
+    "expected": "RT_26_2-78",
+    "text": "RT_26_2-78",
+    "rect": [
+      2637,
+      3279,
+      1275,
+      48
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11837171600200236,
+    "decode_seconds": 0.10666374699212611,
+    "total_seconds": 0.22503546299412847
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-8.26-04-27.JPG",
+    "expected": "RT_26_2-8",
+    "text": "RT_26_2-8",
+    "rect": [
+      2763,
+      3294,
+      1173,
+      21
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13175739800499287,
+    "decode_seconds": 0.1232492999988608,
+    "total_seconds": 0.25500669800385367
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-8.26-04-28.JPG",
+    "expected": "RT_26_2-8",
+    "text": "RT_26_2-8",
+    "rect": [
+      2766,
+      3297,
+      1176,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12647873899550177,
+    "decode_seconds": 0.11647663300391287,
+    "total_seconds": 0.24295537199941464
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-8.26-04-29.JPG",
+    "expected": "RT_26_2-8",
+    "text": "RT_26_2-8",
+    "rect": [
+      2760,
+      3288,
+      1173,
+      45
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.11510802400880493,
+    "decode_seconds": 0.1033761619910365,
+    "total_seconds": 0.21848418599984143
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-8.26-04-30.JPG",
+    "expected": "RT_26_2-8",
+    "text": "RT_26_2-8",
+    "rect": [
+      2766,
+      3297,
+      1173,
+      30
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12222171400208026,
+    "decode_seconds": 0.10782952199224383,
+    "total_seconds": 0.2300512359943241
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-9.26-04-27.JPG",
+    "expected": "RT_26_2-9",
+    "text": "RT_26_2-9",
+    "rect": [
+      2793,
+      3324,
+      1173,
+      3
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.13011402898700908,
+    "decode_seconds": 0.1223612510075327,
+    "total_seconds": 0.2524752799945418
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-9.26-04-28.JPG",
+    "expected": "RT_26_2-9",
+    "text": "RT_26_2-9",
+    "rect": [
+      2793,
+      3327,
+      1176,
+      6
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.14210454000567552,
+    "decode_seconds": 0.11511814998812042,
+    "total_seconds": 0.25722268999379594
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-9.26-04-29.JPG",
+    "expected": "RT_26_2-9",
+    "text": "RT_26_2-9",
+    "rect": [
+      2796,
+      3327,
+      1173,
+      12
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.12262301699956879,
+    "decode_seconds": 0.10904621399822645,
+    "total_seconds": 0.23166923099779524
+  },
+  {
+    "path": "data_in_vitro/RT_26_2-9.26-04-30.JPG",
+    "expected": "RT_26_2-9",
+    "text": "RT_26_2-9",
+    "rect": [
+      2796,
+      3327,
+      0,
+      0
+    ],
+    "shape": [
+      4000,
+      6000,
+      3
+    ],
+    "load_seconds": 0.1234921330033103,
+    "decode_seconds": 0.11064628699386958,
+    "total_seconds": 0.23413841999717988
+  }
+]

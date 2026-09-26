@@ -6,6 +6,7 @@ Reads barcodes from images using pyzbar.
 
 import cv2
 import numpy as np
+from pathlib import Path
 from pyzbar import pyzbar
 
 
@@ -21,6 +22,42 @@ class BarcodeReader:
         self._symbol_type = pyzbar.ZBarSymbol.CODE128
         self._max_width = 2000  # Downscale to this width for faster processing
         self._roi_fraction = 0.50  # Scan top 50% of image
+
+    def read_file(self, path: str) -> tuple[str, tuple[int, int, int, int] | None]:
+        """Read a photograph, trying its bottom label without full JPEG decoding.
+
+        JPEG's half-resolution grayscale decode avoids loading a full BGR image.
+        The fast path prefers bottom labels (the acquisition setup places them
+        there); all failures and other file formats use the original reader.
+        Coordinates always refer to the original, unrotated photograph.
+        """
+        path = str(path)
+        fast_result = None
+        if Path(path).suffix.lower() in {'.jpg', '.jpeg', '.jpe'}:
+            reduced = cv2.imread(path, cv2.IMREAD_REDUCED_GRAYSCALE_2)
+            if reduced is not None and reduced.shape[0] >= 2:
+                offset_y = reduced.shape[0] // 2
+                roi = reduced[offset_y:]
+                scale = min(1.0, self._max_width / roi.shape[1])
+                scale_y = 1.0
+                if scale < 1:
+                    resized_height = max(1, int(roi.shape[0] * scale))
+                    scale_y = resized_height / roi.shape[0]
+                    roi = cv2.resize(roi, (self._max_width, resized_height),
+                                     interpolation=cv2.INTER_AREA)
+                decoded = pyzbar.decode(roi, symbols=[self._symbol_type])
+                if decoded:
+                    barcode = decoded[0]
+                    x, y, w, h = barcode.rect
+                    fast_result = (barcode.data.decode('utf-8'), (
+                        int(2 * x / scale), int(2 * (y / scale_y + offset_y)),
+                        int(2 * w / scale), int(2 * h / scale_y)))
+                    # A single successful scanline may have a zero-area box.
+                    # Prefer the original overlay if that path can read it too.
+                    if w > 0 and h > 0:
+                        return fast_result
+        result = self.read_fast(cv2.imread(path))
+        return result if result[0] or fast_result is None else fast_result
     
     def read_fast(self, image: np.ndarray) -> tuple[str, tuple[int, int, int, int] | None]:
         """
