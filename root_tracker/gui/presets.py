@@ -41,12 +41,23 @@ class PresetStore:
 
     def initialize(self, bundled_directory):
         marker = self.directory / '.initialized'
-        if marker.exists():
-            return
+        migration = self.directory / '.defaults-from-in-vitro'
+        bundled_directory = Path(bundled_directory)
         self.directory.mkdir(parents=True, exist_ok=True)
-        if not self.path('Defaults').exists():
-            self.save('Defaults', Config())
-        for path in sorted(Path(bundled_directory).glob('*.yaml')):
-            if not self.path(path.stem).exists():
-                self.save(path.stem, Config.from_yaml(path))
-        marker.touch()
+        if not marker.exists():
+            for path in sorted(bundled_directory.glob('*.yaml')):
+                name = 'Defaults' if path.stem == 'in_vitro' else path.stem
+                if not self.path(name).exists():
+                    self.save(name, Config.from_yaml(path))
+            marker.touch()
+            migration.touch()
+        elif not migration.exists():
+            # Replace the old generic Defaults with the existing In vitro YAML,
+            # preserving any edits made to that preset. Do this only once so a
+            # later user deletion is respected and never recreated on startup.
+            previous = self.path('in_vitro')
+            if previous.exists():
+                os.replace(previous, self.path('Defaults'))
+            elif self.path('Defaults').exists() and (bundled_directory / 'in_vitro.yaml').exists():
+                self.save('Defaults', Config.from_yaml(bundled_directory / 'in_vitro.yaml'))
+            migration.touch()

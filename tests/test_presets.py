@@ -163,7 +163,7 @@ class PresetTests(unittest.TestCase):
         self.store.save('Startup', self.config)
         settings = Mock()
         settings.value.side_effect = lambda key, default=None: str(self.store.path('Startup')) if key == 'active_preset' else default
-        with patch('root_tracker.gui.main_window.QSettings', return_value=settings), patch.object(MainWindow, '_reload_images') as reload_images, patch.object(MainWindow, '_load_last_folder') as last_folder:
+        with patch('root_tracker.gui.main_window.QSettings', return_value=settings), patch.object(MainWindow, '_get_preset_store', return_value=self.store), patch.object(MainWindow, '_reload_images') as reload_images, patch.object(MainWindow, '_load_last_folder') as last_folder:
             window = MainWindow()
             self.addCleanup(window.close)
             self.assertEqual(window._config.n_clusters, 9)
@@ -185,26 +185,26 @@ class PresetTests(unittest.TestCase):
             window._refresh_presets_menu()
         self.assertEqual([action.text() for action in window._presets_menu.actions() if not action.isSeparator()], ['Manage presets…', 'Example'])
 
-    def test_first_launch_uses_in_vitro_and_marks_active_preset(self):
+    def test_first_launch_uses_defaults_and_marks_active_preset(self):
         self.config.crop.top_ratio = .1
         self.config.crop.bottom_ratio = .85
-        self.store.save('in_vitro', self.config)
+        self.store.save('Defaults', self.config)
         settings = Mock()
         settings.value.side_effect = lambda key, default=None: default
         with patch('root_tracker.gui.main_window.QSettings', return_value=settings), patch.object(MainWindow, '_get_preset_store', return_value=self.store), patch.object(MainWindow, '_reload_images'):
             window = MainWindow()
             self.addCleanup(window.close)
-            self.assertEqual(window._active_preset_name, 'in_vitro')
+            self.assertEqual(window._active_preset_name, 'Defaults')
             self.assertEqual(window._config.crop.top_ratio, .1)
             self.assertEqual(window._config.crop.bottom_ratio, .85)
             window._refresh_presets_menu()
             checked = [action.text() for action in window._presets_menu.actions() if action.isChecked()]
-            self.assertEqual(checked, ['in_vitro'])
-        dialog = PresetsDialog(self.store, self.config, active_name='in_vitro')
+            self.assertEqual(checked, ['Defaults'])
+        dialog = PresetsDialog(self.store, self.config, active_name='Defaults')
         self.addCleanup(dialog.deleteLater)
-        self.assertEqual(dialog.list.currentItem().text(), 'in_vitro')
+        self.assertEqual(dialog.list.currentItem().text(), 'Defaults')
         self.assertFalse(dialog.list.currentItem().icon().isNull())
-        self.assertEqual(dialog._loaded_name, 'in_vitro')
+        self.assertEqual(dialog._loaded_name, 'Defaults')
 
     def test_decimal_fields_hide_trailing_zeros_without_losing_precision(self):
         from PySide6.QtCore import QLocale
@@ -219,6 +219,40 @@ class PresetTests(unittest.TestCase):
                 widget.setValue(value)
                 self.assertEqual(widget.text(), expected)
                 self.assertEqual(widget.value(), value)
+
+    def test_defaults_is_the_in_vitro_yaml_and_migration_preserves_edits(self):
+        bundled = Path(self.temp.name)/'configs'
+        bundled.mkdir()
+        self.config.crop.top_ratio = .1
+        self.config.crop.bottom_ratio = .85
+        self.config.to_yaml(bundled/'in_vitro.yaml')
+        self.store.initialize(bundled)
+        self.assertEqual(self.store.names(), ['Defaults'])
+        self.assertEqual(self.store.load('Defaults').crop.top_ratio, .1)
+        self.assertEqual(self.store.load('Defaults').crop.bottom_ratio, .85)
+        self.assertTrue(self.store.path('Defaults').is_file())
+        # Simulate an installation created by the previous version.
+        (self.store.directory/'.defaults-from-in-vitro').unlink()
+        self.store.save('Defaults', Config())
+        self.config.n_clusters = 8
+        self.store.save('in_vitro', self.config)
+        self.store.initialize(bundled)
+        self.assertEqual(self.store.names(), ['Defaults'])
+        self.assertEqual(self.store.load('Defaults').n_clusters, 8)
+        self.assertEqual(self.store.load('Defaults').crop.top_ratio, .1)
+        self.store.delete('Defaults')
+        self.store.initialize(bundled)
+        self.assertEqual(self.store.names(), [])
+
+    def test_remembered_in_vitro_selection_follows_renamed_yaml(self):
+        self.store.save('Defaults', self.config)
+        settings = Mock()
+        settings.value.side_effect = lambda key, default=None: str(self.store.path('in_vitro')) if key == 'active_preset' else default
+        with patch('root_tracker.gui.main_window.QSettings', return_value=settings), patch.object(MainWindow, '_get_preset_store', return_value=self.store), patch.object(MainWindow, '_reload_images'):
+            window = MainWindow()
+            self.addCleanup(window.close)
+            self.assertEqual(window._active_preset_name, 'Defaults')
+            settings.setValue.assert_called_with('active_preset', str(self.store.path('Defaults')))
 
 
 if __name__ == '__main__':

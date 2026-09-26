@@ -27,12 +27,11 @@ by color. None of these editor-opening choices changes the detection algorithm.
 
 Activating a preset switches input/output/statistics paths and filename parsing
 rules as well as processing settings, reloads the dataset, and returns to Load.
-In vitro is selected on the first launch; subsequent launches restore the last activated preset. The Presets menu checks the active preset, and the manager selects and marks its row. An explicit
+Defaults (the In vitro configuration) is selected on the first launch; subsequent launches restore the last activated preset. The Presets menu checks the active preset, and the manager selects and marks its row. An explicit
 `--config` takes precedence over the saved preset.
 
 Presets live in the platform's user application-configuration directory, under
-`presets/`. On first use, Defaults and copies of the bundled YAML configurations
-are created there. Editing/deleting them does not modify files in the repository,
+`presets/`. On first use, the bundled In vitro YAML is copied as `Defaults.yaml`; other bundled configurations keep their names. There is no separate generic Defaults preset. Existing installations migrate `in_vitro.yaml` to `Defaults.yaml`, replacing the former generic preset. Every preset has its own YAML file. Editing/deleting them does not modify files in the repository,
 and deleted initial presets are not recreated on every launch. Relative paths
 from imported YAML are resolved using the existing CLI convention (relative to
 the configuration file's parent's parent directory); saved/exported presets use

@@ -259,7 +259,13 @@ class MainWindow(QMainWindow):
         self._startup_preset = False
         self._active_preset_name = None
         if config is None:
-            saved = QSettings("RootTracker", "RootTracker").value('active_preset', '')
+            from pathlib import Path
+            store = self._get_preset_store()
+            preferences = QSettings("RootTracker", "RootTracker")
+            saved = preferences.value('active_preset', '')
+            if saved and Path(saved) == store.path('in_vitro') and store.path('Defaults').exists():
+                saved = str(store.path('Defaults'))
+                preferences.setValue('active_preset', saved)
             if saved:
                 try:
                     config = Config.from_yaml(saved)
@@ -269,10 +275,9 @@ class MainWindow(QMainWindow):
                 except Exception:
                     config = None
             if config is None:
-                store = self._get_preset_store()
-                if 'in_vitro' in store.names():
-                    config = store.load('in_vitro')
-                    self._active_preset_name = 'in_vitro'
+                if 'Defaults' in store.names():
+                    config = store.load('Defaults')
+                    self._active_preset_name = 'Defaults'
                     self._startup_preset = os.path.isdir(config.data.input)
                 else:
                     config = Config()
