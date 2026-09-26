@@ -157,4 +157,8 @@ class WorkflowBar(QWidget):
                 }}
                 QPushButton:hover {{ background-color: palette(midlight); }}
                 QPushButton:focus {{ border: 1px solid palette(highlight); }}
+                QPushButton:pressed {{
+                    color: {accent};
+                    border: 1px solid {accent};
+                }}
             """)
