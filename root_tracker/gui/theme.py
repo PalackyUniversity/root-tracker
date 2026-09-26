@@ -43,6 +43,7 @@ def button_stylesheet(palette: QPalette) -> str:
     spin_down_icon = (Path(__file__).parent / "icons" / f"spin-down-{arrow_tone}.svg").as_posix()
     up_icon = (Path(__file__).parent / "icons" / f"chevron-up-{arrow_tone}.svg").as_posix()
     return f"""
+        QDialogButtonBox {{ dialogbuttonbox-buttons-have-icons: 0; }}
         QMenuBar {{ border-bottom: 1px solid {divider}; }}
         QStatusBar {{ border-top: 1px solid {divider}; }}
         QStatusBar::item {{ border: none; }}
