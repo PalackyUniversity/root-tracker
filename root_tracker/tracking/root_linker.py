@@ -47,7 +47,8 @@ class RootLinker:
         point2: tuple[int, int]
     ) -> float:
         """Compute Euclidean distance between two points."""
-        return np.linalg.norm(np.array(point1) - np.array(point2))
+        return math.hypot(float(point1[0]) - float(point2[0]),
+                          float(point1[1]) - float(point2[1]))
     
     def compute_link_cost(
         self,

@@ -5,6 +5,8 @@ Converts binary root masks to single-pixel-wide skeletons and
 identifies branch points.
 """
 
+from collections import OrderedDict
+
 import cv2
 import numpy as np
 from skimage.morphology import skeletonize
@@ -36,6 +38,9 @@ class RootSkeletonizer:
     def __init__(self, config: Config) -> None:
         self.config = config
         self._min_segment_length = 15  # Minimum pixels for a valid segment
+        self._component_cache = OrderedDict()
+        self._component_cache_bytes = 0
+        self._component_cache_limit = 32 * 1024 * 1024
     
     def skeletonize_mask(self, mask: np.ndarray) -> np.ndarray:
         """
@@ -64,9 +69,28 @@ class RootSkeletonizer:
             region = np.s_[y:y + h, x:x + w]
             component = labels[region] == label
             # Bounding boxes can overlap, so merge only foreground pixels.
-            result[region] += skeletonize(component)
+            result[region] += self._thin_component(component)
         return result
     
+    def _thin_component(self, component):
+        """Reuse exact thinning results for components untouched by mask edits."""
+        # Include actual pixels, not only a hash or bounding box: changes and
+        # restoration cannot accidentally reuse a different root's geometry.
+        key = (component.shape, component.tobytes())
+        result = self._component_cache.pop(key, None)
+        if result is not None:
+            self._component_cache[key] = result
+            return result
+        result = skeletonize(component)
+        size = len(key[1]) + result.nbytes
+        if size <= self._component_cache_limit:
+            while self._component_cache_bytes + size > self._component_cache_limit:
+                old_key, old_result = self._component_cache.popitem(last=False)
+                self._component_cache_bytes -= len(old_key[1]) + old_result.nbytes
+            self._component_cache[key] = result
+            self._component_cache_bytes += size
+        return result
+
     def find_endpoints(self, skeleton: np.ndarray) -> list[tuple[int, int]]:
         """
         Find endpoint pixels in the skeleton (pixels with only 1 neighbor).

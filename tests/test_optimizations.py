@@ -42,6 +42,17 @@ def reference_threshold(image, config):
 
 
 class OptimizationTests(unittest.TestCase):
+    def test_repeated_skeletonization_preserves_changed_and_restored_components(self):
+        processor = RootSkeletonizer(Config())
+        mask = np.zeros((600, 700), np.uint8)
+        cv2.line(mask, (80, 40), (180, 500), 255, 7)
+        cv2.line(mask, (480, 40), (510, 540), 255, 5)
+        changed = mask.copy()
+        changed[200:400, :250] = 0
+        for candidate in (mask, changed, mask):
+            np.testing.assert_array_equal(processor.skeletonize_mask(candidate),
+                                          skeletonize(candidate).astype(np.float32))
+
     def test_predecoded_image_matches_regular_preprocessing_without_mutation(self):
         config = Config(n_clusters=1, rotation=0)
         image = np.full((128, 192, 3), (255, 0, 0), np.uint8)
