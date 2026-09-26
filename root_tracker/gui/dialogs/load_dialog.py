@@ -147,6 +147,18 @@ class LoadDialog(QDialog):
         self._custom_date_label.setVisible(is_custom_date)
         self._custom_date_edit.setVisible(is_custom_date)
         
+        tips = {
+            self._path_edit: 'Folder containing the image dataset. Images are grouped using the filename template.',
+            self._template_combo: 'How filenames encode the group, barcode and date. Choose a matching pattern or enter a custom template.',
+            self._date_combo: 'How the date in each filename is interpreted. This controls chronological ordering and growth calculations.',
+        }
+        for widget, tip in tips.items():
+            widget.setToolTip(tip)
+        for widget in (self._template_combo, self._date_combo, self._custom_template_edit, self._custom_date_edit):
+            label = form.labelForField(widget)
+            if label is not None:
+                label.setToolTip(widget.toolTip())
+        form.labelForField(path_layout).setToolTip(self._path_edit.toolTip())
         layout.addLayout(form)
         
         # Barcode detection checkbox

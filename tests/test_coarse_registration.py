@@ -13,6 +13,21 @@ class CoarseRegistrationTests(unittest.TestCase):
         self.registrator = ImageRegistrator(Config())
         self.rng = np.random.default_rng(821)
 
+    def test_registration_updates_plate_coordinate_transform(self):
+        from datetime import datetime
+        from unittest.mock import patch
+        from root_tracker.models import ImageData
+        images = [ImageData(datetime(2026, 1, day), 'unused.jpg', 'test') for day in (1, 2)]
+        for image in images:
+            image.image = np.zeros((40, 50, 3), np.uint8)
+            image.process = image.canny = np.zeros((40, 50), np.uint8)
+            image.plate_transform = [1., 0., -20., 0., 1., -30.]
+        target = images[1]
+        with patch.object(self.registrator, 'align_to_template', return_value=(target.image, target.canny, target.process, 7, -4)):
+            self.registrator.register_series(images)
+        self.assertEqual(target.plate_transform, [1., 0., -13., 0., 1., -34.])
+        self.assertEqual(images[0].plate_transform, [1., 0., -20., 0., 1., -30.])
+
     def edge_image(self, shape):
         result = np.zeros(shape, np.uint8)
         for _ in range(70):
@@ -20,6 +35,25 @@ class CoarseRegistrationTests(unittest.TestCase):
             dx, dy = self.rng.integers(-60, 61, size=2)
             cv2.line(result, (int(x), int(y)), (int(x+dx), int(y+dy)), 255, 1)
         return result
+
+    def test_configured_border_matches_full_search(self):
+        template = self.edge_image((203, 219))
+        for shape in ((203, 219), (181, 241)):
+            edges = cv2.warpAffine(template, np.float32([[1, 0, 17], [0, 1, -9]]),
+                                   (shape[1], shape[0]))
+            image = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
+            for ratio in (0, .1, .25, .5):
+                with self.subTest(shape=shape, ratio=ratio):
+                    self.registrator.config.registration.margin_ratio = ratio
+                    mx = max(int(shape[1] * ratio), (219-shape[1]+1)//2, 0)
+                    my = max(int(shape[0] * ratio), (203-shape[0]+1)//2, 0)
+                    padded = cv2.copyMakeBorder(edges, my, my, mx, mx, cv2.BORDER_CONSTANT)
+                    left, top = cv2.minMaxLoc(cv2.matchTemplate(padded, template, cv2.TM_CCOEFF))[3]
+                    actual = self.registrator.align_to_template(template, image, edges, edges)
+                    self.assertEqual(actual[3:], (mx-left, my-top))
+                    for output, source in zip(actual[:3], (image, edges, edges)):
+                        reference = cv2.copyMakeBorder(source, my, my, mx, mx, cv2.BORDER_CONSTANT)
+                        np.testing.assert_array_equal(output, reference[top:top+203, left:left+219])
 
     def test_large_translations_with_odd_and_different_shapes(self):
         template = self.edge_image((733, 819))

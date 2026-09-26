@@ -14,28 +14,31 @@ from root_tracker.pipeline import RootTrackingPipeline
 
 
 def reference_preprocess(pipeline, original):
-    """The previous copy-heavy path, using the same CV operations."""
+    """Independent copy-heavy reference for the fixed plate-relative crop."""
     if pipeline.config.rotation:
         original = pipeline.cropper.rotate(original)
     cropped = pipeline.cropper.auto_crop_to_blue_background(original)
     contours, _ = pipeline.green_detector.find_green_contours(cropped)
-    min_y = pipeline.green_detector.find_crop_start(contours, cropped.shape[0])
     unmasked = cropped.copy()
     cropped = pipeline.green_detector.mask_green_in_image(cropped, contours)
     pos_x, pos_y, areas = pipeline.green_detector.cluster_plant_positions(contours)
-    cropped = cropped[min_y:].copy()
-    image = unmasked[min_y:].copy()
+    # Independent slice reference for fixed plate-relative defaults. Plant
+    # locations no longer determine the top edge of the analysis crop.
+    height, width = cropped.shape[:2]
+    start = round(height*pipeline.config.crop.top_ratio)
+    end = round(height*pipeline.config.crop.bottom_ratio)
+    top, bottom, left, right = pipeline.cropper.margin_offsets(end-start, width)
+    selection = (slice(start+top, end-bottom), slice(left, width-right))
+    cropped = cropped[selection].copy()
+    image = unmasked[selection].copy()
     process = pipeline.background_remover.remove_gradient(cropped)
     canny = pipeline.background_remover.compute_canny_edges(process)
-    height, width = image.shape[:2]
-    top, bottom, left, right = pipeline.cropper.margin_offsets(height, width)
-    roi = (slice(top, height - bottom), slice(left, width - right))
     return {
-        'image': image[roi].copy(),
-        'process': process[roi].copy(),
-        'canny': canny[roi].copy(),
+        'image': image,
+        'process': process,
+        'canny': canny,
         'positions_x': [x - left for x in pos_x],
-        'positions_y': [y - min_y - top for y in pos_y],
+        'positions_y': [y - start - top for y in pos_y],
         'green_areas': areas,
     }
 

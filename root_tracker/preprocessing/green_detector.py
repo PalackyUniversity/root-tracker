@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 from ..config import Config
+from .colors import color_mask
 
 
 class GreenAreaDetector:
@@ -25,7 +26,7 @@ class GreenAreaDetector:
     def __init__(self, config: Config) -> None:
         self.config = config
     
-    def detect_green_mask(self, image: np.ndarray) -> np.ndarray:
+    def detect_green_mask(self, image: np.ndarray, *, hsv=None) -> np.ndarray:
         """
         Create a binary mask of green areas in the image.
         
@@ -35,13 +36,9 @@ class GreenAreaDetector:
         Returns:
             Binary mask where green areas are white.
         """
-        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        green_threshold = cv2.inRange(
-            hsv,
-            self.config.green.hsv_lower,
-            self.config.green.hsv_upper
-        )
-        
+        green_threshold = color_mask(image, self.config.green.hsv_lower,
+                                     self.config.green.hsv_upper, hsv=hsv)
+
         # Clean up the mask
         green_threshold = cv2.dilate(green_threshold, None, iterations=3)
         green_threshold = cv2.erode(green_threshold, None, iterations=1)

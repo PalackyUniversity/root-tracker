@@ -8,7 +8,7 @@ Shows an empty state with load button when no images are loaded.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem,
     QLabel, QPushButton, QStackedWidget, QHBoxLayout,
-    QToolButton, QStyle, QHeaderView, QSizePolicy
+    QToolButton, QStyle, QHeaderView
 )
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QAction, QFont, QColor, QPalette
@@ -56,6 +56,7 @@ class ImageTree(QWidget):
         self._status_config = Config()
         self._processing_series_ids = set()
         self._processing_step = None
+        self._pending_series_ids = set()
         
         self._setup_ui()
     
@@ -75,7 +76,7 @@ class ImageTree(QWidget):
             }
         """)
         header_layout = QHBoxLayout(self._header)
-        header_layout.setContentsMargins(9, 6, 6, 6)
+        header_layout.setContentsMargins(5, 6, 3, 6)
         header_layout.setSpacing(4)
 
         self._folder_label = QLabel("No folder")
@@ -95,14 +96,6 @@ class ImageTree(QWidget):
         self._header.hide()  # Hidden by default until folder is loaded
         layout.addWidget(self._header)
 
-        self._status_label = QLabel()
-        self._status_label.setStyleSheet(
-            'background: palette(base); color: palette(text); padding: 5px 9px; font-size: 11px;')
-        self._status_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
-        self._status_label.setAccessibleName('Progress for the selected workflow step')
-        self._status_label.hide()
-        layout.addWidget(self._status_label)
-        
         # Stacked widget for empty state vs tree
         self._stack = QStackedWidget()
         
@@ -139,9 +132,10 @@ class ImageTree(QWidget):
         self._tree.header().setStretchLastSection(False)
         self._tree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self._tree.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
-        self._tree.setColumnWidth(1, 64)
+        self._tree.header().setMinimumSectionSize(20)
+        self._tree.setColumnWidth(1, 30)
         self._tree.itemSelectionChanged.connect(self._on_selection_changed)
-        self._tree.setIndentation(20)
+        self._tree.setIndentation(14)
         
         # Enable context menu
         self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -174,11 +168,10 @@ class ImageTree(QWidget):
         if not series_dict:
             self._stack.setCurrentIndex(0)  # Show empty state
             self._header.hide()
-            self._status_label.hide()
         else:
             self._stack.setCurrentIndex(1)  # Show tree
             self._header.show()
-            self._status_label.show()
+
             self._populate_tree()
 
     def set_step(self, step: WorkflowStep, config: Config) -> None:
@@ -186,6 +179,15 @@ class ImageTree(QWidget):
         self._step = step
         self._status_config = config
         self.refresh_status()
+
+    def set_pending_changes(self, series: ImageSeries | None) -> None:
+        self.set_pending_groups([series] if series is not None else [])
+
+    def set_pending_groups(self, groups) -> None:
+        pending = {id(series) for series in groups}
+        if pending != self._pending_series_ids:
+            self._pending_series_ids = pending
+            self.refresh_status()
 
     def set_processing(self, series: ImageSeries | list[ImageSeries] | None, step: WorkflowStep | None) -> None:
         """Mark queued/running groups without reporting partial results as done."""
@@ -201,7 +203,7 @@ class ImageTree(QWidget):
             if not self._status_config.data.detect_barcodes:
                 return 'done', 'Image loaded; barcode checking is disabled'
             if image.barcode_detected:
-                return 'done', 'Barcode checked; see any barcode warning beside the image'
+                return 'done', 'Barcode checked'
         if id(series) in self._processing_series_ids and self._step == self._processing_step:
             return 'running', 'Queued or processing this group; waiting for the step to finish'
         if self._step == WorkflowStep.LOAD:
@@ -235,55 +237,64 @@ class ImageTree(QWidget):
         light = self.palette().color(QPalette.ColorRole.Base).lightness() >= 128
         colors = {
             'done': QColor('#237a45' if light else '#74c69d'),
+            'warning': QColor('#9a5b00' if light else '#ffad42'),
+            'modified': QColor('#d97706' if light else '#ffad42'),
             'pending': self.palette().color(QPalette.ColorRole.PlaceholderText),
             'outdated': QColor('#9a5b00' if light else '#ffad42'),
             'running': QColor('#1766a5' if light else '#80bfff'),
             'excluded': self.palette().color(QPalette.ColorRole.PlaceholderText),
         }
         symbols = {'done': '✓', 'pending': '○', 'outdated': '↻', 'running': '…', 'excluded': '—'}
-        total_done = total_images = 0
         for index in range(self._tree.topLevelItemCount()):
             group = self._tree.topLevelItem(index)
             series = self._item_to_data[id(group)]
             statuses = []
+            warnings = []
             for child_index in range(group.childCount()):
                 child = group.child(child_index)
                 image = self._item_to_data[id(child)]
                 status, detail = self._image_status(image, series, preprocess_hash, tracking_hash)
                 statuses.append(status)
-                child.setText(1, symbols[status])
+                warning = ''
+                if config.data.detect_barcodes and status != 'excluded':
+                    if image.barcode_mismatch:
+                        warning = f"Barcode mismatch: read '{image.barcode_read}', expected '{image.barcode}'"
+                    elif image.barcode_detected and image.barcode_not_found:
+                        warning = 'No barcode detected'
+                if warning:
+                    warnings.append(warning)
+                    detail += f'; {warning}'
+                pending = id(series) in self._pending_series_ids and status != 'excluded'
+                if pending:
+                    detail += '; Unapplied settings changes'
+                child.setText(1, '⚠' if warning else '●' if pending else symbols[status])
                 child.setTextAlignment(1, Qt.AlignmentFlag.AlignCenter)
-                child.setForeground(1, colors[status])
+                child.setForeground(1, colors['warning' if warning else 'modified' if pending else status])
                 child.setData(1, Qt.ItemDataRole.UserRole, status)
                 child.setToolTip(1, f'{label}: {detail}')
                 child.setData(1, Qt.ItemDataRole.AccessibleTextRole, f'{image.filename}: {label}. {detail}')
             count = sum(s != 'excluded' for s in statuses)
             done = statuses.count('done')
-            total_done += done
-            total_images += count
             status = ('excluded' if not count else 'done' if done == count else
                       'running' if 'running' in statuses else
                       'outdated' if 'outdated' in statuses else 'pending')
-            text = '—' if not count else f'{done}/{count}'
-            if status in ('done', 'running', 'outdated'):
-                text = f'{symbols[status]} {text}'
-            group.setText(1, text)
+            pending = id(series) in self._pending_series_ids and bool(count)
+            group.setText(1, '⚠' if warnings else '●' if pending else symbols[status])
             group.setTextAlignment(1, Qt.AlignmentFlag.AlignCenter)
-            group.setForeground(1, colors[status])
+            group.setForeground(1, colors['warning' if warnings else 'modified' if pending else status])
             group.setData(1, Qt.ItemDataRole.UserRole, status)
             detail = f'{label}: {done} of {count} images {verb}' if count else 'Set aside; excluded from processing'
             if status == 'running':
                 detail += '; queued or processing'
             elif status == 'outdated':
                 detail += '; settings changed'
+            if warnings:
+                detail += f'; barcode warnings in {len(warnings)} image(s)'
+            if pending:
+                detail += '; Unapplied settings changes'
             group.setToolTip(1, detail)
             group.setData(1, Qt.ItemDataRole.AccessibleTextRole, f'{series.group}: {detail}')
-        self._status_label.setText(f'{label} · {total_done}/{total_images} {verb}')
-        self._status_label.setToolTip(
-            f'{label}: {total_done} of {total_images} images {verb}.\n'
-            '✓ Complete   ○ Pending   ↻ Settings changed   … Processing group\n'
-            'Set-aside images are excluded. Barcode warnings are shown separately.')
-    
+
     def set_folder_path(self, folder_path: str) -> None:
         """Set the current folder path to display in the header."""
         import os
@@ -296,8 +307,6 @@ class ImageTree(QWidget):
     
     def _populate_tree(self) -> None:
         """Populate the tree with the current series data."""
-        light_background = self.palette().color(QPalette.ColorRole.Window).lightness() >= 128
-        warning_color = QColor("#9a5b00" if light_background else "#ffad42")
         for group_name, series in sorted(self._series_dict.items()):
             is_group_aside = series.is_set_aside
             
@@ -305,37 +314,9 @@ class ImageTree(QWidget):
             if self._filter_aside and is_group_aside:
                 continue
                 
-            # Create group item with status
-            
-            # Determine status
-            prefix = ""
-            color = None
-            tooltip = None
-            
-            if series.has_barcode_error:
-                prefix = "❌ "
-                error_count = series.barcode_error_count
-                suffix = f" (Err: {error_count})"
-                color = Qt.GlobalColor.red
-                tooltip = f"Barcode mismatch in {error_count} image(s)"
-            elif series.has_barcode_warning:
-                prefix = "⚠️ "
-                suffix = ""
-                color = warning_color
-                tooltip = "Barcode not detected in some images"
-            else:
-                suffix = ""
-            
-            group_text = f"{prefix}{group_name}{suffix}"
-            group_item = QTreeWidgetItem([group_text])
+            group_item = QTreeWidgetItem([group_name])
             group_item.setFlags(group_item.flags() | Qt.ItemFlag.ItemIsSelectable)
-            
-            if color:
-                group_item.setForeground(0, color)
-            
-            if tooltip:
-                group_item.setToolTip(0, tooltip)
-            
+
             # Strikethrough if set aside
             if is_group_aside:
                 font = group_item.font(0)
@@ -359,28 +340,8 @@ class ImageTree(QWidget):
                     
                 date_str = image_data.date.strftime("%Y-%m-%d") if image_data.date else "Unknown"
                 
-                # Image status
-                img_prefix = ""
-                img_color = None
-                img_tooltip = None
-                
-                if image_data.barcode_mismatch:
-                    img_prefix = "❌ "
-                    img_color = Qt.GlobalColor.red
-                    img_tooltip = f"Barcode mismatch: Read '{image_data.barcode_read}', Expected '{image_data.barcode}'"
-                elif image_data.barcode_not_found and image_data.barcode_detected:
-                    img_prefix = "⚠️ "
-                    img_color = warning_color
-                    img_tooltip = "No barcode detected"
-                
-                image_item = QTreeWidgetItem([f"{img_prefix}{date_str}"])
-                
-                if img_color:
-                    image_item.setForeground(0, img_color)
-                
-                if img_tooltip:
-                    image_item.setToolTip(0, img_tooltip)
-                
+                image_item = QTreeWidgetItem([date_str])
+
                 if is_img_aside:
                     font = image_item.font(0)
                     font.setStrikeOut(True)

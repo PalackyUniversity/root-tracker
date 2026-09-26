@@ -1,0 +1,573 @@
+{
+  "note": "One rough search box per group, expanded 12% around the first detected plate. Green centroids compared in original oriented-image coordinates to the legacy crop. Crop geometry intentionally changes; tracking statistics are not asserted equivalent.",
+  "groups": [
+    {
+      "dataset": "data_in_vitro",
+      "group": "RT_26_2-1",
+      "load_search_roi": [
+        0.5634999999999999,
+        0.472625,
+        0.5993333333333334,
+        0.89575,
+        -180.0
+      ],
+      "images": [
+        {
+          "file": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+          "plate_shape": [
+            2889,
+            2900
+          ],
+          "analysis_shape": [
+            2102,
+            2726
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-1.26-04-28.JPG",
+          "plate_shape": [
+            2888,
+            2875
+          ],
+          "analysis_shape": [
+            2101,
+            2703
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-1.26-04-29.JPG",
+          "plate_shape": [
+            2893,
+            3127
+          ],
+          "analysis_shape": [
+            2105,
+            2939
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-1.26-04-30.JPG",
+          "plate_shape": [
+            2889,
+            2897
+          ],
+          "analysis_shape": [
+            2102,
+            2723
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        }
+      ],
+      "tracking_statistics_count": 24,
+      "tracking_completed": true
+    },
+    {
+      "dataset": "data_in_vitro",
+      "group": "RT_26_2-32",
+      "load_search_roi": [
+        0.5633333333333332,
+        0.472125,
+        0.599,
+        0.89625,
+        -180.0
+      ],
+      "images": [
+        {
+          "file": "data_in_vitro/RT_26_2-32.26-04-27.JPG",
+          "plate_shape": [
+            2891,
+            2898
+          ],
+          "analysis_shape": [
+            2103,
+            2724
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-32.26-04-28.JPG",
+          "plate_shape": [
+            2885,
+            2908
+          ],
+          "analysis_shape": [
+            2099,
+            2734
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-32.26-04-29.JPG",
+          "plate_shape": [
+            2927,
+            2978
+          ],
+          "analysis_shape": [
+            2129,
+            2800
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.414
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-32.26-04-30.JPG",
+          "plate_shape": [
+            2897,
+            2925
+          ],
+          "analysis_shape": [
+            2107,
+            2749
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.414
+        }
+      ],
+      "tracking_statistics_count": 24,
+      "tracking_completed": true
+    },
+    {
+      "dataset": "data_in_vitro",
+      "group": "RT_26_2-56",
+      "load_search_roi": [
+        0.5618333333333333,
+        0.474625,
+        0.5893333333333334,
+        0.89025,
+        -180.0
+      ],
+      "images": [
+        {
+          "file": "data_in_vitro/RT_26_2-56.26-04-27.JPG",
+          "plate_shape": [
+            2871,
+            2852
+          ],
+          "analysis_shape": [
+            2088,
+            2680
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.414
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-56.26-04-28.JPG",
+          "plate_shape": [
+            2886,
+            2898
+          ],
+          "analysis_shape": [
+            2099,
+            2724
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-56.26-04-29.JPG",
+          "plate_shape": [
+            2892,
+            3016
+          ],
+          "analysis_shape": [
+            2104,
+            2836
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.414
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-56.26-04-30.JPG",
+          "plate_shape": [
+            2880,
+            2911
+          ],
+          "analysis_shape": [
+            2095,
+            2737
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.414
+        }
+      ],
+      "tracking_statistics_count": 24,
+      "tracking_completed": true
+    },
+    {
+      "dataset": "data_in_vitro",
+      "group": "RT_26_2-9",
+      "load_search_roi": [
+        0.5695833333333332,
+        0.477,
+        0.5958333333333333,
+        0.892,
+        -180.0
+      ],
+      "images": [
+        {
+          "file": "data_in_vitro/RT_26_2-9.26-04-27.JPG",
+          "plate_shape": [
+            2878,
+            2883
+          ],
+          "analysis_shape": [
+            2093,
+            2711
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-9.26-04-28.JPG",
+          "plate_shape": [
+            2890,
+            2902
+          ],
+          "analysis_shape": [
+            2102,
+            2728
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-9.26-04-29.JPG",
+          "plate_shape": [
+            2881,
+            2910
+          ],
+          "analysis_shape": [
+            2096,
+            2736
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro/RT_26_2-9.26-04-30.JPG",
+          "plate_shape": [
+            2878,
+            2855
+          ],
+          "analysis_shape": [
+            2093,
+            2683
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.414
+        }
+      ],
+      "tracking_statistics_count": 24,
+      "tracking_completed": true
+    },
+    {
+      "dataset": "data_in_vitro-predchozi",
+      "group": "RT_25_10-1",
+      "load_search_roi": [
+        0.6015833333333332,
+        0.4905000000000001,
+        0.5891666666666666,
+        0.8915,
+        -180.0
+      ],
+      "images": [
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-1.22-09-25.JPG",
+          "plate_shape": [
+            2876,
+            2851
+          ],
+          "analysis_shape": [
+            2092,
+            2679
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-1.24-09-25.JPG",
+          "plate_shape": [
+            2887,
+            2866
+          ],
+          "analysis_shape": [
+            2100,
+            2694
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-1.25-09-25.JPG",
+          "plate_shape": [
+            2884,
+            2862
+          ],
+          "analysis_shape": [
+            2098,
+            2690
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-1.26-09-25.JPG",
+          "plate_shape": [
+            2887,
+            2862
+          ],
+          "analysis_shape": [
+            2100,
+            2690
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        }
+      ],
+      "tracking_statistics_count": 24,
+      "tracking_completed": true
+    },
+    {
+      "dataset": "data_in_vitro-predchozi",
+      "group": "RT_25_10-34",
+      "load_search_roi": [
+        0.6013333333333333,
+        0.492875,
+        0.5873333333333334,
+        0.89175,
+        -180.0
+      ],
+      "images": [
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-34.22-09-25.JPG",
+          "plate_shape": [
+            2877,
+            2842
+          ],
+          "analysis_shape": [
+            2092,
+            2672
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-34.24-09-25.JPG",
+          "plate_shape": [
+            2879,
+            2853
+          ],
+          "analysis_shape": [
+            2094,
+            2681
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-34.25-09-25.JPG",
+          "plate_shape": [
+            2878,
+            2866
+          ],
+          "analysis_shape": [
+            2093,
+            2694
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-34.26-09-25.JPG",
+          "plate_shape": [
+            2876,
+            2874
+          ],
+          "analysis_shape": [
+            2092,
+            2702
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        }
+      ],
+      "tracking_statistics_count": 24,
+      "tracking_completed": true
+    },
+    {
+      "dataset": "data_in_vitro-predchozi",
+      "group": "RT_25_10-6",
+      "load_search_roi": [
+        0.6026666666666666,
+        0.48625,
+        0.5923333333333334,
+        0.893,
+        -180.0
+      ],
+      "images": [
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-6.22-09-25.JPG",
+          "plate_shape": [
+            2880,
+            2866
+          ],
+          "analysis_shape": [
+            2095,
+            2694
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-6.24-09-25.JPG",
+          "plate_shape": [
+            2884,
+            2870
+          ],
+          "analysis_shape": [
+            2098,
+            2698
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-6.25-09-25.JPG",
+          "plate_shape": [
+            2891,
+            2872
+          ],
+          "analysis_shape": [
+            2103,
+            2700
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-6.26-09-25.JPG",
+          "plate_shape": [
+            2887,
+            2870
+          ],
+          "analysis_shape": [
+            2100,
+            2698
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        }
+      ],
+      "tracking_statistics_count": 24,
+      "tracking_completed": true
+    },
+    {
+      "dataset": "data_in_vitro-predchozi",
+      "group": "RT_25_10-9",
+      "load_search_roi": [
+        0.5999166666666665,
+        0.4895000000000001,
+        0.5891666666666666,
+        0.8885,
+        -180.0
+      ],
+      "images": [
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-9.22-09-25.JPG",
+          "plate_shape": [
+            2866,
+            2851
+          ],
+          "analysis_shape": [
+            2085,
+            2679
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-9.24-09-25.JPG",
+          "plate_shape": [
+            2884,
+            2850
+          ],
+          "analysis_shape": [
+            2098,
+            2678
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 0.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-9.25-09-25.JPG",
+          "plate_shape": [
+            2893,
+            2854
+          ],
+          "analysis_shape": [
+            2105,
+            2682
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        },
+        {
+          "file": "data_in_vitro-predchozi/RT_25_10-9.26-09-25.JPG",
+          "plate_shape": [
+            2887,
+            2864
+          ],
+          "analysis_shape": [
+            2100,
+            2692
+          ],
+          "old_plants": 6,
+          "new_plants": 6,
+          "max_centroid_shift_source_px": 1.0
+        }
+      ],
+      "tracking_statistics_count": 24,
+      "tracking_completed": true
+    }
+  ]
+}

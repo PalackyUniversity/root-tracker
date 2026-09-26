@@ -64,6 +64,9 @@ class ImageData:
     diff: Optional[np.ndarray] = field(default=None, repr=False)
     image_annotated: Optional[np.ndarray] = field(default=None, repr=False)
     
+    # Affine mapping from detected-plate pixels to the displayed processed image.
+    plate_transform: list[float] = field(default_factory=list)
+
     # Plant detection results
     green_areas: list[int] = field(default_factory=list)
     positions_x: list[int] = field(default_factory=list)
@@ -92,6 +95,7 @@ class ImageData:
     def clear_preprocessing_results(self) -> None:
         """Clear all preprocessing results (and tracking, since it depends on them)."""
         self.clear_tracking_results()
+        self.plate_transform = []
         self.image = None
         self.process = None
         self.canny = None
@@ -131,6 +135,7 @@ class ImageData:
             diff=self.diff.copy() if self.diff is not None else None,
             image_annotated=self.image_annotated.copy() if self.image_annotated is not None else None,
             green_areas=self.green_areas.copy(),
+            plate_transform=self.plate_transform.copy(),
             positions_x=self.positions_x.copy(),
             positions_y=self.positions_y.copy(),
             total_length=self.total_length,

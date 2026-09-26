@@ -30,7 +30,7 @@ _SCALAR_FIELDS = (
 
 # List fields to persist in metadata (per ImageData)
 _LIST_FIELDS = (
-    "plant_length", "longest", "positions_x", "positions_y", "green_areas",
+    "plant_length", "longest", "positions_x", "positions_y", "green_areas", "plate_transform",
 )
 
 # Barcode fields to persist in metadata (per ImageData)

@@ -1,0 +1,391 @@
+{
+  "baseline_commit": "c085ba3",
+  "legacy_crop_executed_from_original_source": true,
+  "configuration": "configs/in_vitro.yaml",
+  "results": [
+    {
+      "file": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        0,
+        0,
+        6000,
+        4000
+      ],
+      "union_area_fraction": 1.0,
+      "largest_contour_bounds_xywh": [
+        1169,
+        665,
+        2900,
+        2889
+      ],
+      "significant_contours": 135,
+      "selected_fraction": 0.3566
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-2.26-04-27.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        0,
+        0,
+        6000,
+        4000
+      ],
+      "union_area_fraction": 1.0,
+      "largest_contour_bounds_xywh": [
+        1175,
+        664,
+        2896,
+        2885
+      ],
+      "significant_contours": 65,
+      "selected_fraction": 0.3616
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-3.26-04-27.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        0,
+        0,
+        6000,
+        4000
+      ],
+      "union_area_fraction": 1.0,
+      "largest_contour_bounds_xywh": [
+        1169,
+        665,
+        2902,
+        2891
+      ],
+      "significant_contours": 66,
+      "selected_fraction": 0.358
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-4.26-04-28.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        0,
+        0,
+        6000,
+        4000
+      ],
+      "union_area_fraction": 1.0,
+      "largest_contour_bounds_xywh": [
+        1113,
+        647,
+        2908,
+        2886
+      ],
+      "significant_contours": 93,
+      "selected_fraction": 0.3588
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-5.26-04-29.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        0,
+        0,
+        6000,
+        4000
+      ],
+      "union_area_fraction": 1.0,
+      "largest_contour_bounds_xywh": [
+        883,
+        641,
+        3148,
+        2895
+      ],
+      "significant_contours": 2360,
+      "selected_fraction": 0.4482
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-6.26-04-29.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        0,
+        0,
+        6000,
+        4000
+      ],
+      "union_area_fraction": 1.0,
+      "largest_contour_bounds_xywh": [
+        1092,
+        638,
+        2929,
+        2901
+      ],
+      "significant_contours": 248,
+      "selected_fraction": 0.3585
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-7.26-04-29.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        0,
+        0,
+        6000,
+        4000
+      ],
+      "union_area_fraction": 1.0,
+      "largest_contour_bounds_xywh": [
+        1115,
+        638,
+        2906,
+        2895
+      ],
+      "significant_contours": 67,
+      "selected_fraction": 0.3361
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-9.26-04-30.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        0,
+        0,
+        6000,
+        3866
+      ],
+      "union_area_fraction": 0.9665,
+      "largest_contour_bounds_xywh": [
+        1191,
+        658,
+        2855,
+        2878
+      ],
+      "significant_contours": 50,
+      "selected_fraction": 0.3729
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-1.22-09-25.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        965,
+        600,
+        3816,
+        3476
+      ],
+      "union_area_fraction": 0.3416,
+      "largest_contour_bounds_xywh": [
+        965,
+        600,
+        2851,
+        2876
+      ],
+      "significant_contours": 2,
+      "selected_fraction": 0.3061
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-20.22-09-25.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        955,
+        593,
+        3821,
+        3450
+      ],
+      "union_area_fraction": 0.3412,
+      "largest_contour_bounds_xywh": [
+        955,
+        593,
+        2866,
+        2857
+      ],
+      "significant_contours": 1,
+      "selected_fraction": 0.2934
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-31.22-09-25.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        982,
+        587,
+        3816,
+        3462
+      ],
+      "union_area_fraction": 0.3395,
+      "largest_contour_bounds_xywh": [
+        982,
+        603,
+        2834,
+        2859
+      ],
+      "significant_contours": 2,
+      "selected_fraction": 0.3066
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-42.22-09-25.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        963,
+        599,
+        3811,
+        3473
+      ],
+      "union_area_fraction": 0.341,
+      "largest_contour_bounds_xywh": [
+        963,
+        599,
+        2848,
+        2874
+      ],
+      "significant_contours": 1,
+      "selected_fraction": 0.3112
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-52.26-09-25.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        1095,
+        585,
+        3971,
+        3485
+      ],
+      "union_area_fraction": 0.3475,
+      "largest_contour_bounds_xywh": [
+        1115,
+        585,
+        2856,
+        2900
+      ],
+      "significant_contours": 89,
+      "selected_fraction": 0.2825
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-63.26-09-25.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        1095,
+        586,
+        3962,
+        3479
+      ],
+      "union_area_fraction": 0.3456,
+      "largest_contour_bounds_xywh": [
+        1095,
+        586,
+        2867,
+        2893
+      ],
+      "significant_contours": 69,
+      "selected_fraction": 0.284
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-74.26-09-25.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        1101,
+        588,
+        3970,
+        3483
+      ],
+      "union_area_fraction": 0.3461,
+      "largest_contour_bounds_xywh": [
+        1129,
+        588,
+        2841,
+        2895
+      ],
+      "significant_contours": 58,
+      "selected_fraction": 0.2876
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-9.26-09-25.JPG",
+      "shape": [
+        4000,
+        6000
+      ],
+      "mask_exact": true,
+      "crop_exact_with_yaml": true,
+      "union_bounds_xyxy": [
+        1095,
+        595,
+        3959,
+        3482
+      ],
+      "union_area_fraction": 0.3445,
+      "largest_contour_bounds_xywh": [
+        1095,
+        595,
+        2864,
+        2887
+      ],
+      "significant_contours": 23,
+      "selected_fraction": 0.2818
+    }
+  ]
+}

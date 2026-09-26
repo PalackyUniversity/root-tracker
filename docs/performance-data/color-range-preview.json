@@ -1,0 +1,36 @@
+{
+  "baseline_profile_ms_per_refresh": 705.3,
+  "notes": "Offscreen Qt, warm previews; original-resolution HSV threshold and cleanup, screen-resolution compositing. Automatic crop geometry refreshes on dialog close. Includes synchronous setting edit and refresh; excludes 16 ms coalescing timer and physical screen presentation.",
+  "images": [
+    {
+      "image": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+      "shape": [
+        4000,
+        6000,
+        3
+      ],
+      "warm_edit_and_refresh_median_ms": 36.14,
+      "max_ms": 39.52
+    },
+    {
+      "image": "data_in_vitro/RT_26_2-45.26-04-27.JPG",
+      "shape": [
+        4000,
+        6000,
+        3
+      ],
+      "warm_edit_and_refresh_median_ms": 38.55,
+      "max_ms": 41.66
+    },
+    {
+      "image": "data_in_vitro/RT_26_2-9.26-04-30.JPG",
+      "shape": [
+        4000,
+        6000,
+        3
+      ],
+      "warm_edit_and_refresh_median_ms": 38.24,
+      "max_ms": 39.38
+    }
+  ]
+}

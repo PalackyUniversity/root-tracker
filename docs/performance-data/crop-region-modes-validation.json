@@ -1,0 +1,116 @@
+{
+  "images": [
+    {
+      "file": "data_in_vitro/RT_26_2-1.26-04-27.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-2.26-04-27.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-3.26-04-27.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-4.26-04-28.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-5.26-04-29.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-6.26-04-29.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-7.26-04-29.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro/RT_26_2-9.26-04-30.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-1.22-09-25.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-20.22-09-25.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-31.22-09-25.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-42.22-09-25.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-52.26-09-25.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-63.26-09-25.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-74.26-09-25.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    },
+    {
+      "file": "data_in_vitro-predchozi/RT_25_10-9.26-09-25.JPG",
+      "largest_matches_prior": true,
+      "all_patches_matches_legacy_bounds": true,
+      "box_only_exact": true,
+      "rotated_finished_preview_exact": true
+    }
+  ]
+}

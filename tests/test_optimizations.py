@@ -119,6 +119,7 @@ class OptimizationTests(unittest.TestCase):
                 original.add_image(ImageData(datetime(2026, 1, 1), 'input.jpg', 'test'))
                 original.images[0].image = image
                 original.images[0].positions_x = [4, 15]
+                original.images[0].plate_transform = [0.96, -0.28, -41.5, 0.28, 0.96, -17.25]
                 original.pipeline_state.preprocessed = True
                 self.assertIsInstance(series_cache.save_series(original, config), Path)
                 restored = ImageSeries(group='test')
@@ -126,6 +127,7 @@ class OptimizationTests(unittest.TestCase):
                 self.assertTrue(series_cache.load_series(restored, config))
                 np.testing.assert_array_equal(restored.images[0].image, image)
                 self.assertEqual(restored.images[0].positions_x, [4, 15])
+                self.assertEqual(restored.images[0].plate_transform, original.images[0].plate_transform)
                 self.assertTrue(restored.pipeline_state.preprocessed)
 
     def test_threshold_holes_borders_noise_and_empty(self):

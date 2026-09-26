@@ -1,0 +1,17 @@
+{
+  "baseline_mean_switch_ms": 255.8,
+  "cold_first_image_ms": 194.54,
+  "prepared_switch_ms": [
+    19.76,
+    20.34,
+    20.3,
+    18.68,
+    19.56,
+    20.19,
+    19.94,
+    19.79,
+    20.06
+  ],
+  "median_prepared_ms": 19.94,
+  "notes": "24 MP JPEGs, full-resolution pixels and plate detection. Adjacent images prepared during idle time before timing. Offscreen Qt; excludes physical screen presentation. First uncached image still needs decode and detection."
+}

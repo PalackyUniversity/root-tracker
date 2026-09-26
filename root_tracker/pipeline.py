@@ -213,18 +213,10 @@ class RootTrackingPipeline:
         if original is None:
             original = cv2.imread(image_data.path)
         
-        # Rotate if needed
-        if self.config.rotation:
-            original = self.cropper.rotate(original)
-        
-        # Auto-crop to blue background
-        cropped = self.cropper.auto_crop_to_blue_background(original)
-        
+        cropped = self.cropper.process(original)
+
         # Detect green areas (plant stems)
         green_contours, _ = self.green_detector.find_green_contours(cropped)
-        
-        # Find where to crop (below green areas)
-        min_y = self.green_detector.find_crop_start(green_contours, cropped.shape[0])
         
         # Mask out green areas and adjust positions
         # Masking returns its own buffer, so retain the unmasked crop as a view
@@ -239,37 +231,18 @@ class RootTrackingPipeline:
             # If clustering fails, return early
             return
         
-        # Store results (adjusted for crop)
-        image_data.positions_x = pos_x
-        image_data.positions_y = [y - min_y for y in pos_y]
+        from .preprocessing.roi import extract, transform_points
+        analysis_box = self.cropper.analysis_roi(cropped.shape)
+        cropped, matrix = extract(cropped, analysis_box)
+        image_data.image, _ = extract(origo, analysis_box)
+        image_data.plate_transform = matrix.ravel().tolist()
+        positions = transform_points(list(zip(pos_x, pos_y)), matrix)
+        image_data.positions_x = [int(round(p[0])) for p in positions]
+        image_data.positions_y = [int(round(p[1])) for p in positions]
         image_data.green_areas = areas
-        
-        # Crop to root region
-        # A full-width row slice of the owned mask is already contiguous.
-        cropped = cropped[min_y:]
-        display_crop = origo[min_y:]
-        
-        # Remove background gradient
         image_data.process = self.background_remover.remove_gradient(cropped)
         image_data.canny = self.background_remover.compute_canny_edges(image_data.process)
 
-        # Crop the configured margins off entirely instead of blacking them out,
-        # so the dead border is not carried through registration, tracking, or the
-        # UI preview. Margins are re-derived from the original image on every run
-        # (margin_* are part of preprocess_config_hash), so lowering a margin later
-        # simply keeps more pixels rather than losing them permanently.
-        h, w = display_crop.shape[:2]
-        top, bottom, left, right = self.cropper.margin_offsets(h, w)
-        row, col = slice(top, h - bottom), slice(left, w - right)
-        image_data.image = display_crop[row, col].copy()
-        # These CV outputs already own their buffers. Copy only when trimming
-        # margins, so smaller results do not retain the full backing arrays.
-        if any((top, bottom, left, right)):
-            image_data.process = image_data.process[row, col].copy()
-            image_data.canny = image_data.canny[row, col].copy()
-        image_data.positions_x = [x - left for x in image_data.positions_x]
-        image_data.positions_y = [y - top for y in image_data.positions_y]
-    
     def preprocess_series(self, series: ImageSeries, progress_callback: callable = None) -> None:
         """
         Preprocess all images in a series.

@@ -27,7 +27,6 @@ class ImageRegistrator:
     
     def __init__(self, config: Config) -> None:
         self.config = config
-        self._margin_divisor = 4  # Margin is 1/4 of image dimensions
     
     def _coarse_match_location(
         self, target: np.ndarray, template: np.ndarray
@@ -199,9 +198,14 @@ class ImageRegistrator:
         """
         h, w = template_canny.shape[:2]
         
-        # Calculate margins for border expansion
-        mx = target_canny.shape[1] // self._margin_divisor
-        my = target_canny.shape[0] // self._margin_divisor
+        # Respect the configured search border on each side. Smaller targets
+        # still need enough padding to fit the reference at least once.
+        ratio = self.config.registration.margin_ratio
+        if not np.isfinite(ratio) or ratio < 0:
+            raise ValueError("Registration margin_ratio must be finite and non-negative")
+        th, tw = target_canny.shape[:2]
+        mx = max(int(tw * ratio), (w - tw + 1) // 2, 0)
+        my = max(int(th * ratio), (h - th + 1) // 2, 0)
         
         # Add border to target images
         target_canny_padded = cv2.copyMakeBorder(
@@ -276,6 +280,10 @@ class ImageRegistrator:
             images[n + 1].canny = aligned_canny
             images[n + 1].process = aligned_process
             
+            if images[n + 1].plate_transform:
+                images[n + 1].plate_transform[2] += offset_x
+                images[n + 1].plate_transform[5] += offset_y
+
             # Update position coordinates
             images[n + 1].positions_x = [x + offset_x for x in images[n + 1].positions_x]
             images[n + 1].positions_y = [y + offset_y for y in images[n + 1].positions_y]

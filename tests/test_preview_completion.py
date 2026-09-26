@@ -71,6 +71,21 @@ class PreviewCompletionTests(unittest.TestCase):
         color = item.pixmap().toImage().pixelColor(20, 20)
         self.assertEqual((color.red(), color.green(), color.blue()), (0, 0, 255))
 
+    def test_barcode_toggle_immediately_updates_overlay_without_detection(self):
+        self.window._current_series = self.series
+        image = self.series.images[0]
+        self.window._current_image = image
+        image.barcode_detected = True
+        image.barcode_not_found = True
+        with patch.object(self.window._settings, 'setValue'), patch.object(self.window._pipeline, 'iter_detect_barcodes') as detect:
+            self.window._on_detect_barcodes_toggled(True)
+            self.assertTrue(self.window._image_viewer._barcode_items)
+            self.window._on_detect_barcodes_toggled(False)
+            self.assertFalse(self.window._image_viewer._barcode_items)
+            self.window._on_detect_barcodes_toggled(True)
+            self.assertTrue(self.window._image_viewer._barcode_items)
+            detect.assert_not_called()
+
     def test_first_selection_populates_preview_after_barcode_detection(self):
         self.click_and_wait()
         self.assert_blue_preview()

@@ -43,8 +43,8 @@ class TreeStatusTests(unittest.TestCase):
         self.mark_preprocessed()
         self.tree.set_step(WorkflowStep.PREPROCESS, self.config)
         self.assertEqual([self.status(i) for i in range(3)], ['done', 'done', 'pending'])
-        self.assertIn('2/3', self.tree._tree.topLevelItem(0).text(1))
-        self.assertIn('Preprocess', self.tree._status_label.text())
+        self.assertIn('2 of 3', self.tree._tree.topLevelItem(0).toolTip(1))
+        self.assertEqual(self.tree._tree.topLevelItem(0).text(1), '○')
 
     def test_tracking_is_distinct_and_zero_root_length_counts_as_done(self):
         self.mark_preprocessed()
@@ -84,6 +84,52 @@ class TreeStatusTests(unittest.TestCase):
         self.assertIn('checked', group.child(0).toolTip(1).lower())
         self.assertTrue(group.child(0).data(1, Qt.ItemDataRole.AccessibleTextRole))
 
+    def test_barcode_warnings_replace_right_status_and_toggle_without_rebuilding(self):
+        self.config.data.detect_barcodes = True
+        self.images[0].barcode_detected = True
+        self.images[0].barcode_not_found = True
+        self.images[1].barcode_detected = True
+        self.images[1].barcode_mismatch = True
+        self.images[1].barcode_read = 'wrong'
+        self.tree.refresh()
+        self.tree.set_step(WorkflowStep.LOAD, self.config)
+        group = self.tree._tree.topLevelItem(0)
+        self.assertEqual(group.text(0), 'group')
+        for i in (0, 1):
+            self.assertEqual(group.child(i).text(0), self.images[i].date.strftime('%Y-%m-%d'))
+            self.assertEqual(group.child(i).text(1), '⚠')
+        self.assertEqual(group.text(1), '⚠')
+        self.assertIn('wrong', group.child(1).toolTip(1))
+        self.config.data.detect_barcodes = False
+        self.tree.refresh_status()
+        self.assertIs(self.tree._tree.topLevelItem(0), group)
+        self.assertEqual(group.text(1), '✓')
+        for i in (0, 1):
+            self.assertEqual(group.child(i).text(1), '✓')
+            self.assertNotIn('No barcode detected', group.child(i).toolTip(1))
+        self.config.data.detect_barcodes = True
+        self.tree.refresh_status()
+        self.assertEqual(group.text(1), '⚠')
+        self.assertEqual(group.child(0).text(1), '⚠')
+
+    def test_pending_dot_overlays_success_without_invalidating_results(self):
+        self.mark_preprocessed()
+        self.tree.set_step(WorkflowStep.PREPROCESS, self.config)
+        group = self.tree._tree.topLevelItem(0)
+        self.assertEqual(group.child(0).text(1), '✓')
+        self.tree.set_pending_changes(self.series)
+        self.assertEqual(group.child(0).text(1), '●')
+        self.assertTrue(self.series.pipeline_state.preprocessed)
+        self.assertEqual(self.status(0), 'done')
+        self.config.data.detect_barcodes = True
+        self.images[0].barcode_detected = True
+        self.images[0].barcode_not_found = True
+        self.tree.refresh_status()
+        self.assertEqual(group.child(0).text(1), '⚠')
+        self.assertIn('Unapplied', group.child(0).toolTip(1))
+        self.tree.set_pending_changes(None)
+        self.assertEqual(group.child(1).text(1), '✓')
+
     def test_disabled_barcode_check_shows_loaded_and_aside_is_excluded(self):
         self.config.data.detect_barcodes = False
         self.images[2].path = '/images/aside/2.jpg'
@@ -91,7 +137,7 @@ class TreeStatusTests(unittest.TestCase):
         self.tree.set_step(WorkflowStep.LOAD, self.config)
         self.assertEqual(self.status(0), 'done')
         self.assertEqual(self.status(2), 'excluded')
-        self.assertIn('2/2', self.tree._tree.topLevelItem(0).text(1))
+        self.assertEqual(self.tree._tree.topLevelItem(0).text(1), '✓')
 
     def test_active_group_is_not_reported_as_complete_until_registration_finishes(self):
         self.mark_preprocessed()

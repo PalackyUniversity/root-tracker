@@ -5,6 +5,7 @@ Integrates all components into the main window layout.
 """
 
 import os
+import math
 import multiprocessing as mp
 from multiprocessing import Manager
 import shutil
@@ -34,6 +35,7 @@ from .settings_panel import SettingsPanel
 from .dialogs import LoadDialog
 from .masking_tools import MaskTool
 from .menus import MenuBarPopup
+from .operation_progress import OperationProgress
 from .theme import button_stylesheet
 
 
@@ -102,6 +104,14 @@ class ProcessingContext:
         if self.main_window._executor is not None:
             self.main_window._executor = None
         
+        continuing = bool(not self.was_cancelled and self.next_operation)
+        self.main_window._finish_operation_progress(not self.was_cancelled, continuing)
+        if continuing:
+            # Keep one visible bar and a locked UI across worker transitions.
+            self.main_window._context = None
+            self.next_operation()
+            return False
+
         # Hide progress indicators
         self.main_window._progress_bar.hide()
         self.main_window._processing_label.hide()
@@ -119,10 +129,6 @@ class ProcessingContext:
         # Restore focus to tree
         self.main_window._image_tree.setFocus()
         
-        # Process next operation in chain if not cancelled
-        if not self.was_cancelled and self.next_operation:
-            self.next_operation()
-        
         # Don't suppress exceptions
         return False
 
@@ -130,7 +136,8 @@ class ProcessingContext:
 class ProcessWorker(QThread):
     """Worker thread for processing operations to keep UI responsive."""
     
-    progress = Signal(int, int)  # current, total
+    phase = Signal(str)
+    progress = Signal(int, int)  # percentage within this operation
     finished = Signal(bool, str)  # success, error_msg
     
     def __init__(self, pipeline, series, config, operation='preprocess'):
@@ -170,13 +177,17 @@ class ProcessWorker(QThread):
         def progress_callback(current, total):
             if self._cancelled:
                 raise InterruptedError("Cancelled")
-            self.progress.emit(current, total)
+            self.progress.emit(int(75 * current / max(1, total)), 100)
 
+        self.phase.emit("Preparing images")
         self.pipeline.preprocess_series(self.series, progress_callback=progress_callback)
 
         if not self._cancelled:
             # Register the series
+            self.phase.emit("Aligning images")
+            self.progress.emit(75, 100)
             self.pipeline.register_series(self.series)
+            self.progress.emit(92, 100)
             
             # Update pipeline state
             self.series.pipeline_state.preprocessed = True
@@ -185,6 +196,7 @@ class ProcessWorker(QThread):
             
             # Save to cache
             from ..io import series_cache
+            self.phase.emit("Saving results")
             series_cache.save_series(self.series, self.config)
     
     def _run_track(self):
@@ -196,7 +208,7 @@ class ProcessWorker(QThread):
         def progress_callback(current, total):
             if self._cancelled:
                 raise InterruptedError("Cancelled")
-            self.progress.emit(current, total)
+            self.progress.emit(int(85 * current / max(1, total)), 100)
         
         stats = self.pipeline.track_and_analyze_series(
             self.series,
@@ -211,6 +223,7 @@ class ProcessWorker(QThread):
             
             # Save to cache
             from ..io import series_cache
+            self.phase.emit("Saving results")
             series_cache.save_series(self.series, self.config)
     
     def _run_barcode_detection(self):
@@ -218,11 +231,12 @@ class ProcessWorker(QThread):
         total_images = len(self.series.images)
         for i, image_data in enumerate(self.pipeline.iter_detect_barcodes(
                 self.series.images, cancelled=lambda: self._cancelled)):
-            self.progress.emit(i + 1, total_images)
+            self.progress.emit(int(90 * (i + 1) / max(1, total_images)), 100)
         
         if not self._cancelled:
             # Save to cache
             from ..io import series_cache
+            self.phase.emit("Saving results")
             series_cache.save_series(self.series, self.config)
 
 
@@ -251,6 +265,9 @@ class MainWindow(QMainWindow):
         # Pipeline and data state
         self._pipeline: RootTrackingPipeline | None = None
         self._series_dict: dict[str, ImageSeries] = {}
+        self._settings_drafts = {}
+        self._mask_drafts = set()
+        self._restoring_settings = False
         self._current_image: ImageData | None = None
         self._current_series: ImageSeries | None = None
         
@@ -258,6 +275,7 @@ class MainWindow(QMainWindow):
         self._state: ProcessingState = ProcessingState.IDLE
         self._context: ProcessingContext | None = None
         self._cancel_requested = mp.Event()
+        self._operation_progress = None
         self._worker: ProcessWorker | None = None  # Current worker thread
         self._executor: ProcessPoolExecutor | None = None  # Current batch executor
         self._step_before_processing: WorkflowStep | None = None  # Track step to restore on cancel
@@ -273,6 +291,8 @@ class MainWindow(QMainWindow):
         
         self._setup_ui()
         self._setup_menu()
+        from .roi_editor import RoiEditor
+        self._roi_editor = RoiEditor(self)
         self._connect_signals()
         
         # Start on Load step with settings panel and image viewer hidden
@@ -289,6 +309,8 @@ class MainWindow(QMainWindow):
     
     def closeEvent(self, event):
         """Handle application close - cleanup any running workers."""
+        self._settings_panel.finish_color_picker()
+        self._roi_editor.close()
         # Cancel any running operations
         if self._worker is not None:
             if self._worker.isRunning():
@@ -349,8 +371,9 @@ class MainWindow(QMainWindow):
         
         self._status_bar = QStatusBar()
         self._status_bar.setSizeGripEnabled(False)  # Remove resize grip
+        # Match the status bar's two-pixel bottom inset at the right edge.
+        self._status_bar.setContentsMargins(0, 0, 2, 0)
         self.setStatusBar(self._status_bar)
-        
         # Left: Zoom controls (as regular widgets - stay on left)
         self._fit_btn = QPushButton("Fit")
         self._fit_btn.setFixedSize(40, 26)
@@ -394,11 +417,6 @@ class MainWindow(QMainWindow):
         self._next_step_btn.clicked.connect(self._on_next_step_clicked)
         self._status_bar.addPermanentWidget(self._next_step_btn)
         
-        # Small spacer after buttons
-        spacer2 = QWidget()
-        spacer2.setFixedWidth(0.25)
-        self._status_bar.addPermanentWidget(spacer2)
-    
     def _setup_menu(self) -> None:
         """Set up the menu bar."""
         menubar = self.menuBar()
@@ -451,6 +469,7 @@ class MainWindow(QMainWindow):
         
         # View menu
         view_menu = MenuBarPopup(menubar, "&View")
+        view_menu.setToolTipsVisible(False)
         menubar.addMenu(view_menu)
         
         fit_action = QAction("&Fit Image", self)
@@ -473,14 +492,14 @@ class MainWindow(QMainWindow):
         self._auto_preview_action = QAction("&Auto Preview", self)
         self._auto_preview_action.setCheckable(True)
         self._auto_preview_action.setChecked(True)  # Default on
-        self._auto_preview_action.setToolTip("Automatically preview preprocessing when group is selected")
+        self._auto_preview_action.setStatusTip("Automatically run any missing barcode, preprocessing or tracking work for the selected group and current step.")
         self._auto_preview_action.toggled.connect(self._on_auto_preview_toggled)
         view_menu.addAction(self._auto_preview_action)
         
         self._detect_barcodes_action = QAction("Detect &Barcodes", self)
         self._detect_barcodes_action.setCheckable(True)
         self._detect_barcodes_action.setChecked(self._config.data.detect_barcodes)
-        self._detect_barcodes_action.setToolTip("Automatically detect and verify barcodes in images")
+        self._detect_barcodes_action.setStatusTip("Read barcodes from photographs and compare them with the identifiers in their filenames. Turn off for images without barcodes.")
         self._detect_barcodes_action.toggled.connect(self._on_detect_barcodes_toggled)
         view_menu.addAction(self._detect_barcodes_action)
         
@@ -506,6 +525,8 @@ class MainWindow(QMainWindow):
         self._image_tree.delete_requested.connect(self._on_delete_requested)
         
         # Settings panel
+        self._settings_panel.dirty_changed.connect(self._on_settings_dirty_changed)
+        self._settings_panel.discard_requested.connect(self._discard_settings_changes)
         self._settings_panel.apply_requested.connect(self._on_apply_settings)
         self._settings_panel.apply_all_requested.connect(self._on_apply_all_settings)
         self._settings_panel.redetect_requested.connect(self._on_redetect_plants)
@@ -547,6 +568,13 @@ class MainWindow(QMainWindow):
         
         try:
             self._series_dict = self._pipeline.load_images()
+            self._settings_panel.finish_color_picker()
+            self._roi_editor.reset()
+            self._settings_drafts.clear()
+            self._mask_drafts.clear()
+            self._current_series = None
+            self._current_image = None
+            self._restore_settings_draft()
             
             if not self._series_dict:
                 QMessageBox.warning(
@@ -561,12 +589,13 @@ class MainWindow(QMainWindow):
             
             # Show image viewer now that we have images
             self._image_viewer.show()
+            self._settings_panel.show()
             
             # Select first image
             self._image_tree.select_first_image()
             
             # Fit image to view after UI updates
-            QTimer.singleShot(0, self._image_viewer.fit_in_view)
+            QTimer.singleShot(0, self._image_viewer, self._image_viewer.fit_in_view)
             
             # Mark step as complete but DON'T auto-advance
             self._workflow_bar.mark_step_completed(WorkflowStep.LOAD)
@@ -592,11 +621,14 @@ class MainWindow(QMainWindow):
         step = self._workflow_bar.get_current_step()
         if self._state != ProcessingState.IDLE:
             return
+        selected_series = self._image_tree.get_selected_series()
+        if selected_series is not self._current_series:
+            self._activate_group_settings(selected_series)
         self._current_image = image_data
-        self._current_series = self._image_tree.get_selected_series()
+        self._current_series = selected_series
 
         # Reload from cache if arrays were freed
-        if self._current_series is not None:
+        if self._current_series is not None and step != WorkflowStep.LOAD:
             self._ensure_series_loaded(self._current_series)
 
         # Auto-detect barcodes for this group if on LOAD step and auto-preview enabled
@@ -649,8 +681,7 @@ class MainWindow(QMainWindow):
         """Handle group selection in tree."""
         if self._state != ProcessingState.IDLE:
             return
-        # Reset settings for new group (discard unsaved changes)
-        self._settings_panel.reset_for_group()
+        self._activate_group_settings(series)
 
         # Deselect mask tools when switching groups
         self._settings_panel.deselect_mask_tools()
@@ -659,7 +690,8 @@ class MainWindow(QMainWindow):
         self._current_image = series.images[0] if series.images else None
 
         # Reload from cache if arrays were freed
-        self._ensure_series_loaded(series)
+        if self._workflow_bar.get_current_step() != WorkflowStep.LOAD:
+            self._ensure_series_loaded(series)
 
         # Initialize working_mask if needed
         if series.working_mask is None and series.user_mask is not None:
@@ -702,33 +734,35 @@ class MainWindow(QMainWindow):
         # Update button states for new selection
         self._update_process_button_states()
     
-    def _display_image(self, image_data: ImageData) -> None:
+    def _display_image(self, image_data: ImageData, *, preserve_view: bool = False) -> None:
         """Display an image in the viewer."""
+        step = self._workflow_bar.get_current_step()
         # Reload from cache if arrays were freed
-        if self._current_series is not None:
+        if self._current_series is not None and step != WorkflowStep.LOAD:
             self._ensure_series_loaded(self._current_series)
 
         # Determine which image to show based on workflow step
         step = self._workflow_bar.get_current_step()
+        editor_presented = self._roi_editor.present(image_data, step, preserve_view=preserve_view)
         
         if step == WorkflowStep.LOAD:
             # Show original image with barcode overlay
-            image = cv2.imread(image_data.path)
-            
-            # No rotation in LOAD step - show raw image
-            self._image_viewer.set_image(image)
+            image = None if editor_presented else cv2.imread(image_data.path)
             
             # Draw barcode overlay if detected
-            if image_data.barcode_rect is not None:
+            if not self._config.data.detect_barcodes:
+                self._image_viewer.clear_barcode_overlay()
+            elif image_data.barcode_rect is not None:
                 label = image_data.barcode_read
                 if image_data.barcode_mismatch:
                     label = f"X {label} (expected: {image_data.barcode})"
                 
-                self._image_viewer.set_barcode_overlay(
-                    image_data.barcode_rect, 
-                    label, 
-                    image_data.barcode_mismatch
-                )
+                rectangle = (self._roi_editor.load_preview_rect(image_data.barcode_rect)
+                             if editor_presented else image_data.barcode_rect)
+                if rectangle is None:
+                    self._image_viewer.clear_barcode_overlay()
+                else:
+                    self._image_viewer.set_barcode_overlay(rectangle, label, image_data.barcode_mismatch)
             elif image_data.barcode_not_found and image_data.barcode_detected:
                 # Show generic warning overlay
                 self._image_viewer.set_barcode_overlay(
@@ -743,9 +777,10 @@ class MainWindow(QMainWindow):
             self._image_viewer.clear_centroids()
         elif step == WorkflowStep.PREPROCESS:
             # Show processed image (RGB) if available, else original (rotated + cropped)
-            if image_data.image is not None:
+            if editor_presented:
+                image = None
+            elif image_data.image is not None:
                 image = image_data.image
-                # Don't show centroids in Preprocess step (requested)
                 self._image_viewer.clear_centroids()
                 self._image_viewer.clear_barcode_overlay()
             else:
@@ -755,15 +790,11 @@ class MainWindow(QMainWindow):
                 from ..preprocessing import ImageCropper
                 cropper = ImageCropper(self._config)
                 
-                # Rotate
-                image = cropper.rotate(image)
-                
-                # Auto-crop (try to simulate what processing will do)
                 try:
-                    image = cropper.auto_crop_to_blue_background(image)
-                except Exception:
+                    image = cropper.process(image)
+                except (ValueError, cv2.error):
                     pass
-                
+
                 self._image_viewer.clear_centroids()
                 self._image_viewer.clear_barcode_overlay()
         else:
@@ -779,8 +810,16 @@ class MainWindow(QMainWindow):
             self._image_viewer.clear_centroids()
             self._image_viewer.clear_barcode_overlay()
 
+        if editor_presented:
+            self._image_viewer.set_mask_data(None, None)
+            return
+
         if image is not None:
-            self._image_viewer.set_image(image)
+            self._image_viewer.set_image(image, preserve_view=preserve_view)
+
+            if step == WorkflowStep.PREPROCESS and image_data.image is not None:
+                self._image_viewer.set_centroids(list(zip(
+                    image_data.positions_x, image_data.positions_y)))
 
             # Set mask data if in TRACK step
             if step == WorkflowStep.TRACK and self._current_series is not None:
@@ -812,13 +851,12 @@ class MainWindow(QMainWindow):
             self._workflow_bar.set_current_step(WorkflowStep.LOAD)
             return
 
-        # Show/hide settings panel
-        if step == WorkflowStep.LOAD:
-            self._settings_panel.hide()
-        else:
-            self._settings_panel.show()
-            self._settings_panel.set_step(step)
-            
+        self._settings_panel.finish_color_picker()
+        self._roi_editor.reset()
+        self._save_settings_draft()
+        self._restore_settings_draft(step)
+        self._settings_panel.show()
+
         # Update tree filtering: show aside items ONLY in LOAD step
         self._image_tree.set_step(step, self._config)
         self._image_tree.set_filter_aside(step != WorkflowStep.LOAD)
@@ -834,7 +872,7 @@ class MainWindow(QMainWindow):
                 self._display_image(self._current_image)
 
         # Reset zoom to fit when switching steps
-        QTimer.singleShot(0, self._image_viewer.fit_in_view)
+        QTimer.singleShot(0, self._image_viewer, self._image_viewer.fit_in_view)
 
         self._update_process_button_states()
 
@@ -894,9 +932,75 @@ class MainWindow(QMainWindow):
             if self._current_image:
                 self._display_image(self._current_image)
     
+    def _save_settings_draft(self):
+        if self._restoring_settings or self._current_series is None:
+            return
+        panel = self._settings_panel
+        key = (self._current_series.group, panel._current_step)
+        edits = {k: v for k, v in panel.get_current_values().items()
+                 if v != panel._original_values.get(k)}
+        if edits:
+            self._settings_drafts[key] = edits
+        else:
+            self._settings_drafts.pop(key, None)
+        if panel._current_step == WorkflowStep.TRACK:
+            if self._current_series.has_pending_mask_changes():
+                self._mask_drafts.add(self._current_series.group)
+            else:
+                self._mask_drafts.discard(self._current_series.group)
+
+    def _refresh_pending_settings(self):
+        groups = {key[0] for key in self._settings_drafts} | self._mask_drafts
+        self._image_tree.set_pending_groups([s for s in self._series_dict.values() if s.group in groups])
+
+    def _on_settings_dirty_changed(self, dirty):
+        if self._restoring_settings:
+            return
+        self._save_settings_draft()
+        self._refresh_pending_settings()
+
+    def _restore_settings_draft(self, step=None):
+        panel = self._settings_panel
+        self._restoring_settings = True
+        try:
+            if step is not None and step != panel._current_step:
+                panel.set_step(step)
+            panel.reset_for_group()
+            if self._current_series is not None:
+                key = (self._current_series.group, panel._current_step)
+                panel.set_pending_values(self._settings_drafts.get(key, {}))
+                if panel._current_step == WorkflowStep.TRACK and self._current_series.has_pending_mask_changes():
+                    panel._mark_dirty()
+        finally:
+            self._restoring_settings = False
+        self._save_settings_draft()
+        self._refresh_pending_settings()
+        self._roi_editor.schedule()
+
+    def _activate_group_settings(self, series):
+        self._settings_panel.finish_color_picker()
+        self._save_settings_draft()
+        self._current_series = series
+        self._restore_settings_draft()
+
+    def _discard_settings_changes(self):
+        self._settings_panel.finish_color_picker()
+        series = self._current_series
+        if series is None:
+            return
+        step = self._settings_panel._current_step
+        self._settings_drafts.pop((series.group, step), None)
+        if step == WorkflowStep.TRACK:
+            series.working_mask = None if series.user_mask is None else series.user_mask.copy()
+            self._mask_drafts.discard(series.group)
+            self._image_viewer.set_mask_data(series.user_mask, series.working_mask)
+        self._restore_settings_draft()
+
     def _update_config_from_panel(self) -> None:
         """Update config object from settings panel values."""
         values = self._settings_panel.get_current_values()
+        from .roi_editor import apply_editor_values
+        apply_editor_values(self._config, values)
         for key, value in values.items():
             if hasattr(self._config, key):
                 setattr(self._config, key, value)
@@ -912,6 +1016,12 @@ class MainWindow(QMainWindow):
             elif key == "min_contour_length":
                 self._config.threshold.min_contour_length = value
     
+    def _invalidate_preprocessing(self, series):
+        # A same-sized rotated crop still changes mask coordinates.
+        series.clear_preprocessing_results()
+        self._mask_drafts.discard(series.group)
+        mask_io.delete_mask(series, self._config)
+
     def _on_apply_settings(self) -> None:
         """Handle Apply button - reprocess current group with new settings and apply mask."""
         if self._pipeline is None or self._current_series is None:
@@ -956,18 +1066,28 @@ class MainWindow(QMainWindow):
         tracking_changed = (old_tracking_hash != self._config.tracking_config_hash())
 
         if preprocess_changed:
-            # Preprocessing params changed — invalidate everything and reprocess
-            self._current_series.clear_preprocessing_results()
-            self._preprocess_group(self._current_series, force=True)
+            # Settings are shared. Every affected mask uses the old geometry,
+            # even when the new crop has exactly the same pixel dimensions.
+            for series in self._series_dict.values():
+                self._invalidate_preprocessing(series)
+            if not any(series is self._current_series for series in self._series_dict.values()):
+                self._invalidate_preprocessing(self._current_series)
+            if step == WorkflowStep.LOAD:
+                if self._current_image:
+                    self._display_image(self._current_image, preserve_view=True)
+            else:
+                self._preprocess_group(self._current_series, force=True)
         elif tracking_changed or mask_changed:
             # Tracking params or mask changed — invalidate tracking only and retrack
             if not mask_changed:  # Already cleared above if mask changed
                 self._current_series.clear_tracking_results()
             if self._auto_preview_action.isChecked():
+                self._preserve_tracking_view_for = self._current_image
                 self._on_track_roots()
             elif self._current_image:
-                self._display_image(self._current_image)
+                self._display_image(self._current_image, preserve_view=True)
 
+        self._restore_settings_draft()
         self._refresh_tree_status()
 
     def _on_apply_all_settings(self) -> None:
@@ -983,6 +1103,7 @@ class MainWindow(QMainWindow):
         if self._pipeline is None or not self._series_dict:
             return
 
+        step = self._workflow_bar.get_current_step()
         # Snapshot config hashes BEFORE updating
         old_preprocess_hash = self._config.preprocess_config_hash()
         old_tracking_hash = self._config.tracking_config_hash()
@@ -997,19 +1118,25 @@ class MainWindow(QMainWindow):
             # Mark every group dirty (frees arrays + invalidates pipeline state)
             # so the final all-groups computation reprocesses them.
             for series in self._series_dict.values():
-                series.clear_preprocessing_results()
+                self._invalidate_preprocessing(series)
             # Recompute only the current group so the user sees the new result.
             if self._current_series is not None:
-                self._preprocess_group(self._current_series, force=True)
+                if step == WorkflowStep.LOAD:
+                    if self._current_image:
+                        self._display_image(self._current_image, preserve_view=True)
+                else:
+                    self._preprocess_group(self._current_series, force=True)
         elif tracking_changed:
             for series in self._series_dict.values():
                 series.clear_tracking_results()
             # Retrack only the current group for immediate feedback.
             if self._auto_preview_action.isChecked() and self._current_series is not None:
+                self._preserve_tracking_view_for = self._current_image
                 self._on_track_roots()
             elif self._current_image:
-                self._display_image(self._current_image)
+                self._display_image(self._current_image, preserve_view=True)
 
+        self._restore_settings_draft()
         self._refresh_tree_status()
 
     def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
@@ -1049,7 +1176,7 @@ class MainWindow(QMainWindow):
             series_cache.save_series(self._current_series, self._config)
 
             if self._current_image:
-                self._display_image(self._current_image)
+                self._display_image(self._current_image, preserve_view=True)
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Detection failed:\n{e}")
         finally:
@@ -1068,7 +1195,9 @@ class MainWindow(QMainWindow):
         self._refresh_tree_status()
         # Save to settings for persistence
         self._settings.setValue("detect_barcodes", enabled)
-        # Note: This will take effect on next image load/reload
+        # Reuse stored detections immediately; toggling visibility never rescans.
+        if self._current_image is not None:
+            self._display_image(self._current_image, preserve_view=True)
     
     def _on_set_aside_requested(self, item: ImageData | ImageSeries) -> None:
         """Handle request to set an item aside (move to aside/ folder)."""
@@ -1551,15 +1680,7 @@ class MainWindow(QMainWindow):
                 self._display_image(self._current_image)
             return
 
-        # Show progress bar in status bar
-        total_images = len(series.images)
-        self._progress_bar.setMaximum(total_images)
-        self._progress_bar.setValue(0)
-        self._progress_bar.show()
-        self._processing_label.setText("Preprocessing...")
-        self._processing_label.show()
-
-        self._start_time = time.time()
+        self._begin_operation_progress('preprocess')
         self._hide_progress_on_complete = hide_progress
 
         # Create and enter processing context
@@ -1568,24 +1689,60 @@ class MainWindow(QMainWindow):
 
         # Create and start worker thread
         self._worker = ProcessWorker(self._pipeline, series, self._config, 'preprocess')
+        self._worker.phase.connect(self._on_worker_phase)
         self._worker.progress.connect(self._on_worker_progress)
         self._worker.finished.connect(self._on_preprocess_finished)
         self._worker.start()
 
-    def _on_worker_progress(self, current: int, total: int) -> None:
-        """Handle progress updates from worker thread."""
-        self._image_tree.refresh_status()
-        # Check if we're in percentage mode (tracking) or count mode (preprocessing/barcode)
-        if self._progress_bar.maximum() == 100:
-            # Tracking mode - convert to percentage
-            if total > 0:
-                percent = int((current / total) * 100)
-                self._progress_bar.setValue(percent)
-            self._update_progress_label(self._start_time, current, total)
+    def _begin_operation_progress(self, operation):
+        if self._operation_progress is None:
+            operations = [operation]
+            if operation == 'barcode' and getattr(self, '_auto_process_pending_preprocess', False):
+                operations.append('preprocess')
+            if operation != 'track' and getattr(self, '_auto_process_pending_tracking', False):
+                operations.append('track')
+            self._operation_progress = OperationProgress(operations)
+            self._progress_bar.setRange(0, 100)
+            self._progress_bar.setValue(0)
+        self._operation_progress.begin(operation)
+        self._progress_bar.show()
+        self._render_operation_progress()
+
+    def _render_operation_progress(self):
+        progress = self._operation_progress
+        if progress is None:
+            return
+        self._progress_bar.setValue(int(progress.value * 100))
+        remaining = progress.remaining()
+        if remaining is None:
+            eta = 'Estimating remaining time…'
         else:
-            # Count mode - use current value directly
-            self._progress_bar.setValue(current)
-            self._update_progress_label(self._start_time, current, total)
+            seconds = max(1, math.ceil(remaining))
+            eta = f'{seconds // 60}m {seconds % 60}s remaining' if seconds >= 60 else f'{seconds}s remaining'
+        self._processing_label.setText(f'{progress.label} · {eta}')
+        self._processing_label.show()
+
+    def _on_worker_phase(self, label):
+        if self._operation_progress is not None:
+            self._operation_progress.label = label
+            self._render_operation_progress()
+
+    def _on_worker_progress(self, current: int, total: int) -> None:
+        self._image_tree.refresh_status()
+        if self._operation_progress is not None:
+            self._operation_progress.update(current, total)
+            self._render_operation_progress()
+
+    def _finish_operation_progress(self, success, continuing=False):
+        if self._operation_progress is None:
+            return
+        if continuing:
+            return
+        if success:
+            self._progress_bar.setValue(100)
+        self._operation_progress = None
+        self._auto_process_pending_preprocess = False
+        self._auto_process_pending_tracking = False
 
     def _on_preprocess_finished(self, success: bool, error_msg: str) -> None:
         """Handle preprocessing completion."""
@@ -1602,7 +1759,7 @@ class MainWindow(QMainWindow):
                 self._workflow_bar.mark_step_completed(WorkflowStep.PREPROCESS)
 
             if self._current_image:
-                self._display_image(self._current_image)
+                self._display_image(self._current_image, preserve_view=True)
             
             # Set up continuation if needed
             if should_continue_to_tracking:
@@ -1614,24 +1771,26 @@ class MainWindow(QMainWindow):
         
         # Cleanup and exit context (handles UI unlock, progress hide, etc.)
         if self._context:
-            was_cancelled = (error_msg == "Cancelled")
+            was_cancelled = not success
             self._context.was_cancelled = was_cancelled
             self._context.__exit__(None, None, None)
 
     def _on_tracking_finished(self, success: bool, error_msg: str) -> None:
         """Handle tracking completion."""
+        preserve_view = self._current_image is getattr(self, '_preserve_tracking_view_for', None)
+        self._preserve_tracking_view_for = None
         if success:
             # Mark step complete
             self._workflow_bar.mark_step_completed(WorkflowStep.TRACK)
 
             if self._current_image:
-                self._display_image(self._current_image)
+                self._display_image(self._current_image, preserve_view=preserve_view)
         elif error_msg and error_msg != "Cancelled":
             QMessageBox.critical(self, "Error", f"Tracking failed:\n{error_msg}")
         
         # Cleanup and exit context (handles UI unlock, progress hide, etc.)
         if self._context:
-            was_cancelled = (error_msg == "Cancelled")
+            was_cancelled = not success
             self._context.was_cancelled = was_cancelled
             self._context.__exit__(None, None, None)
 
@@ -1663,7 +1822,7 @@ class MainWindow(QMainWindow):
         
         # Cleanup and exit context (handles UI unlock, progress hide, etc.)
         if self._context:
-            was_cancelled = (error_msg == "Cancelled")
+            was_cancelled = not success
             self._context.was_cancelled = was_cancelled
             self._context.__exit__(None, None, None)
 
@@ -1714,14 +1873,7 @@ class MainWindow(QMainWindow):
 
     def _start_barcode_detection(self, series: 'ImageSeries') -> None:
         """Start barcode detection in worker thread."""
-        total_images = len(series.images)
-        self._progress_bar.setMaximum(total_images)
-        self._progress_bar.setValue(0)
-        self._progress_bar.show()
-        self._processing_label.setText("Detecting barcodes...")
-        self._processing_label.show()
-
-        self._start_time = time.time()
+        self._begin_operation_progress('barcode')
         self._hide_progress_on_complete = False
 
         # Create and enter processing context
@@ -1729,6 +1881,7 @@ class MainWindow(QMainWindow):
         self._context.__enter__()
 
         self._worker = ProcessWorker(self._pipeline, series, self._config, 'barcode')
+        self._worker.phase.connect(self._on_worker_phase)
         self._worker.progress.connect(self._on_worker_progress)
         self._worker.finished.connect(self._on_barcode_finished)
         self._worker.start()
@@ -1745,13 +1898,7 @@ class MainWindow(QMainWindow):
 
     def _start_tracking(self, series: 'ImageSeries') -> None:
         """Start tracking in worker thread."""
-        self._progress_bar.setRange(0, 100)
-        self._progress_bar.setValue(0)
-        self._progress_bar.show()
-        self._processing_label.setText("Tracking roots...")
-        self._processing_label.show()
-
-        self._start_time = time.time()
+        self._begin_operation_progress('track')
         self._hide_progress_on_complete = True
 
         # Create and enter processing context
@@ -1759,12 +1906,14 @@ class MainWindow(QMainWindow):
         self._context.__enter__()
 
         self._worker = ProcessWorker(self._pipeline, series, self._config, 'track')
+        self._worker.phase.connect(self._on_worker_phase)
         self._worker.progress.connect(self._on_worker_progress)
         self._worker.finished.connect(self._on_tracking_finished)
         self._worker.start()
     
     def _lock_ui(self) -> None:
         """Lock UI during processing. Called by ProcessingContext.__enter__."""
+        self._roi_editor.set_locked(True)
         self._refresh_tree_status()
         # Disable main interactive elements
         self._image_tree.setEnabled(False)
@@ -1800,6 +1949,7 @@ class MainWindow(QMainWindow):
         self._image_tree.setEnabled(True)
         self._settings_panel.setEnabled(True)
         self._workflow_bar.setEnabled(True)
+        self._roi_editor.set_locked(False)
         
         # Handle step restoration if cancelled
         if restore_step and self._step_before_processing is not None:
@@ -1810,11 +1960,8 @@ class MainWindow(QMainWindow):
             
             # Update UI panels manually without triggering auto-processing
             step = self._step_before_processing
-            if step == WorkflowStep.LOAD:
-                self._settings_panel.hide()
-            else:
-                self._settings_panel.show()
-                self._settings_panel.set_step(step)
+            self._settings_panel.show()
+            self._restore_settings_draft(step)
             
             # Update tree filtering
             self._image_tree.set_filter_aside(step != WorkflowStep.LOAD)
@@ -2229,37 +2376,21 @@ class MainWindow(QMainWindow):
             working_mask = self._image_viewer.get_working_mask()
             self._current_series.working_mask = working_mask.copy() if working_mask is not None else None
 
-            # Mark settings as dirty so Apply buttons enable
-            self._settings_panel._mark_dirty()
+            self._settings_panel._mask_dirty = self._current_series.has_pending_mask_changes()
+            self._settings_panel._on_setting_changed()
 
     def _on_mask_erase_all(self) -> None:
-        """Erase all masks (both working and applied)."""
-        if self._current_series is None:
+        """Stage clearing the mask; Apply commits it and Discard restores it."""
+        series = self._current_series
+        if series is None:
             return
-
-        # Clear masks in series
-        self._current_series.user_mask = None
-        self._current_series.working_mask = None
-
-        # Clear in viewer
-        self._image_viewer.clear_all_masks()
-
-        # Delete mask file
-        try:
-            mask_io.delete_mask(self._current_series, self._config)
-        except Exception:
-            pass
-
-        # Mark as dirty so Apply button enables (to commit the erasure)
-        self._settings_panel._mark_dirty()
-
-        # Clear tracking results
-        self._current_series.clear_tracking_results()
-
-        # Save to cache (tracking results are now cleared)
-        series_cache.save_series(self._current_series, self._config)
-
-        self._refresh_tree_status()
+        mask = series.working_mask if series.working_mask is not None else series.user_mask
+        if mask is None:
+            return
+        series.working_mask = np.zeros_like(mask)
+        self._image_viewer.set_mask_data(series.user_mask, series.working_mask)
+        self._settings_panel._mask_dirty = series.has_pending_mask_changes()
+        self._settings_panel._on_setting_changed()
 
     def _load_last_folder(self) -> None:
         """Load the last opened folder if it exists."""

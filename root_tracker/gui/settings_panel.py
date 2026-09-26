@@ -8,14 +8,14 @@ Settings are applied to the entire group on Apply button click.
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QSpinBox, QDoubleSpinBox, QPushButton,
-    QGroupBox, QLineEdit, QComboBox, QCheckBox, QButtonGroup, QRadioButton
+    QGroupBox, QLineEdit, QComboBox, QCheckBox, QButtonGroup, QRadioButton, QScrollArea, QFrame
 )
-from PySide6.QtCore import Signal
-from PySide6.QtGui import QPalette
+from PySide6.QtCore import Signal, Qt
 
 from ..config import Config
 from .workflow_bar import WorkflowStep
 from .masking_tools import MaskTool
+from .color_range import ColorRangeControl
 
 
 class SettingsPanel(QWidget):
@@ -24,7 +24,7 @@ class SettingsPanel(QWidget):
     
     Shows different settings based on the current workflow step.
     Settings are applied to the entire group when Apply is clicked.
-    Changes are discarded when switching groups without applying.
+    The main window retains per-group drafts until applied or discarded.
     
     Signals:
         apply_requested: Emitted when user clicks Apply.
@@ -32,6 +32,12 @@ class SettingsPanel(QWidget):
         track_requested: Emitted for Track step action.
     """
 
+    crop_edit_toggled = Signal(bool)
+    crop_preview_changed = Signal()
+    color_preview_toggled = Signal(bool)
+    color_pick_toggled = Signal(bool)
+    discard_requested = Signal()
+    dirty_changed = Signal(bool)
     apply_requested = Signal()  # Apply settings to current group
     apply_all_requested = Signal()  # Apply settings to all groups
     redetect_requested = Signal()  # Re-run centroid detection
@@ -48,6 +54,7 @@ class SettingsPanel(QWidget):
         self._current_step = WorkflowStep.LOAD
         self._original_values: dict = {}  # Stored values at group selection
         self._is_dirty = False
+        self._mask_dirty = False
         self._groups_out_of_sync = False  # True if some other group has different settings
         self._centroids_modified = False  # True if user moved centroids
 
@@ -63,29 +70,23 @@ class SettingsPanel(QWidget):
         self._mask_erase_all_btn: QPushButton | None = None
 
         self._setup_ui()
+        self.set_step(WorkflowStep.LOAD)
     
     def _setup_ui(self) -> None:
         """Set up the UI components."""
         self._main_layout = QVBoxLayout(self)
         self._main_layout.setContentsMargins(5, 5, 5, 5)
         
-        # Header
-        header_widget = QWidget()
-        header_layout = QHBoxLayout(header_widget)
-        header_layout.setContentsMargins(5, 5, 5, 5)
-        
-        header_layout.addStretch()
-        
-        self._status_indicator = QLabel("")
-        self._status_indicator.setStyleSheet("font-size: 11px;")
-        header_layout.addWidget(self._status_indicator)
-        
-        self._main_layout.addWidget(header_widget)
-        
         # Settings container (rebuilt per step)
         self._settings_container = QWidget()
         self._settings_layout = QVBoxLayout(self._settings_container)
-        self._main_layout.addWidget(self._settings_container)
+        self._settings_scroll = QScrollArea()
+        self._settings_scroll.setWidgetResizable(True)
+        self._settings_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._settings_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._settings_scroll.setWidget(self._settings_container)
+        self._settings_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self._main_layout.addWidget(self._settings_scroll, 1)
         
         # Bottom buttons (Apply and Re-detect)
         self._buttons_widget = QWidget()
@@ -98,26 +99,37 @@ class SettingsPanel(QWidget):
         apply_layout = QHBoxLayout()
         
         # Apply to this group button
-        self._apply_btn = QPushButton("Apply to this group")
+        self._apply_btn = QPushButton("Apply settings")
         self._apply_btn.setEnabled(False)
-        self._apply_btn.setToolTip("No changes to apply")
+        self._apply_btn.setStatusTip("No changes to apply. Settings are shared: Apply previews this group; other groups use them when next processed. Masks affect this group only.")
         self._apply_btn.clicked.connect(self._on_apply_clicked)
         apply_layout.addWidget(self._apply_btn)
         
         # Apply to all groups button
-        self._apply_all_btn = QPushButton("Apply to all groups")
+        self._apply_all_btn = QPushButton("Update all groups")
         self._apply_all_btn.setEnabled(False)
-        self._apply_all_btn.setToolTip("No changes to apply")
+        self._apply_all_btn.setStatusTip("No changes to apply")
         self._apply_all_btn.clicked.connect(self._on_apply_all_clicked)
         apply_layout.addWidget(self._apply_all_btn)
         
         self._buttons_layout.addLayout(apply_layout)
-        
+        self._discard_btn = QPushButton('Discard changes')
+        self._discard_btn.setEnabled(False)
+        self._discard_btn.setStatusTip('Discard pending edits for this group and step, including its tracking mask. Restore the applied settings without reprocessing.')
+        self._discard_btn.clicked.connect(self.discard_requested.emit)
+        self._buttons_layout.addWidget(self._discard_btn)
+
         self._main_layout.addWidget(self._buttons_widget)
-        self._main_layout.addStretch()
+
     
+    def finish_color_picker(self):
+        control = getattr(self, '_color_control', None)
+        if control is not None and self._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS):
+            control.finish_picker()
+
     def set_step(self, step: WorkflowStep) -> None:
         """Update panel for the given workflow step."""
+        self.finish_color_picker()
         self._current_step = step
         self._rebuild_for_step(step)
     
@@ -127,9 +139,14 @@ class SettingsPanel(QWidget):
         while self._settings_layout.count():
             item = self._settings_layout.takeAt(0)
             if item.widget():
+                item.widget().hide()
                 item.widget().deleteLater()
         
-        if step == WorkflowStep.PREPROCESS:
+        if step == WorkflowStep.LOAD:
+            self._create_crop_settings(load=True)
+            self._buttons_widget.show()
+            self._store_original_values()
+        elif step == WorkflowStep.PREPROCESS:
             self._create_preprocess_settings()
             self._buttons_widget.show()
             # self._redetect_btn is now inside the settings layout, not buttons layout
@@ -139,57 +156,127 @@ class SettingsPanel(QWidget):
         else:
             self._buttons_widget.hide()
         
+        self._install_setting_help()
         # Reset state
         self._mark_clean()
     
+    def _install_setting_help(self):
+        tips = {
+            '_n_clusters_spin': 'Expected number of plants in each image. Green stem detections are grouped into this many plant centers. Match this to the plants in the photograph.',
+            '_reg_enabled_cb': 'Align photographs in a group to the first image so roots can be compared at consistent positions over time.',
+            '_reg_margin_spin': 'Search border on each side as a fraction of image size (0.25 = 25%). Larger values allow larger shifts but take longer. Smaller images are padded enough to fit the reference.',
+            '_min_contour_area_spin': 'Minimum enclosed root-contour area in square pixels. Increase to reject small specks; too high can remove small roots.',
+            '_min_contour_length_spin': 'Minimum number of sampled points in a root contour (not root length in millimetres). Increase to reject short contours; too high can remove fine roots.',
+            '_move_radio': 'Pan the image without changing the exclusion mask. Scroll to zoom.',
+            '_brush_radio': 'Paint areas to exclude from root tracking. Apply settings to use the edited mask for this group.',
+            '_brush_size_spin': 'Diameter of the exclusion brush in image pixels. Larger values cover a wider area.',
+            '_rect_radio': 'Drag a rectangle to exclude that area from root tracking.',
+            '_brush_eraser_radio': 'Erase painted exclusions to include those areas in tracking again.',
+            '_brush_eraser_size_spin': 'Diameter of the mask eraser in image pixels.',
+            '_rect_eraser_radio': 'Drag a rectangle to remove exclusions inside it.',
+            '_mask_erase_all_btn': 'Clear the entire exclusion mask for this group. Apply settings to use the cleared mask.',
+            '_redetect_btn': 'Re-run automatic plant detection for this group, replacing manually moved centroid positions.',
+        }
+        active = self._settings_container.findChildren(QWidget)
+        forms = self._settings_container.findChildren(QFormLayout)
+        for name, tip in tips.items():
+            widget = getattr(self, name, None)
+            if widget not in active:
+                continue
+            widget.setStatusTip(tip)
+            for form in forms:
+                label = form.labelForField(widget)
+                if label is not None:
+                    label.setStatusTip(tip)
+
+    def _create_crop_settings(self, *, load):
+        group = QGroupBox('Plate search area' if load else 'Crop within plate')
+        layout = QVBoxLayout(group)
+        self._crop_value = self._config.load_roi if load else self._config.preprocess_roi
+        self._crop_summary = QLabel()
+        self._crop_summary.setMinimumHeight(20)
+        layout.addWidget(self._crop_summary)
+        self._crop_edit_btn = QPushButton('Edit crop')
+        self._crop_edit_btn.setCheckable(True)
+        self._crop_edit_btn.setChecked(load)
+        self._crop_edit_btn.setStatusTip('Resize or move the box in the image. Drag just outside a corner or use the round handle to rotate. Rotation snaps every 15°; continue dragging to release a snap.')
+        self._crop_edit_btn.toggled.connect(self._crop_edit_changed)
+        layout.addWidget(self._crop_edit_btn)
+        self._auto_crop_btn = QPushButton('Search whole image' if load else 'Reset crop')
+        self._auto_crop_btn.setStatusTip('Search the whole image for the plate.' if load else 'Restore the fixed crop margins relative to the detected plate.')
+        self._auto_crop_btn.clicked.connect(lambda: self.set_crop(None))
+        layout.addWidget(self._auto_crop_btn)
+        self._settings_layout.addWidget(group)
+        lower, upper = ((self._config.crop.blue_hsv_lower, self._config.crop.blue_hsv_upper) if load else
+                        (self._config.green.hsv_lower, self._config.green.hsv_upper))
+        self._color_control = ColorRangeControl('Background color' if load else 'Green plant parts', lower, upper)
+        self._color_control.setStatusTip('Detect the plate by color inside the Load search box using the selected region method.' if load else 'Select the green plant parts used to locate plant centers and exclude leaves from root detection.')
+        self._color_control.range_changed.connect(self._color_range_changed)
+        self._color_control.preview_changed.connect(self.color_preview_toggled)
+        self._color_control.pick_requested.connect(self.color_pick_toggled)
+        if load:
+            self._background_enabled = QCheckBox("Detect plate by background color")
+            self._background_enabled.setChecked(self._config.crop.background_enabled)
+            self._background_enabled.setStatusTip('Use color to refine the crop inside the box, or use only the box itself.')
+            self._color_control.layout().insertWidget(0, self._background_enabled)
+            form = QFormLayout()
+            self._background_region = QComboBox()
+            self._background_region.addItems(['Largest matching region', 'All matching patches'])
+            self._background_region.setCurrentIndex(0 if self._config.crop.background_region == 'largest' else 1)
+            self._background_region.setStatusTip('Choose the largest connected color region, or enclose all matching patches inside the box.')
+            form.addRow('Region', self._background_region)
+            form.labelForField(self._background_region).setStatusTip(self._background_region.statusTip())
+            self._color_control.layout().insertLayout(1, form)
+        self._settings_layout.addWidget(self._color_control)
+        if load:
+            self._background_enabled.toggled.connect(self._background_mode_changed)
+            self._background_region.currentIndexChanged.connect(self._background_mode_changed)
+            self._set_background_controls_enabled()
+        self._update_crop_summary()
+        self._crop_edit_btn.setText('Finish editing' if load else 'Edit crop')
+
+    def _set_background_controls_enabled(self):
+        enabled = self._background_enabled.isChecked()
+        self._background_region.setEnabled(enabled)
+        if not enabled:
+            self._color_control.finish_picker()
+            self._color_control.pick_button.setChecked(False)
+            self._color_control.preview.setChecked(False)
+        self._color_control.swatch.setEnabled(enabled)
+        self._color_control.preview.setEnabled(enabled)
+        self._color_control.pick_button.setEnabled(enabled)
+
+    def _background_mode_changed(self):
+        self._set_background_controls_enabled()
+        self._on_setting_changed()
+        self.crop_preview_changed.emit()
+
+    def _crop_edit_changed(self, enabled):
+        self._crop_edit_btn.setText('Finish editing' if enabled else 'Edit crop')
+        self.crop_edit_toggled.emit(enabled)
+
+    def _update_crop_summary(self):
+        self._crop_summary.setText(('Whole image' if self._current_step == WorkflowStep.LOAD else 'Fixed plate margins') if self._crop_value is None else
+                                   f'Manual crop · {self._crop_value[4] % 360:.1f}°')
+
+    def set_crop(self, box):
+        self._crop_value = None if box is None else tuple(box)
+        self._update_crop_summary()
+        self._on_setting_changed()
+        self.crop_preview_changed.emit()
+
+    def _color_range_changed(self, lower, upper):
+        self._color_control.preview.setChecked(True)
+        self._on_setting_changed()
+        self.crop_preview_changed.emit()
+
+    def crop_editing(self):
+        return self._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS) and self._crop_edit_btn.isChecked()
+
     def _create_preprocess_settings(self) -> None:
         """Create settings for Preprocess step."""
-        # ROI Group
-        roi_group = QGroupBox("Region of Interest")
-        roi_layout = QFormLayout(roi_group)
-        
-        self._rotation_combo = QComboBox()
-        self._rotation_combo.addItems(["0", "90", "180", "270"])
-        # Set current value
-        current_rot = str(self._config.rotation)
-        if current_rot in ["0", "90", "180", "270"]:
-            self._rotation_combo.setCurrentText(current_rot)
-        else:
-            self._rotation_combo.setCurrentText("0")
-            
-        self._rotation_combo.currentTextChanged.connect(self._on_setting_changed)
-        roi_layout.addRow("Rotation (°):", self._rotation_combo)
-        
-        self._margin_top_spin = QDoubleSpinBox()
-        self._margin_top_spin.setRange(0.0, 0.5)
-        self._margin_top_spin.setSingleStep(0.01)
-        self._margin_top_spin.setValue(self._config.margin_top)
-        self._margin_top_spin.valueChanged.connect(self._on_setting_changed)
-        roi_layout.addRow("Margin Top:", self._margin_top_spin)
-        
-        self._margin_bottom_spin = QDoubleSpinBox()
-        self._margin_bottom_spin.setRange(0.0, 0.5)
-        self._margin_bottom_spin.setSingleStep(0.01)
-        self._margin_bottom_spin.setValue(self._config.margin_bottom)
-        self._margin_bottom_spin.valueChanged.connect(self._on_setting_changed)
-        roi_layout.addRow("Margin Bottom:", self._margin_bottom_spin)
-        
-        self._margin_left_spin = QDoubleSpinBox()
-        self._margin_left_spin.setRange(0.0, 0.5)
-        self._margin_left_spin.setSingleStep(0.01)
-        self._margin_left_spin.setValue(self._config.margin_left)
-        self._margin_left_spin.valueChanged.connect(self._on_setting_changed)
-        roi_layout.addRow("Margin Left:", self._margin_left_spin)
-        
-        self._margin_right_spin = QDoubleSpinBox()
-        self._margin_right_spin.setRange(0.0, 0.5)
-        self._margin_right_spin.setSingleStep(0.01)
-        self._margin_right_spin.setValue(self._config.margin_right)
-        self._margin_right_spin.valueChanged.connect(self._on_setting_changed)
-        roi_layout.addRow("Margin Right:", self._margin_right_spin)
-        
-        self._settings_layout.addWidget(roi_group)
-        
+        self._create_crop_settings(load=False)
+
         # Plant Attributes Group
         attr_group = QGroupBox("Plant Attributes")
         attr_layout = QFormLayout(attr_group)
@@ -203,7 +290,7 @@ class SettingsPanel(QWidget):
         # Re-detect button inside Plant Attributes
         self._redetect_btn = QPushButton("Re-detect centroids")
         self._redetect_btn.setEnabled(False)
-        self._redetect_btn.setToolTip("Click after moving centroids to re-run auto-detection")
+        self._redetect_btn.setStatusTip("Click after moving centroids to re-run auto-detection")
         self._redetect_btn.clicked.connect(self._on_redetect_clicked)
         
         attr_layout.addRow(self._redetect_btn)
@@ -226,7 +313,7 @@ class SettingsPanel(QWidget):
         self._reg_margin_spin.setSingleStep(0.05)
         self._reg_margin_spin.setValue(self._config.registration.margin_ratio)
         self._reg_margin_spin.valueChanged.connect(self._on_setting_changed)
-        self._reg_margin_spin.setEnabled(self._config.registration.enabled)
+        self._reg_margin_spin.setEnabled(self._reg_enabled_cb.isChecked())
         reg_layout.addRow("Margin Ratio:", self._reg_margin_spin)
         
         self._settings_layout.addWidget(reg_group)
@@ -392,7 +479,7 @@ class SettingsPanel(QWidget):
     def _on_setting_changed(self) -> None:
         """Handle any setting value change."""
         current = self.get_current_values()
-        self._is_dirty = current != self._original_values
+        self._is_dirty = current != self._original_values or self._mask_dirty
         self._update_apply_button()
     
     def _update_apply_button(self) -> None:
@@ -400,15 +487,13 @@ class SettingsPanel(QWidget):
         # "Apply to this group" reflects pending edits to the current group.
         if self._is_dirty:
             self._apply_btn.setEnabled(True)
-            self._apply_btn.setToolTip("Apply changes to current group")
-            self._status_indicator.setText("● Modified")
-            light_background = self.palette().color(QPalette.ColorRole.Window).lightness() >= 128
-            warning_color = "#9a5b00" if light_background else "#f0ad4e"
-            self._status_indicator.setStyleSheet(f"color: {warning_color}; font-size: 11px;")
+            self._apply_btn.setStatusTip("Use shared settings and preview this group. Other groups use them when next processed. Mask changes affect this group only.")
         else:
             self._apply_btn.setEnabled(False)
-            self._apply_btn.setToolTip("No changes to apply")
-            self._status_indicator.setText("")
+            self._apply_btn.setStatusTip("No changes to apply. Settings are shared: Apply previews this group; other groups use them when next processed. Masks affect this group only.")
+
+        self._discard_btn.setEnabled(self._is_dirty)
+        self.dirty_changed.emit(self._is_dirty)
 
         # "Apply to all groups" stays enabled whenever applying would change at
         # least one group — i.e. there are pending edits, or some other group was
@@ -417,9 +502,9 @@ class SettingsPanel(QWidget):
         apply_all_enabled = self._is_dirty or self._groups_out_of_sync
         self._apply_all_btn.setEnabled(apply_all_enabled)
         if apply_all_enabled:
-            self._apply_all_btn.setToolTip("Apply current settings to ALL groups")
+            self._apply_all_btn.setStatusTip("Use shared settings, mark other results for recalculation, and preview this group. Other groups are processed later; masks are not copied.")
         else:
-            self._apply_all_btn.setToolTip("All groups already use these settings")
+            self._apply_all_btn.setStatusTip("All groups already use these settings. Update all marks other results for recalculation and previews this group; it does not immediately process every group. Masks are not copied.")
 
     def set_groups_out_of_sync(self, out_of_sync: bool) -> None:
         """Set whether some other group was last evaluated with different settings.
@@ -436,28 +521,40 @@ class SettingsPanel(QWidget):
     def _mark_clean(self) -> None:
         """Mark settings as clean (no pending changes)."""
         self._is_dirty = False
+        self._mask_dirty = False
         self._update_apply_button()
 
     def _mark_dirty(self) -> None:
         """Mark settings as dirty (has pending changes)."""
+        self._mask_dirty = True
         self._is_dirty = True
         self._update_apply_button()
     
+    def _finish_crop_editing(self):
+        if self._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS):
+            self._crop_edit_btn.setChecked(False)
+            self._color_control.preview.setChecked(False)
+            self._color_control.pick_button.setChecked(False)
+
     def _on_apply_clicked(self) -> None:
         """Handle Apply to this group button click."""
+        self.finish_color_picker()
         self._store_original_values()  # New baseline
+        self._finish_crop_editing()
         self.apply_requested.emit()
         
     def _on_apply_all_clicked(self) -> None:
         """Handle Apply to all groups button click."""
+        self.finish_color_picker()
         self._store_original_values()  # New baseline
+        self._finish_crop_editing()
         self.apply_all_requested.emit()
     
     def _on_redetect_clicked(self) -> None:
         """Handle Re-detect Plants button click."""
         self._centroids_modified = False
         self._redetect_btn.setEnabled(False)
-        self._redetect_btn.setToolTip("Click after moving centroids to re-run auto-detection")
+        self._redetect_btn.setStatusTip("Click after moving centroids to re-run auto-detection")
         self.redetect_requested.emit()
     
     def enable_redetect(self) -> None:
@@ -465,81 +562,84 @@ class SettingsPanel(QWidget):
         self._centroids_modified = True
         if self._current_step == WorkflowStep.PREPROCESS and hasattr(self, '_redetect_btn'):
             self._redetect_btn.setEnabled(True)
-            self._redetect_btn.setToolTip("Re-run plant centroid detection")
+            self._redetect_btn.setStatusTip("Re-run plant centroid detection")
     
     def mark_centroids_modified(self) -> None:
         """Mark that centroids have been modified (enable Re-detect button)."""
         self.enable_redetect()
     
-    def reset_for_group(self) -> None:
-        """Reset settings for a new group (discard unsaved changes)."""
+    def set_pending_values(self, values):
+        """Restore a draft without treating intermediate widget updates as edits."""
+        bindings = {
+            'n_clusters': ('_n_clusters_spin', 'setValue'),
+            'reg_enabled': ('_reg_enabled_cb', 'setChecked'),
+            'reg_margin': ('_reg_margin_spin', 'setValue'),
+            'min_contour_area': ('_min_contour_area_spin', 'setValue'),
+            'min_contour_length': ('_min_contour_length_spin', 'setValue'),
+        }
+        if self._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS):
+            load = self._current_step == WorkflowStep.LOAD
+            key, prefix = ('load_roi', 'blue') if load else ('preprocess_roi', 'green')
+            if key in values:
+                self._crop_value = None if values[key] is None else tuple(values[key])
+                self._update_crop_summary()
+            lower, upper = self._color_control.values()
+            self._color_control.set_range(values.get(prefix+'_lower', lower), values.get(prefix+'_upper', upper))
+        if self._current_step == WorkflowStep.LOAD:
+            for widget, setter, value in (
+                (self._background_enabled, 'setChecked', values.get('background_enabled', self._background_enabled.isChecked())),
+                (self._background_region, 'setCurrentIndex', 0 if values.get('background_region', 'largest' if self._background_region.currentIndex() == 0 else 'all') == 'largest' else 1),
+            ):
+                blocked = widget.blockSignals(True)
+                getattr(widget, setter)(value)
+                widget.blockSignals(blocked)
+            self._set_background_controls_enabled()
+        for key in self.get_current_values():
+            if key not in values or key not in bindings:
+                continue
+            name, setter = bindings[key]
+            widget = getattr(self, name)
+            was_blocked = widget.blockSignals(True)
+            getattr(widget, setter)(values[key])
+            widget.blockSignals(was_blocked)
         if self._current_step == WorkflowStep.PREPROCESS:
-            if hasattr(self, '_rotation_combo'):
-                self._rotation_combo.blockSignals(True)
-                rot = str(self._config.rotation)
-                if rot in ["0", "90", "180", "270"]:
-                    self._rotation_combo.setCurrentText(rot)
-                else:
-                    self._rotation_combo.setCurrentText("0")
-                self._rotation_combo.blockSignals(False)
-            
-            if hasattr(self, '_n_clusters_spin'):
-                self._n_clusters_spin.blockSignals(True)
-                self._n_clusters_spin.setValue(self._config.n_clusters)
-                self._n_clusters_spin.blockSignals(False)
-            
-            if hasattr(self, '_margin_top_spin'):
-                self._margin_top_spin.blockSignals(True)
-                self._margin_top_spin.setValue(self._config.margin_top)
-                self._margin_top_spin.blockSignals(False)
-                
-                self._margin_bottom_spin.blockSignals(True)
-                self._margin_bottom_spin.setValue(self._config.margin_bottom)
-                self._margin_bottom_spin.blockSignals(False)
-                
-                self._margin_left_spin.blockSignals(True)
-                self._margin_left_spin.setValue(self._config.margin_left)
-                self._margin_left_spin.blockSignals(False)
-                
-                self._margin_right_spin.blockSignals(True)
-                self._margin_right_spin.setValue(self._config.margin_right)
-                self._margin_right_spin.blockSignals(False)
-            
-            if hasattr(self, '_reg_enabled_cb'):
-                self._reg_enabled_cb.blockSignals(True)
-                self._reg_enabled_cb.setChecked(self._config.registration.enabled)
-                self._reg_enabled_cb.blockSignals(False)
-                self._on_reg_enabled_changed(self._config.registration.enabled)
-                
-            if hasattr(self, '_reg_margin_spin'):
-                self._reg_margin_spin.blockSignals(True)
-                self._reg_margin_spin.setValue(self._config.registration.margin_ratio)
-                self._reg_margin_spin.blockSignals(False)
-        
+            self._on_reg_enabled_changed(self._reg_enabled_cb.isChecked())
+        self._on_setting_changed()
+
+    def reset_for_group(self) -> None:
+        """Load the current applied settings; the window restores any saved draft."""
+        values = dict(n_clusters=self._config.n_clusters,
+                      background_enabled=self._config.crop.background_enabled, background_region=self._config.crop.background_region,
+                      load_roi=self._config.load_roi, preprocess_roi=self._config.preprocess_roi,
+                      blue_lower=self._config.crop.blue_hsv_lower, blue_upper=self._config.crop.blue_hsv_upper,
+                      green_lower=self._config.green.hsv_lower, green_upper=self._config.green.hsv_upper,
+                      reg_enabled=self._config.registration.enabled,
+                      reg_margin=self._config.registration.margin_ratio,
+                      min_contour_area=self._config.threshold.min_contour_area,
+                      min_contour_length=self._config.threshold.min_contour_length)
+        self.set_pending_values(values)
         self._store_original_values()
         self._centroids_modified = False
         if self._current_step == WorkflowStep.PREPROCESS and hasattr(self, '_redetect_btn'):
             self._redetect_btn.setEnabled(False)
-    
+
     def get_current_values(self) -> dict:
         """Get current setting values."""
         values = {}
         
-        if self._current_step == WorkflowStep.PREPROCESS:
-            if hasattr(self, '_rotation_combo'):
-                try:
-                    values["rotation"] = int(self._rotation_combo.currentText())
-                except ValueError:
-                    values["rotation"] = 0
-                values["n_clusters"] = self._n_clusters_spin.value()
-                values["margin_top"] = self._margin_top_spin.value()
-                values["margin_bottom"] = self._margin_bottom_spin.value()
-                values["margin_left"] = self._margin_left_spin.value()
-                values["margin_right"] = self._margin_right_spin.value()
-                if hasattr(self, '_reg_enabled_cb'):
-                    values["reg_enabled"] = self._reg_enabled_cb.isChecked()
-                    values["reg_margin"] = self._reg_margin_spin.value()
-        
+        if self._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS):
+            load = self._current_step == WorkflowStep.LOAD
+            key, prefix = ('load_roi', 'blue') if load else ('preprocess_roi', 'green')
+            values[key] = self._crop_value
+            values[prefix+'_lower'], values[prefix+'_upper'] = self._color_control.values()
+            if load:
+                values['background_enabled'] = self._background_enabled.isChecked()
+                values['background_region'] = 'largest' if self._background_region.currentIndex() == 0 else 'all'
+            if not load:
+                values['n_clusters'] = self._n_clusters_spin.value()
+                values['reg_enabled'] = self._reg_enabled_cb.isChecked()
+                values['reg_margin'] = self._reg_margin_spin.value()
+
         elif self._current_step == WorkflowStep.TRACK:
             if hasattr(self, '_min_contour_area_spin'):
                 values["min_contour_area"] = self._min_contour_area_spin.value()

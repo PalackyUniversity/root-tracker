@@ -7,12 +7,15 @@ Provides pan/zoom functionality using QGraphicsView.
 from PySide6.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
     QWidget, QVBoxLayout, QGraphicsEllipseItem, QGraphicsRectItem,
-    QGraphicsSimpleTextItem
+    QGraphicsSimpleTextItem, QGraphicsPolygonItem
 )
-from PySide6.QtCore import Qt, Signal, QPointF
-from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent
+from PySide6.QtCore import Qt, Signal, QPointF, QRectF
+from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent, QTransform, QPolygonF
+import math
 import numpy as np
 import cv2
+
+from .crop_overlay import CropOverlay
 
 from .masking_tools import (
     MaskTool, MaskOverlay, BrushCursor, RectanglePreview, BrushStrokePreview,
@@ -41,7 +44,8 @@ class DraggableCentroid(QGraphicsEllipseItem):
         callback = None
     ) -> None:
         # Create ellipse centered at (x, y)
-        super().__init__(x - radius, y - radius, radius * 2, radius * 2)
+        super().__init__(-radius, -radius, radius * 2, radius * 2)
+        self.setPos(x, y)
         
         self._center_x = x
         self._center_y = y
@@ -57,6 +61,8 @@ class DraggableCentroid(QGraphicsEllipseItem):
         self.setFlag(QGraphicsEllipseItem.GraphicsItemFlag.ItemIsMovable, True)
         self.setFlag(QGraphicsEllipseItem.GraphicsItemFlag.ItemSendsGeometryChanges, True)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
+        self.setFlag(QGraphicsEllipseItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        self.setToolTip(f"Plant {index + 1}: drag to correct its center")
         self.setZValue(100)  # Above the image
     
     def itemChange(self, change, value):
@@ -95,6 +101,10 @@ class ImageViewer(QWidget):
     
     zoom_changed = Signal(int)
     centroid_moved = Signal(int, float, float)  # index, x, y
+    crop_changed = Signal(object)
+    color_picked = Signal(int, int)
+    color_pick_cancelled = Signal()
+    editor_help = Signal(str)
     mask_modified = Signal()  # Emitted when working mask changes
 
     # Zoom limits (10% to 500%)
@@ -104,6 +114,9 @@ class ImageViewer(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
+        self._crop_overlay = None
+        self._plate_outline = None
+        self._color_picking = False
         self._zoom_factor = 1.0
         self._centroid_items: list[DraggableCentroid] = []
         self._barcode_items: list[QGraphicsRectItem | QGraphicsSimpleTextItem] = []
@@ -142,19 +155,63 @@ class ImageViewer(QWidget):
         # Pixmap item for displaying images
         self._pixmap_item: QGraphicsPixmapItem | None = None
     
-    def set_image(self, image: np.ndarray | None) -> None:
+    def set_crop(self, shape, box):
+        self.clear_crop()
+        self._crop_overlay = CropOverlay(shape, box)
+        self._crop_overlay.changed.connect(self.crop_changed)
+        self._crop_overlay.help_requested.connect(self.editor_help)
+        self._scene.addItem(self._crop_overlay)
+        self._crop_overlay.set_view_scale(math.hypot(self._view.transform().m11(), self._view.transform().m12()))
+
+    def clear_crop(self):
+        if self._crop_overlay is not None:
+            self._scene.removeItem(self._crop_overlay)
+            self._crop_overlay.deleteLater()
+            self._crop_overlay = None
+
+    def set_plate_outline(self, points):
+        self.clear_plate_outline()
+        self._plate_outline = QGraphicsPolygonItem(QPolygonF([QPointF(float(x), float(y)) for x, y in points]))
+        pen = QPen(QColor('#22c55e'), 2, Qt.PenStyle.DashLine)
+        pen.setCosmetic(True)
+        self._plate_outline.setPen(pen)
+        self._plate_outline.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+        self._plate_outline.setZValue(1)
+        self._scene.addItem(self._plate_outline)
+
+    def clear_plate_outline(self):
+        if self._plate_outline is not None:
+            self._scene.removeItem(self._plate_outline)
+            self._plate_outline = None
+
+    def set_color_picking(self, enabled):
+        self._color_picking = enabled
+        # Item hover cursors and ScrollHandDrag otherwise hide the eyedropper
+        # cursor and make the picker look like the ordinary move tool.
+        self._view.setInteractive(not enabled)
+        drawing = self._mask_tool not in (MaskTool.NONE, MaskTool.MOVE)
+        self._view.setDragMode(QGraphicsView.DragMode.NoDrag if enabled or drawing else QGraphicsView.DragMode.ScrollHandDrag)
+        self._view.viewport().setCursor(Qt.CursorShape.CrossCursor if enabled else Qt.CursorShape.ArrowCursor)
+
+    def set_image(self, image: np.ndarray | None, *, preserve_view: bool = False, source_shape=None) -> None:
         """
         Set the displayed image.
         
         Args:
             image: OpenCV image (BGR format) or None to clear.
+            preserve_view: Keep zoom and scene center when refreshing an existing image.
         """
-        # Clear existing
-        if self._pixmap_item is not None:
-            self._scene.removeItem(self._pixmap_item)
-            self._pixmap_item = None
-        
+        self.clear_crop()
+        self.clear_plate_outline()
+        previous_transform = self._view.transform()
+        previous_scene_rect = self._view.sceneRect()
+        previous_scroll = (self._view.horizontalScrollBar().value(), self._view.verticalScrollBar().value())
+        preserve_view = preserve_view and self._pixmap_item is not None
+
         if image is None:
+            if self._pixmap_item is not None:
+                self._scene.removeItem(self._pixmap_item)
+                self._pixmap_item = None
             return
         
         # Convert OpenCV image to QPixmap
@@ -168,20 +225,52 @@ class ImageViewer(QWidget):
             bytes_per_line = width
             q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_Grayscale8)
         else:
-            # Color (BGR to RGB)
-            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            height, width, channels = image_rgb.shape
+            # Qt accepts BGR directly; avoid a full-frame channel-swap copy.
+            height, width, channels = image.shape
             bytes_per_line = channels * width
-            q_image = QImage(image_rgb.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
+            q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_BGR888)
         
         pixmap = QPixmap.fromImage(q_image)
-        self._pixmap_item = QGraphicsPixmapItem(pixmap)
-        self._scene.addItem(self._pixmap_item)
-        self._scene.setSceneRect(self._pixmap_item.boundingRect())
-        
-        # Fit to view on first load
-        self.fit_in_view()
+        if self._pixmap_item is None:
+            self._pixmap_item = QGraphicsPixmapItem(pixmap)
+            self._scene.addItem(self._pixmap_item)
+        else:
+            self._pixmap_item.setPixmap(pixmap)
+        logical_height, logical_width = source_shape[:2] if source_shape is not None else image.shape[:2]
+        self._pixmap_item.setTransform(QTransform.fromScale(logical_width / width, logical_height / height))
+        bounds = self._pixmap_item.sceneBoundingRect()
+        self._scene.setSceneRect(bounds)
+
+        if preserve_view:
+            # Preserve the exact viewport translation. Round-tripping through
+            # mapToScene(center)/centerOn accumulates a pixel on every redraw.
+            self._view.setSceneRect(previous_scene_rect.united(bounds))
+            self._view.setTransform(previous_transform)
+            self._view.horizontalScrollBar().setValue(previous_scroll[0])
+            self._view.verticalScrollBar().setValue(previous_scroll[1])
+            self._update_zoom_from_view()
+        else:
+            self.fit_in_view()
     
+    def preserve_frame_position(self, old_viewport, new_to_old):
+        """Keep corresponding image pixels fixed across an affine frame change."""
+        matrix = np.asarray(new_to_old, dtype=float).copy()
+        # CV transforms address pixel centers; graphics scenes address pixel edges.
+        matrix[:2, 2] += .5 - matrix[:2, :2] @ np.array([.5, .5])
+        mapping = QTransform(matrix[0, 0], matrix[1, 0], matrix[0, 1],
+                             matrix[1, 1], matrix[0, 2], matrix[1, 2])
+        desired = mapping * old_viewport
+        inverse, valid = desired.inverted()
+        if not valid:
+            return
+        visible = inverse.mapRect(QRectF(self._view.viewport().rect()))
+        bounds = self._scene.sceneRect().united(visible)
+        self._view.setSceneRect(bounds.adjusted(-visible.width(), -visible.height(), visible.width(), visible.height()))
+        self._view.setTransform(desired)
+        self._view.horizontalScrollBar().setValue(0)
+        self._view.verticalScrollBar().setValue(0)
+        self._update_zoom_from_view()
+
     def set_pixmap(self, pixmap: QPixmap | None) -> None:
         """
         Set the displayed image from a QPixmap.
@@ -198,12 +287,22 @@ class ImageViewer(QWidget):
         
         self._pixmap_item = QGraphicsPixmapItem(pixmap)
         self._scene.addItem(self._pixmap_item)
-        self._scene.setSceneRect(self._pixmap_item.boundingRect())
+        self._scene.setSceneRect(self._pixmap_item.sceneBoundingRect())
     
     def fit_in_view(self) -> None:
         """Fit the image to the view."""
         if self._pixmap_item is not None:
-            self._view.fitInView(self._pixmap_item, Qt.AspectRatioMode.KeepAspectRatio)
+            self._view.ensure_pan_space(self._pixmap_item.sceneBoundingRect().center())
+            bounds = self._pixmap_item.sceneBoundingRect()
+            if self._crop_overlay is not None:
+                # Leave screen space for corner and rotation handles at the edges.
+                scale = min(self._view.viewport().width()/max(1, bounds.width()),
+                            self._view.viewport().height()/max(1, bounds.height()))
+                pad = 48/max(scale, .0001)
+                bounds = bounds.adjusted(-pad, -pad, pad, pad)
+            self._view.fitInView(bounds, Qt.AspectRatioMode.KeepAspectRatio)
+            self._view.ensure_pan_space(self._pixmap_item.sceneBoundingRect().center())
+            self._view.centerOn(self._pixmap_item.sceneBoundingRect().center())
             self._update_zoom_from_view()
     
     def zoom_in(self) -> None:
@@ -222,7 +321,7 @@ class ImageViewer(QWidget):
         
         # Calculate scale change
         scale = factor / self._zoom_factor
-        self._view.scale(scale, scale)
+        self._view.zoom_at(self._view.viewport().rect().center(), scale)
         self._zoom_factor = factor
         
         # Update UI
@@ -230,13 +329,15 @@ class ImageViewer(QWidget):
     
     def _update_zoom_ui(self) -> None:
         """Update zoom signal."""
+        if self._crop_overlay is not None:
+            self._crop_overlay.set_view_scale(math.hypot(self._view.transform().m11(), self._view.transform().m12()))
         percentage = int(self._zoom_factor * 100)
         self.zoom_changed.emit(percentage)
     
     def _update_zoom_from_view(self) -> None:
         """Update zoom factor from view transform."""
         transform = self._view.transform()
-        self._zoom_factor = transform.m11()  # Horizontal scale
+        self._zoom_factor = math.hypot(transform.m11(), transform.m12())
         self._update_zoom_ui()
     
     def _on_view_zoom_changed(self) -> None:
@@ -255,7 +356,7 @@ class ImageViewer(QWidget):
         for i, (x, y) in enumerate(positions):
             centroid = DraggableCentroid(
                 x, y, 
-                radius=15, 
+                radius=7,
                 index=i,
                 callback=self._on_centroid_moved
             )
@@ -430,7 +531,7 @@ class ImageViewer(QWidget):
         # Create new overlay if we have mask data
         if self._working_mask is not None and self._pixmap_item is not None:
             if self._mask_overlay is None:
-                image_rect = self._pixmap_item.boundingRect()
+                image_rect = self._pixmap_item.sceneBoundingRect()
                 self._mask_overlay = MaskOverlay((int(image_rect.height()), int(image_rect.width())))
 
             # Just show working_mask (brush preview is now a graphics item overlay)
@@ -460,7 +561,7 @@ class ImageViewer(QWidget):
         y = int(scene_pos.y())
 
         # Check bounds
-        rect = self._pixmap_item.boundingRect()
+        rect = self._pixmap_item.sceneBoundingRect()
         if 0 <= x < rect.width() and 0 <= y < rect.height():
             return (x, y)
 
@@ -488,30 +589,58 @@ class ZoomableGraphicsView(QGraphicsView):
         
         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.setRenderHint(self.renderHints().TextAntialiasing, True)
-        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+        # Pan space is always scrollable. Reserve scrollbar space up front so
+        # deferred appearance cannot resize/recenter the viewport on a click.
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setBackgroundBrush(Qt.GlobalColor.darkGray)
     
+    def ensure_pan_space(self, center=None):
+        """Leave scrollable space around the image even below fit-to-view zoom.
+
+        QGraphicsView otherwise centers a small scene and ignores cursor
+        anchoring. Keep the scene's own bounds equal to the image for overlays;
+        only this view gets an expanded navigable rectangle.
+        """
+        if center is None:
+            center = self.mapToScene(self.viewport().rect().center())
+        visible = self.mapToScene(self.viewport().rect()).boundingRect()
+        visible.moveCenter(center)
+        bounds = self.scene().sceneRect().united(visible)
+        self.setSceneRect(bounds.adjusted(-visible.width(), -visible.height(),
+                                         visible.width(), visible.height()))
+        self.centerOn(center)
+
+    def zoom_at(self, position, factor):
+        anchor = self.mapToScene(position)
+        self.scale(factor, factor)
+        self.ensure_pan_space(anchor)
+        # Scrollbar rounding can introduce at most about one screen pixel.
+        center_offset = self.mapToScene(self.viewport().rect().center()) - self.mapToScene(position)
+        self.centerOn(anchor + center_offset)
+
     def wheelEvent(self, event: QWheelEvent) -> None:
-        """Handle mouse wheel for zooming with limits."""
-        zoom_in_factor = 1.15
-        zoom_out_factor = 1 / zoom_in_factor
-
-        # Get current zoom from transform
-        current_zoom = self.transform().m11()
-
-        if event.angleDelta().y() > 0:
-            # Zoom in - check max limit
-            if current_zoom * zoom_in_factor <= self.MAX_ZOOM:
-                self.scale(zoom_in_factor, zoom_in_factor)
+        """Keep the scene point beneath the cursor fixed at every zoom level."""
+        delta = event.angleDelta().y()
+        if not delta:
+            event.ignore()
+            return
+        current = math.hypot(self.transform().m11(), self.transform().m12())
+        requested = current * (1.15 if delta > 0 else 1 / 1.15)
+        # Fit can be below MIN_ZOOM for very large photographs: let wheel-up
+        # recover smoothly rather than jumping directly to the manual minimum.
+        if delta > 0:
+            target = max(current, min(self.MAX_ZOOM, requested))
         else:
-            # Zoom out - check min limit
-            if current_zoom * zoom_out_factor >= self.MIN_ZOOM:
-                self.scale(zoom_out_factor, zoom_out_factor)
-
+            target = max(min(current, self.MIN_ZOOM), requested)
+        if target == current:
+            event.accept()
+            return
+        self.zoom_at(event.position().toPoint(), target / current)
         self.zoom_changed.emit()
+        event.accept()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """Handle mouse press - start drawing if tool active."""
@@ -526,6 +655,13 @@ class ZoomableGraphicsView(QGraphicsView):
             super().mousePressEvent(event)
             return
 
+        if viewer._color_picking:
+            coords = viewer._scene_to_image_coords(self.mapToScene(event.position().toPoint()))
+            if coords is not None:
+                viewer.color_picked.emit(*coords)
+            event.accept()
+            return
+
         # Check if a masking tool is active
         if viewer._mask_tool == MaskTool.NONE or viewer._mask_tool == MaskTool.MOVE:
             super().mousePressEvent(event)
@@ -533,14 +669,14 @@ class ZoomableGraphicsView(QGraphicsView):
 
         # Initialize working mask if needed
         if viewer._working_mask is None and viewer._pixmap_item is not None:
-            rect = viewer._pixmap_item.boundingRect()
+            rect = viewer._pixmap_item.sceneBoundingRect()
             viewer._working_mask = np.zeros((int(rect.height()), int(rect.width())), dtype=np.uint8)
             # If there's an applied mask, copy it to working mask
             if viewer._applied_mask is not None:
                 viewer._working_mask = viewer._applied_mask.copy()
 
         # Get scene position
-        scene_pos = self.mapToScene(event.pos())
+        scene_pos = self.mapToScene(event.position().toPoint())
         img_coords = viewer._scene_to_image_coords(scene_pos)
 
         if img_coords is None:
@@ -576,7 +712,7 @@ class ZoomableGraphicsView(QGraphicsView):
             super().mouseMoveEvent(event)
             return
 
-        scene_pos = self.mapToScene(event.pos())
+        scene_pos = self.mapToScene(event.position().toPoint())
 
         # Update brush cursor position
         if viewer._brush_cursor is not None:
@@ -617,7 +753,7 @@ class ZoomableGraphicsView(QGraphicsView):
             # Convert graphics preview to numpy mask
             if viewer._brush_stroke_preview is not None:
                 # Create temporary mask for this stroke
-                rect = viewer._pixmap_item.boundingRect()
+                rect = viewer._pixmap_item.sceneBoundingRect()
                 stroke_mask = np.zeros((int(rect.height()), int(rect.width())), dtype=np.uint8)
 
                 # Rasterize the stroke path to the mask
@@ -667,7 +803,7 @@ class ZoomableGraphicsView(QGraphicsView):
 
         # Finalize rectangle
         if viewer._rect_start_point is not None:
-            scene_pos = self.mapToScene(event.pos())
+            scene_pos = self.mapToScene(event.position().toPoint())
             start_coords = viewer._scene_to_image_coords(viewer._rect_start_point)
             end_coords = viewer._scene_to_image_coords(scene_pos)
 
@@ -686,6 +822,15 @@ class ZoomableGraphicsView(QGraphicsView):
             return
 
         super().mouseReleaseEvent(event)
+
+    def keyPressEvent(self, event):
+        viewer = self.parent()
+        if event.key() == Qt.Key.Key_Escape and isinstance(viewer, ImageViewer) and viewer._color_picking:
+            viewer.set_color_picking(False)
+            viewer.color_pick_cancelled.emit()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def leaveEvent(self, event) -> None:
         """Handle mouse leaving view - hide brush cursor."""

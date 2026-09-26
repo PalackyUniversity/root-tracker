@@ -78,7 +78,7 @@ def tree_stylesheet(palette: QPalette) -> str:
             outline: none;
         }}
         QTreeWidget::item {{
-            padding: 3px 2px;
+            padding: 3px 1px;
             margin: 1px 0px;
             border-radius: 0px;
         }}

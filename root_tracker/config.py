@@ -9,6 +9,7 @@ from hashlib import md5
 from pathlib import Path
 from typing import Optional
 import yaml
+import math
 
 
 @dataclass
@@ -52,12 +53,14 @@ class ThresholdConfig:
 class RegistrationConfig:
     """Configuration for image registration."""
     enabled: bool = True
-    margin_ratio: float = 0.25  # 1/4 of image dimensions
+    margin_ratio: float = 0.25  # Search border on each side, relative to image dimensions
 
 
 @dataclass
 class CropConfig:
     """Configuration for image cropping."""
+    background_enabled: bool = True
+    background_region: str = "largest"  # "largest" or "all" matching patches
     # HSV range for blue background detection
     blue_hsv_lower: tuple[int, int, int] = (70, 0, 0)
     blue_hsv_upper: tuple[int, int, int] = (140, 255, 255)
@@ -88,7 +91,11 @@ class Config:
     margin_left: float = 0.03
     margin_right: float = 0.03
     
-    rotation: int = 180  # Rotation in degrees (0, 90, 180, 270)
+    rotation: float = 180  # Legacy automatic orientation, clockwise degrees
+    # Load ROI bounds plate search; preprocess ROI is fixed in plate coordinates.
+    # None searches the whole image / uses the configured fixed plate margins.
+    load_roi: tuple[float, float, float, float, float] | None = None
+    preprocess_roi: tuple[float, float, float, float, float] | None = None
     n_clusters: int = 6  # Number of plants per image
     
     # Nested configs
@@ -107,8 +114,13 @@ class Config:
     
     def _validate(self) -> None:
         """Validate configuration values."""
-        if self.rotation not in (0, 90, 180, 270):
-            raise ValueError(f"rotation must be 0, 90, 180, or 270, got {self.rotation}")
+        if self.crop.background_region not in ("largest", "all"):
+            raise ValueError("background_region must be largest or all")
+        if not math.isfinite(self.rotation):
+            raise ValueError("rotation must be finite")
+        from .preprocessing.roi import validate
+        self.load_roi = validate(self.load_roi)
+        self.preprocess_roi = validate(self.preprocess_roi)
         
         for name, value in [
             ("margin_top", self.margin_top),
@@ -167,14 +179,22 @@ class Config:
     def preprocess_config_hash(self) -> str:
         """Hash of config values that affect preprocessing."""
         values = (
+            "plate-search-fixed-analysis-v2",
             self.rotation, self.n_clusters,
             self.margin_top, self.margin_bottom, self.margin_left, self.margin_right,
             self.green.min_count, self.green.min_area,
             self.green.hsv_lower, self.green.hsv_upper,
             self.crop.top_ratio, self.crop.bottom_ratio,
             self.crop.blue_hsv_lower, self.crop.blue_hsv_upper,
+            self.crop.background_enabled, self.crop.background_region,
             self.registration.enabled, self.registration.margin_ratio,
         )
+        # Older versions ignored non-default margins. Do not reuse those
+        # cached alignments now that this setting controls the search border.
+        if self.registration.enabled and self.registration.margin_ratio != 0.25:
+            values += ("configurable-registration-border-v1",)
+        if self.load_roi is not None or self.preprocess_roi is not None:
+            values += ("rotated-crops-v1", self.load_roi, self.preprocess_roi)
         return md5(str(values).encode()).hexdigest()
 
     def tracking_config_hash(self) -> str:
