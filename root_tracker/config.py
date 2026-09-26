@@ -226,15 +226,17 @@ class Config:
 
     def preprocess_config_hash(self) -> str:
         """Hash of config values that affect preprocessing."""
+        # YAML/JSON turn tuples into lists; a GUI spinbox may turn 180 into
+        # 180.0. Equivalent settings must retain the same cache identity.
         values = (
             "plate-search-fixed-analysis-v2",
             self.data.filename_template, self.data.date_format,
-            self.rotation, self.n_clusters,
+            float(self.rotation), self.n_clusters,
             self.margin_top, self.margin_bottom, self.margin_left, self.margin_right,
             self.green.min_count, self.green.min_area,
-            self.green.hsv_lower, self.green.hsv_upper,
+            list(self.green.hsv_lower), list(self.green.hsv_upper),
             self.crop.top_ratio, self.crop.bottom_ratio,
-            self.crop.blue_hsv_lower, self.crop.blue_hsv_upper,
+            list(self.crop.blue_hsv_lower), list(self.crop.blue_hsv_upper),
             self.crop.background_enabled, self.crop.background_region,
             self.registration.enabled, self.registration.margin_ratio,
         )

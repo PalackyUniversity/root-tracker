@@ -5,6 +5,7 @@ Integrates all components into the main window layout.
 """
 
 import os
+import json
 from copy import deepcopy
 import math
 import multiprocessing as mp
@@ -274,17 +275,29 @@ class MainWindow(QMainWindow):
         super().__init__()
         
         # An explicit CLI configuration takes precedence over the last preset.
+        self._remember_session = config is None
         self._startup_preset = False
         self._active_preset_name = None
         if config is None:
             from pathlib import Path
             store = self._get_preset_store()
             preferences = QSettings("RootTracker", "RootTracker")
+            session = preferences.value('last_session', '')
+            if session:
+                try:
+                    session = json.loads(session)
+                    restored = Config.from_dict(session['config'])
+                    if os.path.isdir(restored.data.input):
+                        config = restored
+                        self._active_preset_name = session.get('preset')
+                        self._startup_preset = True
+                except (TypeError, ValueError, KeyError):
+                    pass  # Fall back to the saved preset if the session is invalid.
             saved = preferences.value('active_preset', '')
             if saved and Path(saved) == store.path('in_vitro') and store.path('Defaults').exists():
                 saved = str(store.path('Defaults'))
                 preferences.setValue('active_preset', saved)
-            if saved:
+            if config is None and saved:
                 try:
                     config = Config.from_yaml(saved)
                     from pathlib import Path
@@ -366,6 +379,7 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """Handle application close - cleanup any running workers."""
         self._settings_panel.finish_color_picker()
+        self._apply_auto_settings(evaluate=False)
         self._auto_apply_timer.stop()
         self._evaluation_timer.stop()
         self._roi_editor.close()
@@ -384,7 +398,20 @@ class MainWindow(QMainWindow):
             self._executor.shutdown(wait=False, cancel_futures=True)
             self._executor = None
         
+        self._save_last_session()
         event.accept()
+
+    def _save_last_session(self):
+        """Remember committed GUI settings without overwriting a named preset."""
+        if not self._remember_session or not self._series_dict:
+            return
+        config = deepcopy(self._config)
+        config.data.resolve_paths(config.base_path)
+        self._settings.setValue('last_session', json.dumps({
+            'config': config.to_dict(),
+            'preset': self._active_preset_name,
+        }))
+        self._settings.sync()
     
     def _setup_ui(self) -> None:
         """Set up the main UI layout."""
@@ -2833,6 +2860,7 @@ class MainWindow(QMainWindow):
                 return
             
             stats_df.to_csv(file_path, index=False)
+            self._save_last_session()
             
             self._processing_label.hide()
             self._progress_bar.hide()
