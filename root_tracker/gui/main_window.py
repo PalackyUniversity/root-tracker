@@ -2766,13 +2766,8 @@ class MainWindow(QMainWindow):
     
     def _on_about(self) -> None:
         """Show about dialog."""
-        QMessageBox.about(
-            self,
-            "About Root Tracker",
-            "<h3>Root Tracker</h3>"
-            "<p>A tool for tracking and analyzing plant root growth.</p>"
-            "<p>Version 1.0</p>"
-        )
+        from .dialogs.about_dialog import AboutDialog
+        AboutDialog(self).exec()
     
     def _on_step_back(self) -> None:
         """Navigate to previous workflow step."""
