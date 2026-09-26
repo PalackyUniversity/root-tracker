@@ -6,6 +6,7 @@ from PySide6.QtCore import Qt, QPoint
 from PySide6.QtWidgets import QApplication
 
 from root_tracker.gui.main_window import MainWindow
+from root_tracker.config import Config
 
 
 class WindowStartupTests(unittest.TestCase):
@@ -17,7 +18,7 @@ class WindowStartupTests(unittest.TestCase):
     def setUp(self):
         # Avoid loading the user's last dataset or starting processing workers.
         with patch.object(MainWindow, '_load_last_folder'):
-            self.window = MainWindow()
+            self.window = MainWindow(Config())
         self.addCleanup(self.window.close)
 
     def test_constructor_keeps_window_hidden_and_normal(self):

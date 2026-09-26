@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QSplitter, QStatusBar, QMessageBox,
     QApplication, QFileDialog
 )
-from PySide6.QtCore import Qt, QTimer, QSettings, QThread, Signal
+from PySide6.QtCore import Qt, QTimer, QSettings, QThread, Signal, QStandardPaths
 from PySide6.QtGui import QAction, QKeySequence
 
 from ..config import Config
@@ -255,9 +255,28 @@ class MainWindow(QMainWindow):
     def __init__(self, config: Config | None = None) -> None:
         super().__init__()
         
-        # Initialize with default config if none provided
+        # An explicit CLI configuration takes precedence over the last preset.
+        self._startup_preset = False
+        self._active_preset_name = None
         if config is None:
-            config = Config()
+            saved = QSettings("RootTracker", "RootTracker").value('active_preset', '')
+            if saved:
+                try:
+                    config = Config.from_yaml(saved)
+                    from pathlib import Path
+                    self._active_preset_name = Path(saved).stem
+                    self._startup_preset = os.path.isdir(config.data.input)
+                except Exception:
+                    config = None
+            if config is None:
+                store = self._get_preset_store()
+                if 'in_vitro' in store.names():
+                    config = store.load('in_vitro')
+                    self._active_preset_name = 'in_vitro'
+                    self._startup_preset = os.path.isdir(config.data.input)
+                else:
+                    config = Config()
+                    self._active_preset_name = None
         self._config = config
         
         # Settings for persisting application state
@@ -314,7 +333,10 @@ class MainWindow(QMainWindow):
         # Finish startup while hidden. The launcher shows the normal window
         # once, without an early maximize request racing the first titlebar drag.
         # Load last folder if available
-        self._load_last_folder()
+        if self._startup_preset:
+            self._reload_images()
+        else:
+            self._load_last_folder()
     
     def closeEvent(self, event):
         """Handle application close - cleanup any running workers."""
@@ -478,6 +500,11 @@ class MainWindow(QMainWindow):
         quit_action.triggered.connect(self.close)
         file_menu.addAction(quit_action)
         
+        self._presets_menu = MenuBarPopup(menubar, '&Presets')
+        menubar.addMenu(self._presets_menu)
+        self._presets_menu.addAction('Manage presets…', self._manage_presets)
+        self._presets_menu.aboutToShow.connect(self._refresh_presets_menu)
+
         # View menu
         view_menu = MenuBarPopup(menubar, "&View")
         view_menu.setToolTipsVisible(False)
@@ -502,7 +529,7 @@ class MainWindow(QMainWindow):
 
         self._auto_preview_action = QAction("&Auto-apply settings", self)
         self._auto_preview_action.setCheckable(True)
-        self._auto_preview_action.setChecked(True)  # Default on
+        self._auto_preview_action.setChecked(self._config.gui.auto_apply)
         self._auto_preview_action.setStatusTip("Apply edits automatically in Load and Preprocess. Reset restores settings from before automatic edits. Tracking settings use Apply.")
         self._auto_preview_action.toggled.connect(self._on_auto_preview_toggled)
         view_menu.addAction(self._auto_preview_action)
@@ -555,6 +582,96 @@ class MainWindow(QMainWindow):
         # Image viewer - mask modification
         self._image_viewer.mask_modified.connect(self._on_mask_modified)
     
+    def _get_preset_store(self):
+        from pathlib import Path
+        from .presets import PresetStore
+        directory = Path(QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppConfigLocation)) / 'presets'
+        store = PresetStore(directory)
+        store.initialize(Path(__file__).resolve().parents[2] / 'configs')
+        return store
+
+    def _refresh_presets_menu(self):
+        self._presets_menu.clear()
+        manage = self._presets_menu.addAction('Manage presets…')
+        manage.triggered.connect(self._manage_presets)
+        manage.setEnabled(self._state == ProcessingState.IDLE)
+        try:
+            store = self._get_preset_store()
+            self._presets_menu.addSeparator()
+            for name in store.names():
+                action = self._presets_menu.addAction(name)
+                action.setCheckable(True)
+                action.setChecked(name == self._active_preset_name)
+                action.setEnabled(self._state == ProcessingState.IDLE)
+                action.triggered.connect(lambda checked=False, n=name: self._select_preset(n))
+        except Exception as error:
+            self.statusBar().showMessage(f'Cannot load presets: {error}')
+
+    def _manage_presets(self):
+        if self._state != ProcessingState.IDLE:
+            return
+        from .dialogs.presets_dialog import PresetsDialog
+        try:
+            dialog = PresetsDialog(self._get_preset_store(), self._config, self, active_name=self._active_preset_name)
+            if dialog.exec() == dialog.DialogCode.Accepted:
+                self._apply_preset(dialog.selected_config, dialog.selected_name)
+        except Exception as error:
+            QMessageBox.warning(self, 'Preset error', str(error))
+
+    def _select_preset(self, name):
+        if self._state != ProcessingState.IDLE:
+            return
+        try:
+            self._apply_preset(self._get_preset_store().load(name), name)
+        except Exception as error:
+            QMessageBox.warning(self, 'Preset error', str(error))
+
+    def _apply_preset(self, config, name):
+        """Switch dataset and processing defaults as one configuration change."""
+        from dataclasses import fields
+        from pathlib import Path
+        config = deepcopy(config)
+        config._validate()
+        if not Path(config.data.input).is_dir():
+            raise ValueError(f'Input folder does not exist: {config.data.input}')
+        self._settings_panel.finish_color_picker()
+        self._auto_apply_timer.stop()
+        self._evaluation_timer.stop()
+        self._roi_editor.reset()
+        if (config.data.input == self._config.data.input and
+                config.preprocess_config_hash() != self._config.preprocess_config_hash()):
+            for series in self._series_dict.values():
+                self._invalidate_preprocessing(series)
+        # Keep references held by SettingsPanel and other widgets valid.
+        for field in fields(Config):
+            setattr(self._config, field.name, deepcopy(getattr(config, field.name)))
+        self._auto_apply_baselines.clear()
+        self._settings_drafts.clear()
+        self._mask_drafts.clear()
+        self._current_series = self._current_image = None
+        self._workflow_bar.blockSignals(True)
+        self._workflow_bar._completed_steps.clear()
+        self._workflow_bar.set_current_step(WorkflowStep.LOAD)
+        self._workflow_bar.blockSignals(False)
+        self._settings_panel.set_step(WorkflowStep.LOAD)
+        for action, value in ((self._auto_preview_action, config.gui.auto_apply),
+                              (self._detect_barcodes_action, config.data.detect_barcodes)):
+            action.blockSignals(True)
+            action.setChecked(value)
+            action.blockSignals(False)
+        self._sync_auto_apply_controls()
+        self._series_dict = {}
+        self._image_tree.set_series({})
+        self._image_viewer.set_image(None)
+        self._image_viewer.clear_centroids()
+        self._image_viewer.clear_barcode_overlay()
+        self._image_tree.set_filter_aside(False)
+        self._image_tree.set_step(WorkflowStep.LOAD, self._config)
+        self._reload_images()
+        self._active_preset_name = name
+        self._settings.setValue('active_preset', str(self._get_preset_store().path(name)))
+        self.statusBar().showMessage(f'Preset applied: {name}', 5000)
+
     def _on_load_images(self) -> None:
         """Handle load images action (Ctrl+O)."""
         dialog = LoadDialog(
@@ -1243,6 +1360,7 @@ class MainWindow(QMainWindow):
         self._sync_auto_apply_controls()
 
     def _on_auto_preview_toggled(self, enabled: bool) -> None:
+        self._config.gui.auto_apply = enabled
         self._auto_apply_timer.stop()
         self._sync_auto_apply_controls()
         if self._auto_apply_enabled() and self._settings_panel._is_dirty:

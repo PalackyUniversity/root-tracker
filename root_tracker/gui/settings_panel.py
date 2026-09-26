@@ -213,7 +213,7 @@ class SettingsPanel(QWidget):
         self._crop_summary.setVisible(not load)
         self._crop_edit_btn = QPushButton('Edit crop')
         self._crop_edit_btn.setCheckable(True)
-        self._crop_edit_btn.setChecked(load)
+        self._crop_edit_btn.setChecked(self._config.gui.load_crop_editing if load else self._config.gui.preprocess_crop_editing)
         self._crop_edit_btn.setStatusTip('Resize or move the box in the image. Drag just outside a corner or use the round handle to rotate. Rotation snaps every 15°; continue dragging to release a snap.')
         self._crop_edit_btn.toggled.connect(self._crop_edit_changed)
         buttons = QHBoxLayout()
@@ -251,7 +251,7 @@ class SettingsPanel(QWidget):
             self._background_region.currentIndexChanged.connect(self._background_mode_changed)
             self._set_background_controls_enabled()
         self._update_crop_summary()
-        self._crop_edit_btn.setText('Finish editing' if load else 'Edit crop')
+        self._crop_edit_btn.setText('Finish editing' if self._crop_edit_btn.isChecked() else 'Edit crop')
 
     def _set_background_controls_enabled(self):
         enabled = self._background_enabled.isChecked()

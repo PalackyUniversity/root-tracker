@@ -4,7 +4,7 @@ Configuration management for Root Tracker.
 Uses Python dataclasses for type-safe configuration with validation.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict, fields
 from hashlib import md5
 from pathlib import Path
 from typing import Optional
@@ -70,6 +70,14 @@ class CropConfig:
 
 
 @dataclass
+class GuiConfig:
+    """Workflow defaults saved alongside processing presets."""
+    auto_apply: bool = True
+    load_crop_editing: bool = True
+    preprocess_crop_editing: bool = False
+
+
+@dataclass
 class Config:
     """
     Main configuration class for Root Tracker.
@@ -104,6 +112,7 @@ class Config:
     threshold: ThresholdConfig = field(default_factory=ThresholdConfig)
     registration: RegistrationConfig = field(default_factory=RegistrationConfig)
     crop: CropConfig = field(default_factory=CropConfig)
+    gui: GuiConfig = field(default_factory=GuiConfig)
     
     # Internal state
     _base_path: Optional[Path] = field(default=None, repr=False)
@@ -114,6 +123,12 @@ class Config:
     
     def _validate(self) -> None:
         """Validate configuration values."""
+        for section in (self.data, self.registration, self.crop, self.gui):
+            for setting in fields(section):
+                if isinstance(setting.default, bool) and type(getattr(section, setting.name)) is not bool:
+                    raise ValueError(f'{setting.name} must be true or false')
+        if type(self.n_clusters) is not int:
+            raise ValueError('Origin counts must be an integer')
         if self.crop.background_region not in ("largest", "all"):
             raise ValueError("background_region must be largest or all")
         if not math.isfinite(self.rotation):
@@ -131,6 +146,25 @@ class Config:
             if not 0 <= value <= 1:
                 raise ValueError(f"{name} must be between 0 and 1, got {value}")
                 
+        if not 0 <= self.crop.top_ratio < self.crop.bottom_ratio <= 1:
+            raise ValueError('Crop ratios must satisfy 0 ≤ top < bottom ≤ 1')
+        if self.margin_top + self.margin_bottom >= 1 or self.margin_left + self.margin_right >= 1:
+            raise ValueError('Opposite crop margins must leave some image visible')
+        if not 0 <= self.registration.margin_ratio <= 1:
+            raise ValueError('Registration margin must be between 0 and 1')
+        for section, lower_name, upper_name in ((self.green, 'hsv_lower', 'hsv_upper'),
+                                               (self.crop, 'blue_hsv_lower', 'blue_hsv_upper')):
+            for name in (lower_name, upper_name):
+                value = getattr(section, name)
+                if len(value) != 3 or any(type(v) is not int or not 0 <= v <= limit for v, limit in zip(value, (179, 255, 255))):
+                    raise ValueError('HSV limits require hue 0–179 and saturation/value 0–255')
+            if any(a > b for a, b in zip(getattr(section, lower_name)[1:], getattr(section, upper_name)[1:])):
+                raise ValueError('Lower saturation/value must not exceed the upper limit')
+        for value in (self.green.min_count, self.green.min_area, self.threshold.min_contour_area, self.threshold.min_contour_length):
+            if type(value) is not int or value < 0:
+                raise ValueError('Contour limits must be non-negative integers')
+        if not 0 <= self.threshold.low <= self.threshold.high <= 255:
+            raise ValueError('Root thresholds must satisfy 0 ≤ low ≤ high ≤ 255')
         if self.n_clusters < 1:
             raise ValueError(f"n_clusters must be >= 1, got {self.n_clusters}")
     
@@ -149,26 +183,40 @@ class Config:
         with open(path) as f:
             raw = yaml.safe_load(f)
         
-        # Parse nested configs
-        data_config = DataConfig(**raw.pop("data", {}))
-        green_config = GreenConfig(**raw.pop("green", {}))
-        threshold_config = ThresholdConfig(**raw.pop("threshold", {}))
-        registration_config = RegistrationConfig(**raw.pop("registration", {}))
-        crop_config = CropConfig(**raw.pop("crop", {}))
-        
-        config = cls(
-            data=data_config,
-            green=green_config,
-            threshold=threshold_config,
-            registration=registration_config,
-            crop=crop_config,
-            **raw
-        )
+        config = cls.from_dict(raw)
         config._base_path = path.parent.parent  # Go up from configs/ to project root
         config.data.resolve_paths(config._base_path)
         
         return config
     
+    @classmethod
+    def from_dict(cls, raw):
+        """Read the same schema used by YAML without mutating the input."""
+        if not isinstance(raw, dict):
+            raise ValueError('Configuration must contain named settings')
+        values = dict(raw)
+        nested = {}
+        for name, kind in (('data', DataConfig), ('green', GreenConfig),
+                           ('threshold', ThresholdConfig), ('registration', RegistrationConfig),
+                           ('crop', CropConfig), ('gui', GuiConfig)):
+            nested[name] = kind(**values.pop(name, {}))
+        return cls(**nested, **values)
+
+    def to_dict(self):
+        """Return portable, safe-YAML-compatible configuration values."""
+        values = asdict(self)
+        values.pop('_base_path', None)
+        def plain(value):
+            if isinstance(value, dict):
+                return {key: plain(item) for key, item in value.items()}
+            if isinstance(value, (list, tuple)):
+                return [plain(item) for item in value]
+            return value
+        return plain(values)
+
+    def to_yaml(self, path):
+        Path(path).write_text(yaml.safe_dump(self.to_dict(), sort_keys=False), encoding='utf-8')
+
     @property
     def base_path(self) -> Path:
         """Get the base path for the project."""
