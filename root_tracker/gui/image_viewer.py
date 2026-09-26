@@ -643,7 +643,7 @@ class ZoomableGraphicsView(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         palette = self.palette()
         background = (QColor("#e5e5e5")
-                      if is_light(palette) else QColor(Qt.GlobalColor.darkGray))
+                      if is_light(palette) else QColor("#202020"))
         self.setBackgroundBrush(background)
         self.setStyleSheet(scrollbar_stylesheet(palette) + f"""
             QGraphicsView {{ border: none; background-color: {background.name()}; }}

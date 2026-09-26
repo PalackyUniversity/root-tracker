@@ -430,8 +430,9 @@ class MainWindow(QMainWindow):
         
         self._status_bar = QStatusBar()
         self._status_bar.setSizeGripEnabled(False)  # Remove resize grip
-        # Match the status bar's two-pixel bottom inset at the right edge.
-        self._status_bar.setContentsMargins(0, 0, 2, 0)
+        # Add to Qt's built-in insets for 5 px clearance, matching the settings panel.
+        # The top also includes the one-pixel status-bar divider.
+        self._status_bar.setContentsMargins(3, 3, 5, 3)
         self.setStatusBar(self._status_bar)
         # Left: Zoom controls (as regular widgets - stay on left)
         self._fit_btn = QPushButton("Fit")
