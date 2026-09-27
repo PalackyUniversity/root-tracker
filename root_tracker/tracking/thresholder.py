@@ -152,24 +152,50 @@ class RootThresholder:
         # Remove detections where user_mask is 255
         return cv2.bitwise_and(mask, cv2.bitwise_not(user_mask))
 
-    def filter_small_contours(self, mask: np.ndarray) -> tuple[np.ndarray, list]:
+    def filter_small_contours(
+        self, mask: np.ndarray, *, previous_colored_samples: dict | None = None,
+    ) -> tuple[np.ndarray, list]:
         """
         Remove small contours from the mask.
         
         Args:
             mask: Binary root mask.
+            previous_colored_samples: Established skeleton pixels. Sustained
+                nearby evidence preserves thin roots fragmented by thresholding.
             
         Returns:
             Tuple of (filtered mask, list of valid contours).
         """
         contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        from scipy.spatial import cKDTree
+        history = [cKDTree(np.asarray(list(pixels)))
+                   for pixels in (previous_colored_samples or {}).values()
+                   if len(pixels) >= 5]
+
+        def established(contour):
+            points = np.unique(contour[:, 0], axis=0)
+            for tree in history:
+                # Use the router's broadened temporal-evidence rule: four
+                # pixels of thinning/registration drift, at least ten samples
+                # and half of the observed fragment. Require the same sustained
+                # five-sample history used for ownership runs as well.
+                distances, neighbors = tree.query(points, distance_upper_bound=4.000001)
+                matches = np.isfinite(distances)
+                # A single historical contact cannot rescue unrelated debris.
+                if (np.count_nonzero(matches) >= max(10, .5 * len(points))
+                        and len(np.unique(neighbors[matches])) >= 5):
+                    return True
+            return False
+
         valid_contours = [
             cnt for cnt in contours 
             if cv2.contourArea(cnt) > self.config.threshold.min_contour_area
+            or established(cnt)
         ]
         
         result = np.zeros_like(mask)
         cv2.drawContours(result, valid_contours, -1, 1, cv2.FILLED)
+        result[mask == 0] = 0
         
         return result, valid_contours
     

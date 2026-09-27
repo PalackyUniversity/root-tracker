@@ -390,9 +390,11 @@ class RootTrackingPipeline:
                     image_data.rsml_samples = {}
             return statistics
         
+        previous_main = {}
         total_images = len(series.images)
         for idx, image_data in enumerate(series.images):
             if image_data.rsml_document is not None:
+                previous_main = {}  # A manual replacement starts a new authoritative geometry.
                 from .io.rsml_replacement import render_replacement
                 from .io.root_mask import apply_root_mask
                 apply_root_mask(image_data, series.user_mask)
@@ -424,6 +426,7 @@ class RootTrackingPipeline:
             # Threshold to get root mask. Margins are already cropped out during
             # preprocessing, so there is no edge border left to clear here.
             thresh = self.thresholder.threshold(image_data.process)
+            unmasked_thresh = thresh
 
             # Apply user mask if present (series-level mask)
             thresh = self.thresholder.apply_user_mask(thresh, series.user_mask)
@@ -439,10 +442,16 @@ class RootTrackingPipeline:
                 image_data.new_area = None
                 image_data.new_parts = None
             
-            # Filter small contours
-            thresh_filtered, contours = self.thresholder.filter_small_contours(thresh)
+            # Preserve observed thin fragments supported by the preceding frame.
+            previous_colored_samples = (series.images[idx - 1].colored_samples
+                                        if idx > 0 else None)
+            thresh_filtered, contours = self.thresholder.filter_small_contours(
+                thresh, previous_colored_samples=previous_colored_samples)
             image_data.total_area = cv2.countNonZero(thresh_filtered)
             
+            _, component_labels, component_stats, _ = cv2.connectedComponentsWithStats(
+                (unmasked_thresh > 0).astype(np.uint8))
+
             # Skeletonize
             skeleton = self.skeletonizer.skeletonize_mask(thresh_filtered)
             image_data.total_length = self.skeletonizer.get_total_length(skeleton)
@@ -518,6 +527,12 @@ class RootTrackingPipeline:
                             corner['junction_id'] = int(adjacent[0])
                     if upper_info.get('junction_id') in terminal_exits:
                         upper_info['terminal_exits'] = terminal_exits.pop(upper_info['junction_id'])
+                    ux, uy = upper_info['point']
+                    component = int(component_labels[uy, ux])
+                    upper_info['component_id'] = component
+                    width, height = component_stats[component, 2:4]
+                    upper_info['component_extent'] = float(np.hypot(width - 1, height - 1))
+                    upper_info['component_area'] = int(component_stats[component, cv2.CC_STAT_AREA])
                     upper_info['contour_index'] = cnt_n
                     upper_info['contour'] = cnt
                     upper_info['lower_point'] = lower_info['point']
@@ -527,13 +542,6 @@ class RootTrackingPipeline:
                     
                     if lower_info['point'] not in endpoints:
                         lower_corners.append(lower_info)
-            
-            # Retrieve previous colored samples for consistency
-            previous_colored_samples = None
-            if idx > 0:
-                prev_image = series.images[idx - 1]
-                if hasattr(prev_image, 'colored_samples'):
-                    previous_colored_samples = prev_image.colored_samples
             
             # Link segments and assign to plants
             pairs, colored, colored_samples = self.linker.link_corners(
@@ -585,56 +593,33 @@ class RootTrackingPipeline:
                 plant_length = cv2.countNonZero(mask_to_count)
                 image_data.plant_length.append(plant_length)
                 
-                # Find main root depth
-                if colored_k:
-                    top = min(colored_k.keys(), key=lambda z: z[1])
-                    bottom = max(colored_k.keys(), key=lambda z: z[1])
-                    main_root_depth = bottom[1] - top[1]
-                else:
-                    main_root_depth = 0
-                    top = (pos_x_median[k], pos_y_median[k])
-                    bottom = (pos_x_median[k], pos_y_median[k])
-                
+                from .tracking.main_root import select_main_path
+                bottom, main_indices = select_main_path(
+                    upper_corners, colored, pairs, k, previous_main.get(k, set()),
+                    lower_corners,
+                    (previous_colored_samples or {}).get(k))
+                top = (min(colored_k, key=lambda z: z[1]) if colored_k
+                       else (pos_x_median[k], pos_y_median[k]))
+                bottom = bottom if bottom is not None else top
+                main_root_depth = bottom[1] - top[1]
+
                 # Keep depth markers separate until root annotations are complete.
                 cv2.line(depth_mask, top, (top[0] + 100, top[1]), 255, 1)
                 cv2.line(depth_mask, (top[0] + 100, top[1]), (top[0] + 100, bottom[1]), 255, 3)
                 cv2.line(depth_mask, (top[0] + 100, bottom[1]), bottom, 255, 1)
 
-                # Trace longest path (backtracking from bottom)
                 mask_longest = np.zeros_like(skeleton_split)
-                conts = []
-                last_len = None
-                visited = set()  # Prevent cycles in segment graph
-
-                # We need to trace back from the bottom point to the top
-                current_bottom = bottom
-
-                while last_len != len(conts):
-                    last_len = len(conts)
-                    for uc_idx, uc in enumerate(upper_corners):
-                        # Find the segment that ends at current_bottom
-                        if 'lower_point' in uc and uc['lower_point'] == current_bottom and uc_idx not in visited:
-                            visited.add(uc_idx)
-                            # Found the segment, add its contour
-                            if uc['contour_index'] < len(segment_contours):
-                                conts.append(segment_contours[uc['contour_index']])
-                                main_segments.setdefault(uc['contour_index'], set()).add(k)
-
-                            # Now find the pair that connects to the top of this segment
-                            if k in uc.get('parent_points', {}):
-                                current_bottom = uc['parent_points'][k]
-                            else:
-                                for p1, p2 in pairs:
-                                    if p1 == uc['point']:
-                                        current_bottom = p2
-                                        break
-                            break
+                conts = [segment_contours[i] for i in main_indices]
+                for i in main_indices:
+                    main_segments.setdefault(i, set()).add(k)
 
                 cv2.drawContours(mask_longest, conts, -1, 255, cv2.FILLED)
                 longest_length = cv2.countNonZero(mask_longest)
                 image_data.longest.append(longest_length)
+                ys, xs = np.nonzero(mask_longest)
+                if len(xs):
+                    previous_main.setdefault(k, set()).update(zip(xs.tolist(), ys.tolist()))
                 if not has_mask:
-                    ys, xs = np.nonzero(mask_longest)
                     main_pixels.extend(zip(np.full(len(xs), k), xs, ys))
                 
                 # Color the roots

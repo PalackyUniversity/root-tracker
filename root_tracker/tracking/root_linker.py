@@ -164,6 +164,9 @@ class RootLinker:
             for n, (x, y) in enumerate(zip(plant_positions_x, plant_positions_y))
         }
         
+        from .gap_evidence import GapEvidence
+        gap_evidence = GapEvidence(upper_corners)
+
         # Sort corners by y-coordinate
         upper_corners_sorted = sorted(upper_corners, key=lambda c: c['point'][1])
         lower_corners_sorted = sorted(lower_corners, key=lambda c: c['point'][1])
@@ -246,6 +249,8 @@ class RootLinker:
                 # A nearby fragment is not evidence of a root. Only endpoints
                 # already connected to a plant can pass on its identity.
                 if lower['point'] not in colored:
+                    continue
+                if self.config.registration.enabled and not gap_evidence.allows(upper, lower['point']):
                     continue
                 
                 cost = self.compute_link_cost(

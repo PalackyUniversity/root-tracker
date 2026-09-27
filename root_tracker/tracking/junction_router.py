@@ -142,9 +142,13 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
     def publish(index, routes):
         upper = uppers[index]
         processed.add(index)
-        if index >= real_count or not routes or 'lower_point' not in upper:
+        if index >= real_count or 'lower_point' not in upper:
             return
         supported, continuing = evidence(index)
+        # A disconnected fragment needs majority historical support. The looser
+        # contact vote disambiguates rooted paths but cannot establish a root.
+        if not routes and not continuing and (supported is None or supported[1] < .5):
+            return
         if len(routes) > 1 and index not in contact_extents and not contact_proof.get(index):
             options_here = {pid: [route] for pid, route in routes.items()}
             winner = supported[0] if supported is not None and supported[0] in routes else next(iter(routes))
