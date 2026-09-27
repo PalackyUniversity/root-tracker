@@ -274,7 +274,7 @@ class Config:
         """Hash of config values that affect tracking."""
         values = (
             "foreground-brightness-v2",
-            "historical-main-and-contact-continuation-v1",
+            "historical-main-and-contact-continuation-v2",
             "plant-connected-links-v1",
             "directional-shared-junctions-v4-contact-tangents",
             "root-depth-overlay-v1",

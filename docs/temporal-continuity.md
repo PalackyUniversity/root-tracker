@@ -100,13 +100,20 @@ lateral prefixes and incomplete historical main observations.
 
 ## Whole-route motion and short physical crossings
 
-Main-root selection compares each historically supported candidate route to the
-whole previous main, using mean nearest distance with the accepted image
-alignment. The same comparison selects ancestry at reconnections and the final
-tip. A short lateral close to the old centerline therefore cannot win merely
-because the true main moved sideways. Sparse contact with a historical lateral
-also cannot exclude an entire shifted main contour: lateral exclusion requires
-majority support when no historical main samples are nearby.
+Main-root ancestry at reconnections compares routes to the whole historical
+main, using mean nearest distance with the accepted image alignment. Final tip
+selection prefers established main support. An internal arrival with an
+admissible continuation is not a competing terminal tip. If the support winner
+would truncate the most recently observed main, a continuation reaching that
+previous depth can instead win by explaining the whole historical route better.
+This preserves the movement recovery without letting tiny distance advantages
+switch a normally growing main to another branch.
+
+Sparse contact with an old lateral cannot erase a bridge between established
+main observations on both sides. This exception requires a majority of the
+bridge to be free of confirmed lateral evidence. A sparsely contested terminal contour stays available only for recovery: it
+cannot win normal support voting, must reach the full historical main depth,
+and must explain the historical route better than the truncated winner.
 
 At a new two-root crossing, the measured incoming diameters and angle define
 its geometric footprint (sum of diameters divided by the sine of half the

@@ -6,7 +6,7 @@ from .junction_router import plant_ids
 from .temporal_fragments import contour_path
 
 
-def _main_portions(upper, main_tree, lateral_tree):
+def _main_portions(upper, main_tree, lateral_tree, *, main_bridge=False):
     """Return current contour pieces with established lateral runs excluded."""
     if main_tree is None or lateral_tree is None:
         return [upper['contour']], upper['point'], upper['lower_point']
@@ -34,10 +34,10 @@ def _main_portions(upper, main_tree, lateral_tree):
     if not confirmed.any():
         return [upper['contour']], upper['point'], upper['lower_point']
     if not main.any():
-        # A shifted main can brush an old lateral at a junction. Sparse contact
-        # cannot classify its whole contour as lateral; require the same
-        # majority evidence used for a disconnected ownership assignment.
-        if np.count_nonzero(confirmed) * 2 < len(path):
+        # Sparse lateral contact may not erase a bridge between established
+        # main observations. Without those observations on both sides, it is
+        # not evidence that an unrelated branch has become the main.
+        if main_bridge and np.count_nonzero(confirmed) * 2 < len(path):
             return [upper['contour']], upper['point'], upper['lower_point']
         return [], None, None
     # A merged incoming lateral must not become the main's ancestry. Beyond
@@ -157,9 +157,19 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
             parent = ancestor.get('parent_points', {}).get(plant, parents.get(ancestor['point']))
 
     geometries, by_tip = {}, {}
+    recovery_only = set()
     for u in owned:
-        pieces, first, last = _main_portions(u, main_tree, lateral_tree)
         has_ancestor = established_ancestor(u)
+        pieces, first, last = _main_portions(
+            u, main_tree, lateral_tree,
+            main_bridge=has_ancestor and u['contour_index'] in ancestors_of_main)
+        if not pieces and has_ancestor:
+            # Keep a sparsely contested moved terminal available for recovery,
+            # without allowing it to vote itself into an ordinary main branch.
+            recovered, start, end = _main_portions(u, main_tree, lateral_tree, main_bridge=True)
+            if recovered:
+                pieces, first, last = recovered, start, end
+                recovery_only.add(u['contour_index'])
         if not pieces:
             if not (has_ancestor and u['contour_index'] in ancestors_of_main):
                 continue
@@ -252,17 +262,42 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
         memo[point] = result
         return result
 
-    best = None
-    for tip in by_tip:
-        if not geometries[by_tip[tip]['contour_index']]:
+    # An internal arrival is not a tip when an admissible physical continuation
+    # exists. At a reconnection, counting its old samples separately would let
+    # the losing incoming arm beat the complete selected route.
+    continued = set()
+    for node in by_tip.values():
+        if not geometries[node['contour_index']] or node['contour_index'] in recovery_only:
             continue
-        support_score, path = trace(tip, set())
-        score = (*route_quality(path, support_score), tip[1])
-        if best is None or score > best[0]:
-            best = score, tip, path
-    if best is None:
+        parent = node.get('parent_points', {}).get(plant, parents.get(node['point']))
+        if parent != node['lower_point']:
+            continued.add(parent)
+        continued.update(p for p in incoming.get(node.get('junction_id'), [])
+                         if p != node['lower_point'] and p[1] <= node['point'][1])
+    tips = [tip for tip in by_tip if tip not in continued
+            and geometries[by_tip[tip]['contour_index']]]
+    if not tips:
+        tips = [tip for tip in by_tip if geometries[by_tip[tip]['contour_index']]]
+    candidates = [(trace(tip, set()), tip) for tip in tips]
+    established = [item for item in candidates if not recovery_only.intersection(item[0][1])]
+    if not established:
         return None, {}
-    return best[1], {index: geometries[index] for index in best[2] if geometries[index]}
+    (support_score, path), tip = max(established, key=lambda item: (item[0][0], item[1][1]))
+    recent = set(previous or ()) & set(previous_roots or ())
+    if recent and tip[1] < max(y for _, y in recent):
+        previous_depth = max(y for _, y in recent)
+        continuations = [item for item in candidates if item[1][1] >= previous_depth
+                         and (not recovery_only.intersection(item[0][1])
+                              or item[1][1] >= max(y for _, y in previous))]
+        if continuations:
+            # Pixel votes alone can prefer a short lateral near the old
+            # centerline after the whole main moves sideways. Recover only
+            # when that vote would truncate an observed established route.
+            (score, alternative), endpoint = max(continuations,
+                key=lambda item: (*route_quality(item[0][1], item[0][0]), item[1][1]))
+            if route_quality(alternative, score) > route_quality(path, support_score):
+                path, tip = alternative, endpoint
+    return tip, {index: geometries[index] for index in path if geometries[index]}
 
 
 def select_main_path(upper, colored, pairs, plant, previous, lowers=(), previous_roots=None):
