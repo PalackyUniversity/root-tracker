@@ -22,26 +22,38 @@ the first plant ID. Disconnected fragments must still remain unassigned.
 3. Process segment dependencies from plant origins toward the tips. Non-junction
    gaps retain their existing links. At a physical junction, collect distinct
    incoming plant IDs and their tangents. A single plant may branch normally.
-4. With multiple plants, compute the circular angle difference between each
-   incoming tangent and each outgoing tangent. Previous-frame support is trusted
-   only for pixels within 2 pixels of exactly one plant: at least 5 pixels, at
-   least 20% of the outgoing segment, and at least 80% of its exclusive votes.
-   Penalize a conflicting identity by 180 degrees times that coverage fraction.
-   This prevents a later side branch from taking over an established main root;
-   isolated overlaps and previously shared pixels cannot force an identity.
-   Use minimum-cost bipartite
-   matching (SciPy's linear sum assignment) to reserve separate exits where
-   available. A 0.000001-degree order penalty breaks exact direction ties in
-   image-left-to-image-right order. Extra exits use the best incoming identity;
-   extra incoming identities share their best exit.
-5. A new lateral does not end established sharing: retain the incoming shared
-   IDs when at least 5 pixels and 60% of an outgoing segment match pixels that
-   actually belonged to both plants previously (within 2 pixels). Mere proximity
-   to two separate prior roots never counts as shared history.
+4. Match incoming directions to exits jointly with minimum-cost bipartite
+   matching (SciPy's linear sum assignment). A 0.000001-degree order penalty
+   breaks exact ties in image-left-to-image-right order. Historical ownership
+   constrains the result: at 2-pixel tolerance require at least 5 exclusive
+   matches, 20% segment coverage and 80% of exclusive votes. If inconclusive,
+   try 4 then 8 pixels, requiring at least 10 matches and 50% coverage instead.
+   Ambiguous pixels near multiple owners do not provide exclusive votes.
+   Preserve the established owner even if another incoming direction scores
+   better. A contact cannot add an owner to an established root unless an
+   outgoing segment at its downstream junction independently supports that
+   owner. Thus a root can end where it touches another root.
+5. Preserve established shared ownership from actual previously shared pixels,
+   allowing up to 8 pixels of alignment/thinning movement. Such evidence must
+   be at least as close as any competing historical owner. At least 5 matching
+   pixels are required. Retain whole-segment sharing only when the matches span
+   at least 60% of its path, account for at least 60% of observed historical
+   pixels, and no sustained exclusive historical portion conflicts with it.
+   Otherwise preserve only the matched shared portions, separately for disjoint
+   runs. Overlapping shared pairs combine all supported plant IDs. Sustained exclusive
+   historical runs (at least 5 nearest-owner pixels within 2 pixels, with gaps
+   of at most 2 intervening pixels) are also retained individually. Split a
+   current contour at these ownership boundaries, keeping its new growth
+   separately routed. This prevents both loss of old shared roots and expansion
+   of sharing over an established unshared neighbor. Temporal preservation also
+   runs in frames with no detected junctions.
 6. While a segment has multiple IDs, retain their pre-merge directions and
    entry order. These guide the next split. A resolved, single-plant continuation
    uses its own bottom tangent at subsequent junctions. Store a parent endpoint
    separately for each plant so longest-path tracing follows the proper root.
+   If a temporal boundary changes an endpoint owner, redirect its children to
+   the last fragment retaining their own identity and rebuild links in parent
+   order. Measurements, exported samples and drawing use the same fragments.
 7. A cyclic/ambiguous directed junction falls back to already rooted base links;
    it never authorizes an unrooted fragment.
 
@@ -70,9 +82,15 @@ also replays the cached dataset and checks rooted graph connections, retained
 root geometry, and changed plant identities. No image-level automatic comparison
 can establish biological ground truth for every ambiguous overlap.
 
-Validation for this change: all 265 unittest tests passed. A complete tracking
-rerun of 78 cached series (309 images) retained all previously assigned root
-pixels, had no mismatched per-plant parent identities, and left 1,651 per-plant
-frame pixel sets unchanged. Reported RT17/19/25/62 endpoints and four additional
-series' established main roots are asserted separately against traced identities.
+The follow-up contact regressions cover RT1/10/12 day30 and RT17 shared-root
+persistence. RT17's upper contact and left lateral remain with plant 2, as
+established on earlier days; its long lower shared root keeps both plants 2
+and 3. Earlier single-image expectations for that upper contact are superseded
+by these temporal observations.
+
+Validation: all 275 unittest tests passed. A 78-series/309-image replay retained
+all previously assigned geometry, had no mismatched parent identities, and left
+1,778 per-plant frame pixel sets unchanged. No run of five or more exactly
+matching historical pixels changed plant ownership. Short isolated coincidences
+are intentionally insufficient evidence for historical identity.
 Run the committed tests with `python -m unittest discover -s tests`.

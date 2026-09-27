@@ -36,6 +36,101 @@ def fixture_frames(filename):
 
 
 class RootCrossingTests(unittest.TestCase):
+    def test_shared_history_cannot_override_a_closer_established_root(self):
+        from root_tracker.tracking.junction_router import route_junctions
+        upper, _ = detected_segment((76, 10), (76, 100))
+        shared = {(70, y) for y in range(10, 101)}
+        own = {(76, y) for y in range(10, 101)}
+        _, colored, samples = route_junctions(
+            [upper], [], {(20, 5): 0, (70, 5): 1, (76, 5): 2},
+            [((76, 10), (76, 5))], 3, {0: shared, 1: shared, 2: own})
+        self.assertEqual(colored[(76, 100)], 2)
+        self.assertFalse(samples[0] | samples[1])
+
+    def test_shared_history_survives_a_frame_without_a_junction(self):
+        upper, lower = detected_segment((70, 10), (70, 100))
+        shared = {(70, y) for y in range(10, 101)}
+        _, colored, samples = RootLinker(Config(n_clusters=2)).link_corners(
+            [upper], [{'point': (20, 5), 'angle': 90.},
+                      {'point': (120, 5), 'angle': 90.}, lower],
+            [20, 120], [5, 5], {0: shared, 1: shared})
+        self.assertEqual(colored[(70, 100)], (0, 1))
+        self.assertTrue(shared <= samples[0] & samples[1])
+
+    def test_mixed_historical_owners_are_preserved_on_their_own_portions(self):
+        from root_tracker.tracking.junction_router import route_junctions
+        upper, _ = detected_segment((70, 10), (70, 120))
+        first = {(70, y) for y in range(50, 66)}
+        second = {(70, y) for y in range(10, 121)} - first
+        _, colored, samples = route_junctions(
+            [upper], [], {(20, 5): 0, (70, 5): 1},
+            [((70, 10), (70, 5))], 2, {0: first, 1: second})
+        self.assertEqual(colored[(70, 120)], 1)
+        self.assertIn((70, 57), samples[0])
+        self.assertNotIn((70, 57), samples[1])
+
+    def test_shared_and_exclusive_portions_do_not_expand_into_each_other(self):
+        from root_tracker.tracking.junction_router import route_junctions
+        upper, _ = detected_segment((76, 10), (76, 100))
+        shared = {(76, y) for y in range(10, 71)}
+        exclusive = {(76, y) for y in range(71, 101)}
+        _, colored, samples = route_junctions(
+            [upper], [], {(20, 5): 0, (70, 5): 1, (76, 5): 2},
+            [((76, 10), (76, 5))], 3, {0: shared, 1: shared, 2: exclusive})
+        self.assertEqual(colored[(76, 100)], 2)
+        self.assertIn((76, 40), samples[0] & samples[1])
+        self.assertNotIn((76, 40), samples[2])
+        self.assertNotIn((76, 90), samples[0] | samples[1])
+
+    def test_disjoint_shared_runs_and_three_owners_keep_their_exact_history(self):
+        from root_tracker.tracking.junction_router import route_junctions
+        prefix = {(76, y) for y in range(10, 31)}
+        suffix = {(76, y) for y in range(80, 101)}
+        whole = {(76, y) for y in range(10, 101)}
+        for previous in ({0: prefix | suffix, 1: prefix | suffix,
+                          2: whole - prefix - suffix},
+                         {0: prefix, 1: prefix, 2: prefix, 3: whole - prefix}):
+            upper, _ = detected_segment((76, 10), (76, 100))
+            count = len(previous)
+            origins = {(20 + 15 * pid, 5): pid for pid in previous}
+            parent = next(point for point, pid in origins.items() if pid == count - 1)
+            _, _, samples = route_junctions(
+                [upper], [], origins, [((76, 10), parent)], count, previous)
+            with self.subTest(owners=count):
+                self.assertEqual(samples, previous)
+
+    def test_temporal_fragment_boundaries_keep_children_on_their_own_plant(self):
+        from root_tracker.tracking.junction_router import route_junctions, plant_ids
+        parent, parent_lower = detected_segment((70, 10), (70, 65))
+        child, _ = detected_segment((70, 70), (70, 110))
+        _, colored, _ = route_junctions(
+            [parent, child], [parent_lower], {(70, 5): 0, (20, 5): 1},
+            [((70, 10), (70, 5)), ((70, 70), (70, 65))], 2,
+            {0: {(70, y) for y in range(10, 51)},
+             1: {(70, y) for y in range(51, 66)}})
+        self.assertEqual(colored[(70, 65)], 1)
+        self.assertIn(0, plant_ids(colored[child['parent_points'][0]]))
+
+    def test_touching_roots_cannot_take_over_established_neighboring_roots(self):
+        expected = {
+            'RT_26_2-1': {(381, 1061): 1, (297, 1117): 1},
+            'RT_26_2-10': {(874, 863): 1, (792, 936): 1},
+            'RT_26_2-12': {(1919, 915): 4, (1833, 966): 4},
+            'RT_26_2-17': {(891, 1986): (1, 2)},
+            'RT_26_2-55': {(577, 688): 1},
+        }
+        previous = {}
+        for case in fixture_frames('root_temporal_contacts.npz'):
+            group = case['group']
+            _, colored, previous[group] = RootLinker(Config()).link_corners(
+                case['upper'], case['lower'], case['x'], case['y'], previous.get(group))
+            if case['day'] == 30:
+                for point, plant in expected[group].items():
+                    with self.subTest(group=group, point=point):
+                        self.assertEqual(colored[point], plant)
+                if group == 'RT_26_2-55':
+                    self.assertIn((604, 670), previous[group][0] & previous[group][1])
+
     def test_crossing_roots_follow_their_straight_continuations(self):
         segments = [detected_segment((20, 10), (67, 57)),
                     detected_segment((120, 10), (73, 57)),
@@ -145,6 +240,28 @@ class RootCrossingTests(unittest.TestCase):
         self.assertNotIn((76, 66), colored)
         self.assertNotIn((76, 66), samples[0])
 
+    def test_shared_prefix_is_retained_without_claiming_the_entire_new_exit(self):
+        segments = [detected_segment((20, 10), (67, 57)),
+                    detected_segment((120, 10), (73, 57)),
+                    detected_segment((70, 63), (70, 85)),
+                    detected_segment((73, 91), (110, 128)),
+                    detected_segment((67, 91), (30, 128))]
+        for _, lower in segments[:2]:
+            lower['junction_id'] = 1
+        segments[2][0]['junction_id'] = 1
+        segments[2][1]['junction_id'] = 2
+        for upper, _ in segments[3:]:
+            upper['junction_id'] = 2
+        shared = {(67 - n, 91 + n) for n in range(9)}
+        continuing = set(map(tuple, segments[4][0]['contour'][:, 0].tolist()))
+        _, colored, samples = RootLinker(Config(n_clusters=2)).link_corners(
+            [u for u, _ in segments],
+            [{'point': (x, 5), 'angle': 90.} for x in (20, 120)]
+            + [l for _, l in segments], [20, 120], [5, 5], {0: shared, 1: continuing})
+        self.assertEqual(colored[(30, 128)], 1)
+        self.assertTrue(shared <= samples[0] & samples[1])
+        self.assertNotIn((30, 128), samples[0])
+
     def test_pipeline_measures_and_draws_both_roots_on_shared_section(self):
         from datetime import datetime
         from tempfile import TemporaryDirectory
@@ -179,7 +296,9 @@ class RootCrossingTests(unittest.TestCase):
 
     def test_reported_shared_sections_split_back_to_the_correct_plants(self):
         expected = {
-            'RT_26_2-17': {(930, 1100): (1, 2), (950, 1165): 1, (860, 1129): 2},
+            # Earlier days show that the upper contact and its left lateral
+            # already belong to plant 2; plant 3 must not take them over.
+            'RT_26_2-17': {(930, 1100): 1, (950, 1165): 1, (860, 1129): 1},
             'RT_26_2-62': {(1537, 1010): (2, 3), (1514, 1135): 3, (1584, 1140): 2},
         }
         previous = {}
@@ -223,7 +342,7 @@ class RootCrossingTests(unittest.TestCase):
              {0: {(x - 1, y) for x, y in previous[1]},
               1: {(x + 2, y) for x, y in previous[1]}}, 0, 1),
             ('established shared history', {0: previous[1], 1: previous[1]}, (0, 1), 1),
-            ('weaker competing branch', {1: previous[1] | set(sorted(previous[0])[:12])}, 1, 0),
+            ('established competing branch', {1: previous[1] | set(sorted(previous[0])[:12])}, 1, 1),
         ]
         for name, evidence, right_plant, left_plant in scenarios:
             with self.subTest(evidence=name):

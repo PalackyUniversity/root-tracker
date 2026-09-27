@@ -149,7 +149,9 @@ class RootLinker:
 
         Equal-height segment endpoints may be reoriented in-place. Physical
         junction routing adds per-plant ``parent_points`` to upper corners for
-        the caller's main-path tracing.
+        the caller's main-path tracing. Temporal ownership boundaries can also
+        split and append upper-corner contours; callers must use these updated
+        contours for measurement and drawing.
         """
         if not upper_corners or not plant_positions_x:
             return [], {}, {}
@@ -270,7 +272,7 @@ class RootLinker:
                         pixels = set(map(tuple, upper['contour'][:, 0].tolist()))
                         colored_samples[plant_id].update(pixels)
         
-        if any(corner.get('junction_id') for corner in upper_corners):
+        if previous_colored_samples or any(corner.get('junction_id') for corner in upper_corners):
             from .junction_router import route_junctions
             return route_junctions(
                 upper_corners, lower_corners,

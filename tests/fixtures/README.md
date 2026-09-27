@@ -37,3 +37,10 @@ discarded short bridges remain part of the crossing topology.
 `root17_terminal_mask.npy` is the RT_26_2-17/day30 skeleton crop at
 x=1060:1130, y=815:875. It verifies that a filtered terminal twig remains a
 routing exit, including a horizontal-tip variant of the same crossing.
+
+`root_temporal_contacts.npz` contains complete RT_26_2-1, -10, -12, -17 and -55
+sequences through April 30, including junction and terminal-exit metadata.
+These assert that touching roots cannot take over an established neighboring
+trunk/lateral, that RT17's long shared root retains both owners, and that
+RT55 retains a short historically shared portion inside a longer segment. Frame dates
+use each series' actual final three/four-day sequence.

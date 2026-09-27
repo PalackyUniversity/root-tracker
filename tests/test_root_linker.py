@@ -129,8 +129,8 @@ class RootLinkerTests(unittest.TestCase):
         series.pipeline_state.preprocessed = True
         series.pipeline_state.tracked = True
         series.pipeline_state.preprocess_config_hash = config.preprocess_config_hash()
-        # Hash persisted before direction-aware shared-root routing.
-        series.pipeline_state.tracking_config_hash = '4638b313f4c78e1a46a1952b084f5f67'
+        # Hash persisted before contact-safe temporal ownership preservation.
+        series.pipeline_state.tracking_config_hash = 'b59d4c92530ae9171fff92ca9de78142'
         self.assertFalse(RootTrackingPipeline(config).is_tracking_current(series))
         series.pipeline_state.tracking_config_hash = config.tracking_config_hash()
         self.assertTrue(RootTrackingPipeline(config).is_tracking_current(series))

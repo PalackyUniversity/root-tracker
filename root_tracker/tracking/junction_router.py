@@ -20,6 +20,7 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
     """
     # Short terminal twigs removed by the length filter reserve their real
     # outgoing direction, so an arriving root need not steal another exit.
+    original_uppers = uppers
     real_count = len(uppers)
     sinks = [dict(exit_corner)
              for upper in uppers for exit_corner in upper.get('terminal_exits', [])]
@@ -45,8 +46,11 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
     processed = set()
     previous_trees = None
     shared_previous_trees = {}
+    evidence_cache = {}
+    historical_fragments = {}
+    proven_upgrades = {}
 
-    def temporal_support(upper, ids):
+    def temporal_support(upper):
         nonlocal previous_trees
         if not previous_samples or 'contour' not in upper:
             return None, ()
@@ -55,35 +59,104 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
                               for pid, pixels in previous_samples.items() if pixels}
         if not previous_trees:
             return None, ()
-        pixels = np.unique(upper['contour'][:, 0], axis=0)
+        from .temporal_fragments import contour_path
+        pixels = contour_path(upper)
         # Small registration/thinning shifts must not erase otherwise strong
         # temporal evidence. Pixels near multiple plants, including previously
         # shared sections, provide no exclusive evidence for either identity.
-        near = {pid: np.isfinite(tree.query(pixels, distance_upper_bound=2.000001)[0])
-                for pid, tree in previous_trees.items()}
+        distances = {pid: tree.query(pixels, distance_upper_bound=8.000001)[0]
+                     for pid, tree in previous_trees.items()}
+        near = {pid: distance <= 2.000001 for pid, distance in distances.items()}
+        nearest_history = np.min(list(distances.values()), axis=0)
+        # A merged current segment may contain different historical owners.
+        # Keep sustained exclusive runs individually instead of allowing the
+        # majority owner to replace the minority's established pixels.
+        closest = {pid: (distance <= 2.000001)
+                   & (distance <= nearest_history + .000001)
+                   for pid, distance in distances.items()}
+        unique = np.sum(list(closest.values()), axis=0) == 1
+        for pid, matches in closest.items():
+            indices = np.flatnonzero(matches & unique)
+            for run in np.split(indices, np.flatnonzero(np.diff(indices) > 3) + 1):
+                if len(run) >= 5:
+                    historical_fragments.setdefault(id(upper), []).append(
+                        ((pid,), pixels[run[0]:run[-1] + 1], True))
         continuing_ids = set()
-        for pair in combinations(sorted(ids), 2):
+        for pair in combinations(sorted(previous_trees), 2):
             if pair not in shared_previous_trees:
                 common = previous_samples.get(pair[0], set()) & previous_samples.get(pair[1], set())
                 shared_previous_trees[pair] = cKDTree(np.asarray(list(common))) if common else None
             tree = shared_previous_trees[pair]
             if tree is not None:
-                matches = np.isfinite(tree.query(pixels, distance_upper_bound=2.000001)[0])
-                if np.count_nonzero(matches) >= max(5, .6 * len(pixels)):
-                    continuing_ids.update(pair)
-        continuing = tuple(pid for pid in ids if pid in continuing_ids)
-        exclusive = np.sum(list(near.values()), axis=0) == 1
-        overlaps = {pid: int(np.count_nonzero(matches & exclusive)) for pid, matches in near.items()}
-        best = max(overlaps, key=overlaps.get)
-        count = overlaps[best]
-        if best in ids and count >= max(5, .2 * len(pixels)) and count >= .8 * sum(overlaps.values()):
-            return (best, count / len(pixels)), continuing
+                shared_distances = tree.query(pixels, distance_upper_bound=8.000001)[0]
+                matches = (np.isfinite(shared_distances)
+                           & (shared_distances <= nearest_history + .000001))
+                # Measure support against observed historical pixels, not new
+                # growth or a differently split/currently longer segment.
+                observed = np.count_nonzero(np.any(list(near.values()), axis=0))
+                if np.count_nonzero(matches) >= 5:
+                    indices = np.flatnonzero(matches)
+                    if (indices[-1] - indices[0] + 1 >= .6 * len(pixels)
+                            and np.count_nonzero(matches) >= .6 * observed
+                            and np.count_nonzero(unique) < 5):
+                        continuing_ids.update(pair)
+                    else:
+                        boundaries = [i + 1 for i, (left, right) in enumerate(
+                            zip(indices[:-1], indices[1:]))
+                            if right - left > 3 or np.any(unique[left + 1:right])]
+                        for run in np.split(indices, boundaries):
+                            if len(run) >= 5:
+                                historical_fragments.setdefault(id(upper), []).append(
+                                    (pair, pixels[run[0]:run[-1] + 1], False))
+        continuing = tuple(sorted(continuing_ids))
+        # Broaden only when the tighter match is inconclusive. Ambiguous
+        # pixels near two separate roots never vote for either identity.
+        for tolerance in (2., 4., 8.):
+            near = {pid: distance <= tolerance + .000001 for pid, distance in distances.items()}
+            exclusive = np.sum(list(near.values()), axis=0) == 1
+            overlaps = {pid: int(np.count_nonzero(matches & exclusive)) for pid, matches in near.items()}
+            best = max(overlaps, key=overlaps.get)
+            count = overlaps[best]
+            minimum = max(5, .2 * len(pixels)) if tolerance == 2. else max(10, .5 * len(pixels))
+            if count >= minimum and count >= .8 * sum(overlaps.values()):
+                return (best, count / len(pixels)), continuing
         return None, continuing
+
+    def evidence(index):
+        if index not in evidence_cache:
+            evidence_cache[index] = temporal_support(uppers[index])
+        return evidence_cache[index]
+
+    def downstream_owner(index, pid):
+        """Require an established exit before extending a contact into a root."""
+        lower = lower_by_point.get(uppers[index].get('lower_point'), {})
+        children = tasks.get(('junction', lower.get('junction_id')), [])
+        return any((evidence(child)[0] is not None and evidence(child)[0][0] == pid)
+                   or pid in evidence(child)[1] for child in children if child != index)
 
     def publish(index, routes):
         upper = uppers[index]
         processed.add(index)
         if index >= real_count or not routes or 'lower_point' not in upper:
+            return
+        supported, continuing = evidence(index)
+        proven_upgrades[id(upper)] = {pid for pid in routes if downstream_owner(index, pid)}
+        required = set(continuing)
+        if supported is not None:
+            required.add(supported[0])
+            # Touching an established root is not evidence that the arriving
+            # root follows it. Require its own downstream continuation.
+            routes = {pid: route for pid, route in routes.items()
+                      if pid in required or downstream_owner(index, pid)}
+        for pid in sorted(required):
+            if pid in routes:
+                continue
+            candidates = [(point, flow[pid]) for point, flow in flows.items()
+                          if pid in flow and point[1] <= upper['point'][1]]
+            if candidates:
+                routes[pid] = min(candidates, key=lambda route: sum(
+                    (a - b) ** 2 for a, b in zip(route[0], upper['point'])))
+        if not routes:
             return
         ids = tuple(routes)
         bottom = upper['lower_point']
@@ -120,7 +193,7 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
             indices.sort(key=lambda i: (uppers[i]['point'][0], uppers[i]['lower_point'][0]))
             scores = np.empty((len(ids), len(indices)))
             choices = {}
-            history = {index: temporal_support(uppers[index], ids) if len(ids) > 1 else (None, ())
+            history = {index: evidence(index)
                        for index in indices}
             for row, pid in enumerate(ids):
                 for col, index in enumerate(indices):
@@ -155,7 +228,8 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
                 _, continuing = history[index]
                 if len(continuing) > 1:
                     for pid in continuing:
-                        routes[col][pid] = choices[ids.index(pid), col]
+                        if pid in ids:
+                            routes[col][pid] = choices[ids.index(pid), col]
                 publish(index, {pid: routes[col][pid] for pid in ids if pid in routes[col]})
         else:
             # Away from physical junctions retain the existing gap/temporal
@@ -182,4 +256,8 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
             pending = [key for key in pending if any(i not in processed for i in tasks[key])]
             if len(processed) == before:
                 break
+    if historical_fragments:
+        from .temporal_fragments import preserve_historical_fragments
+        preserve_historical_fragments(
+            original_uppers, historical_fragments, pairs, colored, samples, proven_upgrades)
     return pairs, colored, samples

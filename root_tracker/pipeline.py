@@ -512,6 +512,11 @@ class RootTrackingPipeline:
                 upper_corners, lower_corners, pos_x_median, pos_y_median,
                 previous_colored_samples=previous_colored_samples
             )
+            # Temporal ownership boundaries may subdivide a current skeleton
+            # segment. Use those same fragments for measurement and drawing.
+            segment_contours = [upper['contour'] for upper in upper_corners]
+            for contour_index, upper in enumerate(upper_corners):
+                upper['contour_index'] = contour_index
             
             image_data.colored_samples = colored_samples
             image_data.rsml_samples = {
