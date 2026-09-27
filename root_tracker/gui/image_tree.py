@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QStyle, QHeaderView, QStyleOptionViewItem, QStyledItemDelegate
 )
 from PySide6.QtCore import Signal, Qt, QRectF, QPersistentModelIndex
-from PySide6.QtGui import QAction, QFont, QColor, QPalette, QPainter, QPen, QPainterPath
+from PySide6.QtGui import QIcon, QAction, QFont, QColor, QPalette, QPainter, QPen, QPainterPath
 
 from ..models import ImageSeries, ImageData
 from ..config import Config
@@ -25,7 +25,7 @@ class NavigationRowDelegate(QStyledItemDelegate):
 
     def paint(self, painter, option, index):
         symbol = index.data(Qt.ItemDataRole.DisplayRole)
-        if index.column() != 1 or symbol not in {'✓', '○', '↻', '…', '—', '⚠', '●'}:
+        if index.column() != 1 or symbol not in {'✓', '✗', '○', '↻', '…', '—', '⚠', '●'}:
             return super().paint(painter, option, index)
         background_option = QStyleOptionViewItem(option)
         self.initStyleOption(background_option, index)
@@ -34,7 +34,7 @@ class NavigationRowDelegate(QStyledItemDelegate):
                                          background_option, painter, self.parent())
         brush = index.data(Qt.ItemDataRole.ForegroundRole)
         color = (option.palette.color(QPalette.ColorRole.HighlightedText)
-                 if option.state & QStyle.StateFlag.State_Selected else brush.color())
+                 if option.state & QStyle.StateFlag.State_Selected else brush.color() if brush is not None else option.palette.color(QPalette.ColorRole.Text))
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.translate(option.rect.center())
@@ -46,6 +46,11 @@ class NavigationRowDelegate(QStyledItemDelegate):
             path.moveTo(-4, 0)
             path.lineTo(-1, 3)
             path.lineTo(5, -3)
+        elif symbol == '✗':
+            path.moveTo(-3, -3)
+            path.lineTo(3, 3)
+            path.moveTo(3, -3)
+            path.lineTo(-3, 3)
         elif symbol in {'○', '●'}:
             if symbol == '●':
                 painter.setBrush(color)
@@ -394,6 +399,9 @@ class ImageTree(QWidget):
                         warning = f"Barcode mismatch: read '{image.barcode_read}', expected '{image.barcode}'"
                     elif image.barcode_detected and image.barcode_not_found:
                         warning = 'No barcode detected'
+                metadata_warning = getattr(self, '_metadata_warnings', {}).get(id(image), '')
+                if metadata_warning:
+                    warning = '; '.join(part for part in (warning, metadata_warning) if part)
                 if warning:
                     warnings.append(warning)
                     detail += f'; {warning}'
@@ -401,6 +409,8 @@ class ImageTree(QWidget):
                 if pending:
                     detail += '; Unapplied settings changes'
                 child.setText(1, 'RSML' if status == 'rsml' else '⚠' if warning else '●' if pending else symbols[status])
+                child.setIcon(0, self.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning)
+                              if metadata_warning and status == 'rsml' else QIcon())
                 child.setTextAlignment(1, Qt.AlignmentFlag.AlignCenter)
                 child.setForeground(1, colors['rsml' if status == 'rsml' else 'warning' if warning else 'modified' if pending else status])
                 child.setData(1, Qt.ItemDataRole.UserRole, status)
@@ -424,11 +434,15 @@ class ImageTree(QWidget):
             elif status == 'outdated':
                 detail += '; settings changed'
             if warnings:
-                detail += f'; barcode warnings in {len(warnings)} image(s)'
+                detail += f'; warnings in {len(warnings)} image(s)'
             if pending:
                 detail += '; Unapplied settings changes'
             group.setToolTip(1, detail)
             group.setData(1, Qt.ItemDataRole.AccessibleTextRole, f'{series.group}: {detail}')
+
+    def set_metadata_warnings(self, warnings):
+        self._metadata_warnings = warnings
+        self.refresh_status()
 
     def set_folder_path(self, folder_path: str) -> None:
         """Set the current folder path to display in the header."""

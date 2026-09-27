@@ -34,6 +34,7 @@ from .workflow_bar import WorkflowBar, WorkflowStep
 from .image_tree import ImageTree
 from .image_viewer import ImageViewer
 from .settings_panel import SettingsPanel
+from .image_metadata import MetadataController
 from .dialogs import LoadDialog
 from .masking_tools import MaskTool
 from .menus import MenuBarPopup
@@ -449,6 +450,12 @@ class MainWindow(QMainWindow):
         
         # Right panel: Settings
         self._settings_panel = SettingsPanel(self._config)
+        self._metadata = MetadataController(self)
+        metadata_panel = self._settings_panel.metadata_panel
+        metadata_panel.enabled.setChecked(str(self._settings.value('metadata_enabled', False)).lower() == 'true')
+        self._metadata.enabled = metadata_panel.enabled.isChecked()
+        metadata_panel.options_changed.connect(self._on_metadata_options)
+        self._metadata.changed.connect(self._refresh_metadata)
         self._settings_panel.detect_barcodes_toggled.connect(self._on_detect_barcodes_toggled)
         self._settings_panel.show_max_root_depth_toggled.connect(self._on_show_max_root_depth_toggled)
         self._settings_panel.setMinimumWidth(360)
@@ -725,6 +732,8 @@ class MainWindow(QMainWindow):
         self._sync_auto_apply_controls()
         self._series_dict = {}
         self._image_tree.set_series({})
+        self._metadata.set_series({})
+        self._settings_panel.metadata_panel.set_selection(None)
         self._image_viewer.set_image(None)
         self._image_viewer.clear_centroids()
         self._image_viewer.clear_barcode_overlay()
@@ -781,6 +790,7 @@ class MainWindow(QMainWindow):
             self._displayed_image = None
             self._restore_settings_draft()
             
+            self._metadata.set_series(self._series_dict)
             if not self._series_dict:
                 QMessageBox.warning(
                     self, "No Images Found",
@@ -831,6 +841,7 @@ class MainWindow(QMainWindow):
             self._activate_group_settings(selected_series)
         self._current_image = image_data
         self._current_series = selected_series
+        self._settings_panel.metadata_panel.set_selection(selected_series, image_data)
 
         # Reload from cache if arrays were freed
         if self._current_series is not None and step != WorkflowStep.LOAD:
@@ -890,6 +901,7 @@ class MainWindow(QMainWindow):
 
         self._current_series = series
         self._current_image = series.images[0] if series.images else None
+        self._settings_panel.metadata_panel.set_selection(series)
 
         # Reload from cache if arrays were freed
         if self._workflow_bar.get_current_step() != WorkflowStep.LOAD:
@@ -1180,6 +1192,7 @@ class MainWindow(QMainWindow):
             if step is not None and step != panel._current_step:
                 panel.set_step(step)
             panel.reset_for_group()
+            panel.metadata_panel.set_selection(self._current_series, self._current_image)
             if self._current_series is not None:
                 key = (self._current_series.group, panel._current_step)
                 panel.set_pending_values(self._settings_drafts.get(key, {}))
@@ -1486,6 +1499,14 @@ class MainWindow(QMainWindow):
         if self._current_image is not None:
             self._display_image(self._current_image, preserve_view=True)
 
+    def _on_metadata_options(self, enabled):
+        self._settings.setValue('metadata_enabled', enabled)
+        self._metadata.set_options(enabled)
+
+    def _refresh_metadata(self):
+        self._image_tree.set_metadata_warnings(self._metadata.warnings())
+        self._settings_panel.metadata_panel.refresh()
+
     def _on_detect_barcodes_toggled(self, enabled: bool) -> None:
         """Handle the Load panel barcode verification toggle."""
         self._config.data.detect_barcodes = enabled
@@ -1643,8 +1664,10 @@ class MainWindow(QMainWindow):
                         del self._series_dict[k]
                 
                 self._image_tree.refresh()
+                self._refresh_metadata()
                 self._current_image = None
                 self._current_series = None
+                self._settings_panel.metadata_panel.set_selection(None)
                 self._image_viewer.clear()
                         
             except Exception as e:

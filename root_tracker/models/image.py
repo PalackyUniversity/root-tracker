@@ -94,6 +94,10 @@ class ImageData:
     rsml_document: Optional["RSMLDocument"] = field(default=None, repr=False)
     rsml_background: Optional[np.ndarray] = field(default=None, repr=False)
 
+    # Source metadata is independent of processing caches and settings.
+    camera_metadata: dict[str, str] | None = field(default=None, repr=False)
+    camera_metadata_error: str = ""
+
     def clear_tracking_results(self) -> None:
         """Clear all tracking/analysis results, preserving preprocessing data."""
         self.root_depth_background = None
@@ -154,6 +158,8 @@ class ImageData:
             date=self.date,
             path=self.path,
             barcode=self.barcode,
+            camera_metadata=self.camera_metadata.copy() if self.camera_metadata is not None else None,
+            camera_metadata_error=self.camera_metadata_error,
             barcode_read=self.barcode_read,
             barcode_mismatch=self.barcode_mismatch,
             barcode_not_found=self.barcode_not_found,

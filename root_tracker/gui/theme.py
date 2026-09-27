@@ -231,3 +231,20 @@ def scrollbar_stylesheet(palette: QPalette) -> str:
         QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{ background: transparent; }}
         QAbstractScrollArea::corner {{ background: transparent; border: none; }}
     """
+
+
+def metadata_tree_stylesheet(palette: QPalette) -> str:
+    """Use the navigation tree's rows and scrollbars inside a settings group."""
+    surface = palette.color(QPalette.ColorRole.Base)
+    text = palette.color(QPalette.ColorRole.Text)
+    border = blend(surface, text, .22 if is_light(palette) else .24).name()
+    muted = blend(surface, text, .72).name()
+    return tree_stylesheet(palette) + f"""
+        QTreeWidget {{ border: 1px solid {border}; border-radius: 5px; padding: 3px; }}
+        QHeaderView {{ background: transparent; }}
+        QHeaderView::section {{
+            background-color: {surface.name()}; color: {muted};
+            border: none; border-bottom: 1px solid {border};
+            padding: 5px 4px; font-weight: normal;
+        }}
+    """

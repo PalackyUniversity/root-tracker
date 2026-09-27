@@ -218,3 +218,24 @@ python scripts/run_pipeline.py --config configs/in_vitro.yaml --rsml-output rsml
 
 Malformed XML, DTD/entity declarations, invalid coordinates, and RSML documents
 over 64 MiB are rejected. There is no RSML geometry editor; unknown XML is preserved.
+
+### Image metadata in the Load tab
+
+**Image metadata** compares readable camera settings such as exposure time,
+aperture, ISO sensitivity, focus, white-balance gains and color shifts, picture
+adjustments, and lens corrections. Field names
+use plain language; hover over a name for a short explanation. Unknown camera
+codes, thumbnails, file details and image dimensions are excluded from both the
+table and tree warnings. Duplicate tags are combined into one setting.
+
+Select a photo to see its values, or expand a setting for values by file.
+✓ means identical throughout the group; ✗ means different or missing.
+Tree warnings mark values outside the most common value; ties flag all variants.
+The compact list uses the app’s tree styling and collapses when comparison is
+disabled. Comparison is off by default; the **Enable metadata comparison**
+preference is saved automatically.
+Estimated focus distance is inferred from lens metadata, not a physical distance
+measurement.
+
+[ExifTool](https://exiftool.org/) provides the broadest camera support. Pillow
+reads standard EXIF when ExifTool is unavailable.

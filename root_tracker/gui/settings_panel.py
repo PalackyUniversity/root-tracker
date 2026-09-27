@@ -17,6 +17,7 @@ from ..config import Config
 from .workflow_bar import WorkflowStep
 from .mask_controls import MaskControls
 from .color_range import ColorRangeControl
+from .image_metadata import MetadataPanel
 from .right_checkbox import RightAlignedCheckBox
 
 
@@ -66,6 +67,7 @@ class SettingsPanel(QWidget):
         self._mask_controls: MaskControls | None = None
         self._mask_available = False
 
+        self.metadata_panel = MetadataPanel(self)
         self._setup_ui()
         self.set_step(WorkflowStep.LOAD)
     
@@ -161,11 +163,14 @@ class SettingsPanel(QWidget):
             item = self._settings_layout.takeAt(0)
             if item.widget():
                 item.widget().hide()
-                item.widget().deleteLater()
+                if item.widget() is not self.metadata_panel:
+                    item.widget().deleteLater()
         
         if step == WorkflowStep.LOAD:
             self._create_barcode_settings()
             self._create_crop_settings(load=True)
+            self._settings_layout.addWidget(self.metadata_panel)
+            self.metadata_panel.show()
             self._buttons_widget.show()
             self._store_original_values()
         elif step == WorkflowStep.PREPROCESS:
