@@ -102,3 +102,38 @@ class MaskControlsTests(unittest.TestCase):
         self.button('Brush').click()
         self.assertTrue(self.button('Clear mask').isEnabled())
         self.assertTrue(self.button('Restore').isEnabled())
+
+    def test_pan_clears_action_and_select_uses_brush_or_rectangle(self):
+        self.assertFalse(self.button('Exclude').isChecked())
+        self.assertFalse(self.button('Restore').isChecked())
+        self.assertFalse(self.button('Select').isChecked())
+        self.button('Brush').click()
+        self.button('Select').click()
+        self.assertEqual(self.events[-1], ('brush_select', 100))
+        self.button('Rectangle').click()
+        self.assertEqual(self.events[-1], ('rect_select', 0))
+        self.button('Pan').click()
+        self.assertTrue(all(not self.button(name).isChecked() for name in ('Exclude', 'Restore', 'Select')))
+        self.button('Brush').click()
+        self.assertTrue(self.button('Select').isChecked())
+        self.panel.set_temporary_mask_pan(True)
+        self.assertTrue(all(not self.button(name).isChecked() for name in ('Exclude', 'Restore', 'Select')))
+        self.panel.set_temporary_mask_pan(False)
+        self.assertTrue(self.button('Select').isChecked())
+
+    def test_pan_state_change_disables_and_clears_all_actions(self):
+        self.button('Brush').click()
+        self.button('Select').click()
+        self.button('Pan').setChecked(True)
+        self.panel.set_mask_available(True)
+        self.panel.set_processing(True, allow_mask=True)
+        self.panel.set_processing(False)
+        for name in ('Select', 'Exclude', 'Restore'):
+            self.assertFalse(self.button(name).isChecked())
+            self.assertFalse(self.button(name).isEnabled())
+        self.assertEqual(self.events[-1], ('move', 0))
+
+    def test_select_is_first_action(self):
+        layout = self.panel._mask_controls._operation_row.layout()
+        self.assertEqual([layout.itemAt(i).widget().text() for i in range(layout.count())],
+                         ['Select', 'Exclude', 'Restore'])

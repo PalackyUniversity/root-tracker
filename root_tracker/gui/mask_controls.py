@@ -16,6 +16,7 @@ class MaskControls(QGroupBox):
     def __init__(self, parent=None):
         super().__init__('Exclusion mask', parent)
         self.setObjectName('maskControls')
+        self._last_operation = 0
         self._pan_tool_before_alt = None
         self._restore_action_before_drag = None
         # Palette roles follow the application's light/dark theme. Scope the
@@ -51,10 +52,11 @@ class MaskControls(QGroupBox):
         operation_layout = QHBoxLayout(self._operation_row)
         operation_layout.setContentsMargins(0, 0, 0, 0)
         operation_layout.setSpacing(4)
-        for index, (name, tip) in enumerate((
-            ('Exclude', 'Add to the mask: these areas will be ignored by tracking.'),
-            ('Restore', 'Remove from the mask: allow tracking in these areas again. Right-drag the image to restore temporarily.'),
-        )):
+        for index, name, tip in (
+            (2, 'Select', 'Select roots touched by the brush or rectangle. Hold Ctrl or Shift to add to the selection.'),
+            (0, 'Exclude', 'Add to the mask: these areas will be ignored by tracking.'),
+            (1, 'Restore', 'Remove from the mask: allow tracking in these areas again. Right-drag the image to restore temporarily.'),
+        ):
             button = self._toggle(name, tip)
             self._operations.addButton(button, index)
             operation_layout.addWidget(button, 1)
@@ -65,7 +67,7 @@ class MaskControls(QGroupBox):
         form.setVerticalSpacing(10)
         form.setColumnStretch(1, 1)
         action_label = QLabel('Action')
-        action_label.setStatusTip('Exclude adds areas to the mask; Restore removes them.')
+        action_label.setStatusTip('Exclude adds areas to the mask; Restore removes them; Select selects root detections.')
         form.addWidget(action_label, 0, 0)
         form.addWidget(self._operation_row, 0, 1)
         self._diameter = QSpinBox()
@@ -93,7 +95,7 @@ class MaskControls(QGroupBox):
         footer.addWidget(clear)
         layout.addLayout(footer)
 
-        self._tools.buttonClicked.connect(self._update_tool)
+        self._tools.buttonToggled.connect(lambda button, checked: self._update_tool() if checked else None)
         self._operations.buttonClicked.connect(self._update_tool)
         self._diameter.valueChanged.connect(self._update_tool)
         self.set_mask_available(False)
@@ -125,15 +127,15 @@ class MaskControls(QGroupBox):
         self._update_tool()
 
     def set_temporary_pan(self, active):
-        if active and self._pan_tool_before_alt is None:
-            self._pan_tool_before_alt = self._tools.checkedId()
-            self._tools.button(0).setChecked(True)
-        elif not active and self._pan_tool_before_alt is not None:
-            self._tools.button(self._pan_tool_before_alt).setChecked(True)
-            self._pan_tool_before_alt = None
         # The viewer owns the temporary override; update button states silently.
         previous = self.blockSignals(True)
         try:
+            if active and self._pan_tool_before_alt is None:
+                self._pan_tool_before_alt = self._tools.checkedId()
+                self._tools.button(0).setChecked(True)
+            elif not active and self._pan_tool_before_alt is not None:
+                self._tools.button(self._pan_tool_before_alt).setChecked(True)
+                self._pan_tool_before_alt = None
             self._update_tool()
         finally:
             self.blockSignals(previous)
@@ -148,12 +150,26 @@ class MaskControls(QGroupBox):
 
     def _update_tool(self, *_):
         shape = self._tools.checkedId()
-        restore = self._operations.checkedId() == 1
+        operation = self._operations.checkedId()
+        if operation >= 0:
+            self._last_operation = operation
+        if shape == 0:
+            self._operations.setExclusive(False)
+            for button in self._operations.buttons():
+                button.setChecked(False)
+            self._operations.setExclusive(True)
+        elif operation < 0:
+            self._operations.button(self._last_operation).setChecked(True)
+        operation = self._operations.checkedId()
+        restore = operation == 1
         self._operation_row.setEnabled(shape != 0)
         self._diameter.setEnabled(shape == 1)
         self._diameter_label.setEnabled(shape == 1)
         if shape == 0:
             tool, size = MaskTool.MOVE, 0
+        elif operation == 2:
+            tool = MaskTool.BRUSH_SELECT if shape == 1 else MaskTool.RECT_SELECT
+            size = self._diameter.value() if shape == 1 else 0
         else:
             if shape == 1:
                 tool = MaskTool.BRUSH_ERASER if restore else MaskTool.BRUSH
