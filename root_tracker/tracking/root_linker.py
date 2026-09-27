@@ -78,10 +78,13 @@ class RootLinker:
         """
         up_point = upper_corner['point']
         low_point = lower_corner['point']
-        up_angle = upper_corner['angle']
+        # CornerDetector reports outward tangents: the top endpoint points
+        # back toward its parent, whereas the parent's bottom points toward
+        # the child. Compare both in the parent-to-child direction.
+        up_angle = (upper_corner['angle'] + 180) % 360
         low_angle = lower_corner['angle']
         
-        # Only link if upper is above lower
+        # The parent endpoint must not be below the child's top endpoint.
         if low_point[1] > up_point[1]:
             return math.inf
         
@@ -105,7 +108,9 @@ class RootLinker:
         
         # Angle compatibility cost
         cost = distance
-        cost += abs(up_angle - low_angle) * min_diff_x / 180 / 4
+        def angle_difference(a, b):
+            return abs((a - b + 180) % 360 - 180)
+        cost += angle_difference(up_angle, low_angle) * min_diff_x / 180 / 4
         
         # Prediction matching cost
         predicted_angle = math.degrees(np.arctan2(
@@ -113,8 +118,8 @@ class RootLinker:
             low_point[0] - up_point[0]
         )) + 180
         
-        cost += abs(predicted_angle - up_angle) * min_diff_x / 180 / 2
-        cost += abs(predicted_angle - low_angle) * min_diff_x / 180 / 2
+        cost += angle_difference(predicted_angle, up_angle) * min_diff_x / 180 / 2
+        cost += angle_difference(predicted_angle, low_angle) * min_diff_x / 180 / 2
         
         return cost
     
@@ -125,7 +130,7 @@ class RootLinker:
         plant_positions_x: list[int],
         plant_positions_y: list[int],
         previous_colored_samples: dict[int, set] = None
-    ) -> tuple[list[tuple], dict[tuple, int], dict[int, set]]:
+    ) -> tuple[list[tuple], dict[tuple, int | tuple[int, ...]], dict[int, set]]:
         """
         Link upper corners to lower corners and assign plant IDs.
         
@@ -139,8 +144,12 @@ class RootLinker:
         Returns:
             Tuple of:
             - List of (upper_point, lower_point) pairs
-            - Dict mapping points to plant IDs
+            - Dict mapping points to plant IDs (ordered tuples for shared roots)
             - Dict mapping plant IDs to sets of skeleton pixels
+
+        Equal-height segment endpoints may be reoriented in-place. Physical
+        junction routing adds per-plant ``parent_points`` to upper corners for
+        the caller's main-path tracing.
         """
         if not upper_corners or not plant_positions_x:
             return [], {}, {}
@@ -156,6 +165,7 @@ class RootLinker:
         # Sort corners by y-coordinate
         upper_corners_sorted = sorted(upper_corners, key=lambda c: c['point'][1])
         lower_corners_sorted = sorted(lower_corners, key=lambda c: c['point'][1])
+        lower_by_point = {corner['point']: corner for corner in lower_corners}
         
         pairs = []
         colored_samples = {n: set() for n in range(self.config.n_clusters)}
@@ -163,6 +173,28 @@ class RootLinker:
         
         for upper in upper_corners_sorted:
             up_point = upper['point']
+            bottom = upper.get('lower_point')
+            if bottom is not None and bottom[1] == up_point[1] and bottom in lower_by_point:
+                # Height cannot orient a horizontal segment. Start at the end
+                # nearest a rooted endpoint, and expose the other end for its
+                # continuation. Keep the caller's corner graph in sync for
+                # annotations and longest-path tracing.
+                parents = [c['point'] for c in lower_corners_sorted
+                           if c['point'] in colored and c['point'][1] <= up_point[1]]
+                if parents and min(self.compute_distance(bottom, p) for p in parents) < min(
+                        self.compute_distance(up_point, p) for p in parents):
+                    lower = lower_by_point.pop(bottom)
+                    upper['point'], upper['lower_point'] = bottom, up_point
+                    upper['angle'], lower['angle'] = lower['angle'], upper['angle']
+                    upper_junction = upper.pop('junction_id', None)
+                    lower_junction = lower.pop('junction_id', None)
+                    if lower_junction is not None:
+                        upper['junction_id'] = lower_junction
+                    if upper_junction is not None:
+                        lower['junction_id'] = upper_junction
+                    lower['point'] = up_point
+                    lower_by_point[up_point] = lower
+                    up_point = bottom
             forced_plant_id = None
 
             # Consistency check: look for overlap with previous frame
@@ -238,6 +270,12 @@ class RootLinker:
                         pixels = set(map(tuple, upper['contour'][:, 0].tolist()))
                         colored_samples[plant_id].update(pixels)
         
+        if any(corner.get('junction_id') for corner in upper_corners):
+            from .junction_router import route_junctions
+            return route_junctions(
+                upper_corners, lower_corners,
+                {(x, y): n for n, (x, y) in enumerate(zip(plant_positions_x, plant_positions_y))},
+                pairs, self.config.n_clusters, previous_colored_samples)
         return pairs, colored, colored_samples
     
     def draw_annotations(

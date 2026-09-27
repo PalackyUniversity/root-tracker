@@ -14,3 +14,26 @@ that the identified disconnected pixels disappear, and that the remaining
 plants retain exactly the same pixels. RT_26_2-21 is an unchanged control:
 its reported plant 4 fragment has a link under the existing gap rules and
 is not explained by the unassigned-parent bug.
+
+`root_crossings.npz` contains the RT_26_2-25 and RT_26_2-19 corner sequences
+(April 27–30), including the horizontal lateral branch from the report.
+All crossing fixtures include physical junction IDs and direction-only terminal
+exits, captured through the complete tracking pipeline after skeleton cleanup.
+`root_shared_junctions.npz` contains RT_26_2-17 and RT_26_2-62 for those dates,
+with physical-junction metadata for the merge/shared/split regression.
+`root_crossing_controls.npz` contains RT_26_2-1, -7, -12, and -51: these protect
+established main roots from being reassigned at a later lateral branch after
+sharing a section. All three files use the same JSON metadata and numeric
+contour representation as `root_link_corners.npz`, without baseline pixel arrays.
+Expected plant identities are explicit, hand-traced endpoints in the tests.
+
+The original disconnected-fragment fixture's comparisons now explicitly account
+for corrected crossing assignments in RT_26_2-18 and -19; its debris rejection
+and all other pixel-set comparisons remain enforced.
+
+`root19_crossing_mask.npy` is the actual RT_26_2-19/day30 skeleton crop
+at x=920:1050, y=415:535. Its end-to-end pipeline regression verifies that
+discarded short bridges remain part of the crossing topology.
+`root17_terminal_mask.npy` is the RT_26_2-17/day30 skeleton crop at
+x=1060:1130, y=815:875. It verifies that a filtered terminal twig remains a
+routing exit, including a horizontal-tip variant of the same crossing.

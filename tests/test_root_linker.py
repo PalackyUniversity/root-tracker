@@ -8,7 +8,7 @@ from root_tracker.tracking.root_linker import RootLinker
 
 
 def segment(x, top, bottom):
-    return {'point': (x, top), 'lower_point': (x, bottom), 'angle': 90.,
+    return {'point': (x, top), 'lower_point': (x, bottom), 'angle': 270.,
             'contour': np.array([[[x, y]] for y in range(top, bottom + 1)], dtype=np.int32)}
 
 
@@ -72,6 +72,15 @@ class RootLinkerTests(unittest.TestCase):
             'RT_26_2-21': (3, [0, 0, 0, 0]),
             'RT_26_2-26': (0, [93, 85, 79, 33]),
         }
+        # Independently traced crossing corrections. The original baseline
+        # predates the fix for opposing endpoint-angle conventions.
+        corrected = {
+            3: (1, 0, [(493, 583)]),
+            5: (2, 1, [(1035, 568), (993, 496)]),
+            6: (2, 1, [(863, 576), (1096, 674), (994, 495)]),
+            7: (2, 1, [(1190, 778), (1141, 729), (1120, 709), (863, 576),
+                        (1095, 675), (1032, 559), (992, 493)]),
+        }
         path = Path(__file__).parent / 'fixtures' / 'root_link_corners.npz'
         with np.load(path, allow_pickle=False) as data:
             for index, case in enumerate(json.loads(data['metadata'].tobytes())):
@@ -96,8 +105,17 @@ class RootLinkerTests(unittest.TestCase):
                         reached.add(by_top[top]['lower_point'])
                     self.assertEqual(set(colored), reached)
                     changed_plant, counts = removed[group]
+                    baselines = {plant: set(map(tuple, data[f'baseline_{index}_{plant}'].tolist()))
+                                 for plant in range(6)}
+                    if index in corrected:
+                        source, target, ends = corrected[index]
+                        for upper in uppers:
+                            if upper['lower_point'] in ends:
+                                pixels = set(map(tuple, upper['contour'][:, 0].tolist()))
+                                baselines[source].difference_update(pixels)
+                                baselines[target].update(pixels)
                     for plant in range(6):
-                        baseline = set(map(tuple, data[f'baseline_{index}_{plant}'].tolist()))
+                        baseline = baselines[plant]
                         self.assertFalse(samples[plant] - baseline)
                         self.assertEqual(len(baseline - samples[plant]),
                                          counts[day] if plant == changed_plant else 0)
@@ -111,8 +129,8 @@ class RootLinkerTests(unittest.TestCase):
         series.pipeline_state.preprocessed = True
         series.pipeline_state.tracked = True
         series.pipeline_state.preprocess_config_hash = config.preprocess_config_hash()
-        # Hash persisted by the version that assigned disconnected fragments.
-        series.pipeline_state.tracking_config_hash = '381fad2c52479f3e3499d7756721abdf'
+        # Hash persisted before direction-aware shared-root routing.
+        series.pipeline_state.tracking_config_hash = '4638b313f4c78e1a46a1952b084f5f67'
         self.assertFalse(RootTrackingPipeline(config).is_tracking_current(series))
         series.pipeline_state.tracking_config_hash = config.tracking_config_hash()
         self.assertTrue(RootTrackingPipeline(config).is_tracking_current(series))

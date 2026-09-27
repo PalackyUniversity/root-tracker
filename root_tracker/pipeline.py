@@ -438,6 +438,32 @@ class RootTrackingPipeline:
             skeleton_split, segment_contours = self.skeletonizer.split_at_intersections(
                 skeleton, intersections
             )
+            # Include tiny segments discarded by splitting: they still connect
+            # nearby parts of a crossing. Label only actual skeleton pixels,
+            # so dilation's empty padding cannot join disconnected roots.
+            removed_skeleton = ((skeleton > 0) & (skeleton_split == 0)).astype(np.uint8)
+            junction_labels = cv2.connectedComponents(removed_skeleton)[1]
+            # Filtered terminal twigs still provide real exits at crossings.
+            # Keep their directions for routing, without adding their pixels
+            # back to measurements or rendered root segments.
+            short_mask = ((removed_skeleton > 0) & (intersections == 0)).astype(np.uint8)
+            terminal_exits = {}
+            for short_contour in cv2.findContours(
+                    short_mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)[0]:
+                short_upper, short_lower = self.corner_detector.analyze_contour_corners(
+                    short_contour, short_mask)
+                if short_upper and short_lower:
+                    upper_is_tip = short_upper['point'] in endpoints
+                    lower_is_tip = short_lower['point'] in endpoints
+                    if upper_is_tip == lower_is_tip:
+                        continue
+                    if upper_is_tip:
+                        short_upper, short_lower = short_lower, short_upper
+                    x, y = short_upper['point']
+                    junction = int(junction_labels[y, x])
+                    short_upper['lower_point'] = short_lower['point']
+                    short_upper['junction_id'] = junction
+                    terminal_exits.setdefault(junction, []).append(short_upper)
             
             # Analyze corners of each segment
             upper_corners = []
@@ -457,6 +483,15 @@ class RootTrackingPipeline:
                 )
                 
                 if upper_info and lower_info:
+                    for corner in (upper_info, lower_info):
+                        x, y = corner['point']
+                        adjacent = np.unique(junction_labels[
+                            max(0, y - 1):y + 2, max(0, x - 1):x + 2])
+                        adjacent = adjacent[adjacent > 0]
+                        if len(adjacent) == 1:
+                            corner['junction_id'] = int(adjacent[0])
+                    if upper_info.get('junction_id') in terminal_exits:
+                        upper_info['terminal_exits'] = terminal_exits.pop(upper_info['junction_id'])
                     upper_info['contour_index'] = cnt_n
                     upper_info['contour'] = cnt
                     upper_info['lower_point'] = lower_info['point']
@@ -491,10 +526,12 @@ class RootTrackingPipeline:
             # Compute per-plant statistics
             image_data.plant_length = []
             image_data.longest = []
+            main_segments = {}
+            from .tracking.junction_router import plant_ids
             
             for k in range(self.config.n_clusters):
                 # Find roots for this plant
-                colored_k = {ck: cv for ck, cv in colored.items() if cv == k}
+                colored_k = {ck: cv for ck, cv in colored.items() if k in plant_ids(cv)}
                 plant_contours = [
                     segment_contours[uc['contour_index']]
                     for uc in upper_corners
@@ -540,12 +577,16 @@ class RootTrackingPipeline:
                             # Found the segment, add its contour
                             if uc['contour_index'] < len(segment_contours):
                                 conts.append(segment_contours[uc['contour_index']])
+                                main_segments.setdefault(uc['contour_index'], set()).add(k)
 
                             # Now find the pair that connects to the top of this segment
-                            for p1, p2 in pairs:
-                                if p1 == uc['point']:
-                                    current_bottom = p2
-                                    break
+                            if k in uc.get('parent_points', {}):
+                                current_bottom = uc['parent_points'][k]
+                            else:
+                                for p1, p2 in pairs:
+                                    if p1 == uc['point']:
+                                        current_bottom = p2
+                                        break
                             break
 
                 cv2.drawContours(mask_longest, conts, -1, 255, cv2.FILLED)
@@ -617,6 +658,11 @@ class RootTrackingPipeline:
                 
                 statistics.append(stats)
             
+            # Shared segments are painted last so neither plant overwrites
+            # the other's half, including on highlighted main-root paths.
+            from .tracking.shared_rendering import draw_shared_segments
+            draw_shared_segments(annotated, upper_corners, colored, main_segments, self.linker)
+
             # Save only the pixels needed to hide the markers instantly.
             ys, xs = np.nonzero(depth_mask)
             image_data.root_depth_background = np.column_stack(
