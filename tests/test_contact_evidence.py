@@ -72,8 +72,9 @@ class ContactEvidenceTests(unittest.TestCase):
         segments, x = self.scene(5., exits=True)
         # Both outgoing directions continue the vertical root; neither
         # continues the diagonal arrival. Merely counting two exits is wrong.
-        for upper, _ in segments[3:]:
-            upper['angle'] = 280.
+        upper, lower = detected_segment((73, 111), (75, 128))
+        upper.update(junction_id=2, width_profile=np.full(len(contour_path(upper)), 5.))
+        segments[3] = (upper, lower)
         _, colored, _ = RootLinker(Config(n_clusters=2)).link_corners(
             [u for u, _ in segments], [{'point': (a, 5), 'angle': 90.} for a in x]
             + [l for _, l in segments], x, [5, 5])
@@ -110,6 +111,68 @@ class ContactEvidenceTests(unittest.TestCase):
         self.assertEqual(set(colored[(70, 105)]), {0, 1})
         self.assertNotIn((70, 90), samples[2])
 
+    def test_refinement_selects_new_continuation_without_overriding_history(self):
+        for established in (False, True):
+            segments, x = self.scene(5.)
+            # The local corner points toward the diagonal arrival, while the
+            # actual outgoing centerline continues the vertical arrival.
+            segments[2][0]['angle'] = 234.
+            path = contour_path(segments[2][0])
+            previous = {0: set(map(tuple, path)), 1: set()} if established else None
+            _, colored, _ = RootLinker(Config(n_clusters=2)).link_corners(
+                [u for u, _ in segments], [{'point': (a, 5), 'angle': 90.} for a in x]
+                + [l for _, l in segments], x, [5, 5], previous)
+            with self.subTest(established=established):
+                self.assertEqual(colored[(70, 105)], 0 if established else 1)
+
+    def test_contact_tangent_ignores_the_junction_kink_at_any_scale(self):
+        from root_tracker.tracking.contact_evidence import ContactEvidence
+        for scale, mirror in [(1, False), (3, False), (1, True)]:
+            path = np.asarray([(40, y) for y in range(41)]
+                              + [(40 + d, 40 + d) for d in range(1, 6)])
+            if mirror:
+                path[:, 0] = 100 - path[:, 0]
+            path *= scale
+            upper = dict(point=tuple(path[0]), lower_point=tuple(path[-1]),
+                         contour=np.concatenate((path, path[-2:0:-1]))[:, None],
+                         width_profile=np.full(len(path), 8. * scale), angle=270.)
+            bottom = upper['lower_point']
+            contact = ContactEvidence([upper], {bottom: {'junction_id': 1}}, {}, {}, {bottom: 0})
+            with self.subTest(scale=scale, mirror=mirror):
+                self.assertAlmostEqual(contact.incoming_direction(bottom, 45.), 90.)
+                reverse = path[::-1]
+                upper.update(point=tuple(reverse[0]), lower_point=tuple(reverse[-1]),
+                             contour=np.concatenate((reverse, reverse[-2:0:-1]))[:, None],
+                             junction_id=1)
+                reverse_contact = ContactEvidence([upper], {}, {}, {}, {})
+                self.assertAlmostEqual(reverse_contact.outgoing_direction(0), 270.)
+
+    def test_short_bridge_does_not_fit_the_opposite_junction(self):
+        from root_tracker.tracking.contact_evidence import ContactEvidence
+        upper, lower = detected_segment((70, 60), (70, 80))
+        upper.update(junction_id=1, width_profile=np.full(len(contour_path(upper)), 8.))
+        lower['junction_id'] = 2
+        bottom = lower['point']
+        contact = ContactEvidence([upper], {bottom: lower}, {}, {}, {bottom: 0})
+        self.assertEqual(contact.incoming_direction(bottom, 75.), 75.)
+        upper['angle'] = 255.
+        self.assertEqual(contact.outgoing_direction(0), 75.)
+
+    def test_tangent_fit_is_independent_of_polyline_sampling_density(self):
+        from root_tracker.tracking.contact_evidence import ContactEvidence
+        vertices = np.asarray([(20., 0.), (20., 15.), (25., 25.), (35., 40.)])
+        dense = np.concatenate([np.linspace(a, b, 11)[:-1]
+                                for a, b in zip(vertices[:-1], vertices[1:])]
+                               + [vertices[-1:]])
+        angles = []
+        for path in (vertices, dense):
+            upper = dict(point=tuple(path[0]), lower_point=tuple(path[-1]),
+                         contour=np.concatenate((path, path[-2:0:-1]))[:, None],
+                         width_profile=np.full(len(path), 12.), angle=270., junction_id=1)
+            contact = ContactEvidence([upper], {}, {}, {}, {})
+            angles.append(contact.outgoing_direction(0))
+        self.assertAlmostEqual(*angles)
+
     def test_reported_contacts_replayed_from_first_timepoint(self):
         expected = {
             ('RT_26_2-17', 30): {(891, 1986): (1, 2)},
@@ -120,7 +183,9 @@ class ContactEvidenceTests(unittest.TestCase):
             ('RT_26_2-40', 27): {(1183, 1466): 3},
             ('RT_26_2-40', 30): {(1142, 2100): 2, (1174, 2223): 3},
             ('RT_26_2-51', 30): {(615, 719): 0},
-            ('RT_26_2-53', 30): {(505, 1000): 1, (1278, 876): 3},
+            ('RT_26_2-53', 28): {(555, 736): 0},
+            ('RT_26_2-53', 29): {(526, 918): 0},
+            ('RT_26_2-53', 30): {(505, 1000): 0, (506, 776): 1, (1278, 876): 3},
             ('RT_26_2-55', 29): {(600, 672): 1},
             ('RT_26_2-59', 30): {(1257, 989): 1},
             ('RT_26_2-69', 28): {(395, 604): (0, 1), (370, 688): 1},

@@ -9,6 +9,13 @@ The router uses the same rules for every series; there are no RT-specific rules.
 
 1. Match incoming identities to outgoing directions jointly. An unmatched identity
    may terminate instead of automatically being copied onto the remaining exit.
+   If sharing is ruled out and one new, unshared continuation remains, refine its
+   owner using directions measured outside the junction. Fit the centerline over
+   the interval one to two root diameters from each endpoint, using exact
+   arc-length-weighted moments. This avoids both the artificial bend from thinning
+   at the contact and sensitivity to vertex sampling density. Short bridges without
+   an uncontaminated interior retain their original direction. Established temporal
+   ownership and shared-contact decisions retain priority over this refinement.
 2. Look through degree-two junctions for independent continuations. Each supporting
    exit must uniquely prefer a different incoming direction and point forward.
    Arrivals at the far junction participate too: their exits cannot also prove
@@ -59,7 +66,7 @@ junction; an incidental lateral can obscure a separating junction farther away.
 The automated checks protect specified assignments and graph/history invariants;
 they are not a claim that every unlabelled pixel has biologically correct ownership.
 
-Validation on September 27, 2026:
+Validation of the initial contact-evidence revision (`85b2da13`) on September 27, 2026:
 
 - Replayed all 309 frozen frames across 78 series against the preceding router.
   No detected root pixels were lost, no parent pointed to another plant's segment,
@@ -72,3 +79,18 @@ Validation on September 27, 2026:
   the frozen replay.
 - Inspected corrected RT22, RT37, RT40 and RT53 crops and rechecked the earlier
   RT1, RT7, RT10, RT12, RT17, RT19, RT25, RT51 and RT62 endpoint controls.
+
+
+The RT53 direction correction changes the initial day-28 decision before temporal
+ownership is established: plant 1 continues downward, and plant 2 later exits left.
+It does not swap established owners during forward tracking. RT52 was confirmed
+correct by the user and is an unchanged control in the full-series audit.
+
+Validation of the RT53 refinement: the 309-frame replay changes only plants 1
+and 2 in RT53 on days 28–30. All other 1,848 plant/frame sample sets are exactly
+unchanged, including RT52. There are no lost detected pixels, invalid parent
+identities, or sustained historical ownership losses. A fresh four-frame RT53
+pipeline run also passes the length/sample/export consistency checks.
+The 329-test full suite has only two existing crop-default assertion failures;
+both reproduce with the unmodified HEAD configuration (the test expects a 10%
+bottom crop, while the independently changed default is 5%).

@@ -266,6 +266,16 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
             for col in set(range(len(indices))) - set(cols):
                 row = int(np.argmin(scores[:, col]))
                 routes[col][ids[row]] = choices[row, col]
+            # Sharing evidence uses the local contact geometry. When it
+            # instead supports one new continuation, compare undistorted
+            # approaches to choose its owner before creating temporal history.
+            if len(indices) == 1 and len(ids) > 1 and len(routes[0]) == 1:
+                index = indices[0]
+                supported, continuing = history[index]
+                if supported is None and not continuing and 'width_profile' in uppers[index]:
+                    winner = next(iter(routes[0]))
+                    owner = contacts.exclusive_owner(index, options, winner)
+                    routes[0] = {owner: choices[ids.index(owner), 0]}
             for col, index in enumerate(indices):
                 # A newly grown lateral is not proof that previously shared
                 # roots have separated. Preserve both identities on a strongly

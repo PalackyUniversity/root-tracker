@@ -27,6 +27,89 @@ class ContactEvidence:
         self.bundles = set()
         self.parallel = set()
         self.travel = {}
+        self.tangents = {}
+
+    def incoming_direction(self, point, fallback):
+        """Estimate approach outside the junction's thinning distortion.
+
+        The last skeleton pixels are pulled towards the other root at a
+        contact. Fit the preceding centerline over one measured diameter,
+        leaving one diameter between the fit and the junction endpoint.
+        Use arc length so this is invariant to sampling density and scale.
+        """
+        index = self.by_bottom.get(point)
+        if index is None or not self.lowers.get(point, {}).get('junction_id'):
+            return fallback
+        return self._endpoint_direction(index, True, fallback)
+
+    def outgoing_direction(self, index):
+        upper = self.uppers[index]
+        fallback = (upper['angle'] + 180) % 360
+        if not upper.get('junction_id'):
+            return fallback
+        return self._endpoint_direction(index, False, fallback)
+
+    def _endpoint_direction(self, index, at_end, fallback):
+        key = (index, at_end)
+        if key in self.tangents:
+            return self.tangents[key]
+        upper = self.uppers[index]
+        widths = np.asarray(upper.get('width_profile', []), dtype=float)
+        if not len(widths):
+            return fallback
+        diameter = float(np.median(widths))
+        path = contour_path(upper).astype(float)
+        distances = np.r_[0., np.cumsum(np.linalg.norm(np.diff(path, axis=0), axis=1))]
+        # A short bridge has no uncontaminated interior between its two
+        # junctions. Keep its original direction instead of fitting the other
+        # junction's distorted pixels or a truncated observation window.
+        other_junction = (upper.get('junction_id') if at_end else
+                          self.lowers.get(upper['lower_point'], {}).get('junction_id'))
+        needed_length = (3 if other_junction else 2) * diameter
+        if distances[-1] < needed_length:
+            return fallback
+        if diameter <= 0:
+            return fallback
+        low, high = ((distances[-1] - 2 * diameter, distances[-1] - diameter)
+                     if at_end else (diameter, 2 * diameter))
+        boundaries = np.column_stack([np.interp([low, high], distances, path[:, axis])
+                                      for axis in range(2)])
+        sample = np.vstack((boundaries[:1], path[(distances > low) & (distances < high)],
+                            boundaries[1:]))
+        # Integrate the line-fit moments along each polyline edge. Giving
+        # every vertex equal weight would bias the direction towards densely
+        # sampled pieces (and make equivalent contours route differently).
+        weights = np.linalg.norm(np.diff(sample, axis=0), axis=1)
+        weights /= weights.sum()
+        mean = np.sum(weights[:, None] * (sample[:-1] + sample[1:]) / 2, axis=0)
+        first, last = sample[:-1] - mean, sample[1:] - mean
+        covariance = ((first.T * weights) @ first + (last.T * weights) @ last) / 3
+        cross = (first.T * weights) @ last
+        covariance += (cross + cross.T) / 6
+        _, vectors = np.linalg.eigh(covariance)
+        vector = vectors[:, -1]
+        if np.dot(vector, sample[-1] - sample[0]) < 0:
+            vector = -vector
+        angle = float(np.rad2deg(np.arctan2(vector[1], vector[0])) % 360)
+        self.tangents[key] = angle
+        return angle
+
+    def exclusive_owner(self, index, options, winner):
+        """Resolve a new single continuation after sharing was ruled out.
+
+        Do not reinterpret the identities inside an already shared arrival:
+        its common centerline has no separate approach direction per plant.
+        """
+        if any(len(routes) != 1 for routes in options.values()):
+            return winner
+        points = [routes[0][0] for routes in options.values()]
+        if len(set(points)) != len(points):
+            return winner
+        outgoing = self.outgoing_direction(index)
+        scores = {pid: turn(outgoing, self.incoming_direction(routes[0][0], routes[0][1]))
+                  for pid, routes in options.items()}
+        best = min(scores, key=scores.get)
+        return winner if np.isclose(scores[best], scores[winner]) else best
 
     def independent_exits(self, index, options):
         """Match all arrivals at the far junction, including local arrivals.
