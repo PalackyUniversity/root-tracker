@@ -207,6 +207,10 @@ class RootLinker:
             for lower in lower_corners_sorted:
                 if lower['point'][1] > up_point[1]:
                     break
+                # A nearby fragment is not evidence of a root. Only endpoints
+                # already connected to a plant can pass on its identity.
+                if lower['point'] not in colored:
+                    continue
                 
                 cost = self.compute_link_cost(
                     upper, lower, min_diff_x,
@@ -221,19 +225,7 @@ class RootLinker:
                     low_point = best_lower['point']
                     used.add(low_point)
                     
-                    # Assign plant ID based on nearest colored point
-                    if low_point in colored:
-                        plant_id = colored[low_point]
-                    else:
-                        # Find nearest colored point
-                        distances = [
-                            (self.compute_distance(up_point, p), pid)
-                            for p, pid in colored.items()
-                        ]
-                        if distances:
-                            _, plant_id = min(distances, key=lambda x: x[0])
-                        else:
-                            plant_id = 0
+                    plant_id = colored[low_point]
                     
                     # Propagate color to upper corner
                     if 'lower_point' in upper:
