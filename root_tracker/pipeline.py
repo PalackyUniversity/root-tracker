@@ -594,7 +594,7 @@ class RootTrackingPipeline:
                 plant_length = cv2.countNonZero(mask_to_count)
                 image_data.plant_length.append(plant_length)
                 
-                from .tracking.main_root import select_main_geometry
+                from .tracking.main_root import has_main_axis, select_main_geometry
                 bottom, main_geometry = select_main_geometry(
                     upper_corners, colored, pairs, k, previous_main.get(k, set()),
                     lower_corners,
@@ -619,7 +619,9 @@ class RootTrackingPipeline:
                 image_data.longest.append(longest_length)
                 ys, xs = np.nonzero(mask_longest)
                 current_main_samples[k] = set(zip(xs.tolist(), ys.tolist()))
-                if len(xs):
+                # A seed-edge blob can be the only first detection. Show it,
+                # but establish identity only once a longitudinal axis exists.
+                if len(xs) and (previous_main.get(k) or has_main_axis(main_geometry, upper_corners)):
                     previous_main.setdefault(k, set()).update(zip(xs.tolist(), ys.tolist()))
                 if not has_mask:
                     main_pixels.extend(zip(np.full(len(xs), k), xs, ys))

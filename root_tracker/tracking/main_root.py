@@ -6,6 +6,87 @@ from .junction_router import plant_ids
 from .temporal_fragments import contour_path
 
 
+def has_main_axis(geometry, upper):
+    """A compact first observation has no resolved longitudinal identity yet."""
+    pieces = [c[:, 0] for contours in geometry.values() for c in contours]
+    if not pieces:
+        return False
+    widths = [np.asarray(u.get('width_profile', [2.])).reshape(-1)
+              for u in upper if u['contour_index'] in geometry]
+    extent = np.linalg.norm(np.ptp(np.concatenate(pieces), axis=0))
+    return extent > np.median(np.concatenate(widths))
+
+
+def _connect_main_fragments(by_tip, original_by_tip, parents, plant):
+    """Recover mutually nearest forward gaps within an already assigned plant.
+
+    Ownership may link both fragments directly to the stem. That is not a
+    physical fork. Infer main ancestry only for free arrivals and free tips,
+    never across a known lateral, and leave the ownership graph untouched.
+    """
+    def parent(node):
+        return node.get('parent_points', {}).get(plant, parents.get(node['point']))
+
+    def ancestry(node):
+        point = parent(node)
+        seen = set()
+        while point in original_by_tip and point not in seen:
+            seen.add(point)
+            point = parent(original_by_tip[point])
+        seen.add(point)
+        return seen
+
+    used = {parent(node) for node in by_tip.values()}
+    arrivals = [node for node in by_tip.values()
+                if parent(node) is not None
+                and (parent(node) not in original_by_tip or parent(node) in by_tip)
+                and not node.get('junction_id')]
+    tips = [node for point, node in by_tip.items() if point not in used]
+    paths = {node['contour_index']: contour_path(node).astype(float)
+             for node in by_tip.values()}
+    choices = []
+    for child in arrivals:
+        for upstream in tips:
+            if child is upstream or parent(child) not in ancestry(upstream):
+                continue
+            gap = np.subtract(child['point'], upstream['lower_point']).astype(float)
+            distance = np.linalg.norm(gap)
+            if gap[1] <= 0 or distance == 0:
+                continue
+            directions, lengths = [], []
+            for node, at_start in ((upstream, False), (child, True)):
+                path = paths[node['contour_index']]
+                if not at_start:
+                    path = path[::-1]
+                arc = np.r_[0., np.cumsum(np.linalg.norm(np.diff(path, axis=0), axis=1))]
+                lengths.append(arc[-1])
+                direction = path[min(np.searchsorted(arc, distance), len(path)-1)] - path[0]
+                directions.append(direction if at_start else -direction)
+            # Use the adjoining observed arms, not the extent of an unrelated
+            # connected component. A newly visible tip can be shorter than its
+            # gap while the established upstream arm supplies the scale.
+            if distance > max(lengths):
+                continue
+            # Each arm must point more along the gap than across it.
+            if all(np.dot(gap, d) > abs(gap[0]*d[1] - gap[1]*d[0]) for d in directions):
+                choices.append((distance, child['lower_point'], upstream['lower_point']))
+    nearest_child, nearest_parent = {}, {}
+    def record(mapping, point, distance, candidate):
+        if point not in mapping:
+            mapping[point] = distance, candidate
+        elif mapping[point][0] == distance:
+            mapping[point] = distance, None
+
+    for distance, child, upstream in sorted(choices):
+        record(nearest_parent, child, distance, upstream)
+        record(nearest_child, upstream, distance, child)
+    for child, (_, upstream) in nearest_parent.items():
+        if upstream is not None and nearest_child[upstream][1] == child:
+            node = by_tip[child]
+            node['parent_points'] = dict(node.get('parent_points', {}))
+            node['parent_points'][plant] = upstream
+
+
 def _main_portions(upper, main_tree, lateral_tree, *, main_bridge=False):
     """Return current contour pieces with established lateral runs excluded."""
     if main_tree is None or lateral_tree is None:
@@ -184,6 +265,8 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
         by_tip[last] = node
     if not by_tip:
         return None, {}
+
+    _connect_main_fragments(by_tip, original_by_tip, parents, plant)
 
     incoming = {}
     if support:
