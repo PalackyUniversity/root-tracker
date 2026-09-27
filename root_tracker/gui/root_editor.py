@@ -37,13 +37,16 @@ class RootEditor(QObject):
             image = source = None
         if image is not self.image or source is not self.source or viewer._root_document is not self.document:
             self.image, self.source = image, source
-            series = self.window._current_series
-            index = next((i for i, candidate in enumerate(series.images) if candidate is image), 0) if series else 0
-            self.document = (editable_document(image, group=series.group if series else None, image_index=index)
-                             if image is not None else None)
-            viewer.set_root_document(self.document)
+            self.document = None
+            viewer.set_root_document_loader(self._load_document if source is not None else None)
         else:
             self.selection_changed()
+
+    def _load_document(self):
+        series = self.window._current_series
+        index = next((i for i, candidate in enumerate(series.images) if candidate is self.image), 0) if series else 0
+        self.document = editable_document(self.image, group=series.group if series else None, image_index=index)
+        return self.document
 
     def selection_changed(self):
         viewer = self.window._image_viewer

@@ -126,6 +126,7 @@ class ImageViewer(QWidget):
         self._root_selection_gesture = None
         self._root_selection_preview = None
         self._root_document = None
+        self._root_document_loader = None
         self._root_paths = []
         self._root_highlights = []
         self.selected_roots = set()
@@ -177,6 +178,7 @@ class ImageViewer(QWidget):
     def set_root_document(self, document, selected=()):
         """Enable detection editing for this frame; clear stale selections."""
         self._cancel_root_selection()
+        self._root_document_loader = None
         self._root_document = document
         self._root_press = None
         self._root_drop_target = None
@@ -192,7 +194,19 @@ class ImageViewer(QWidget):
             self._root_paths.append(path)
         self.select_roots(set(selected) & set(range(len(self._root_paths))))
 
+    def set_root_document_loader(self, loader):
+        """Defer editing geometry until an actual selection needs it."""
+        self.set_root_document(None)
+        self._root_document_loader = loader
+
+    def _ensure_root_document(self):
+        if self._root_document_loader is not None:
+            document = self._root_document_loader()
+            self.set_root_document(document)
+
     def select_roots(self, selected):
+        if selected:
+            self._ensure_root_document()
         self.selected_roots = set(selected)
         self._draw_root_selection()
         self.root_selection_changed.emit()
@@ -215,6 +229,7 @@ class ImageViewer(QWidget):
 
     def root_at(self, point, excluded=()):
         """Hit tolerance stays constant on screen at every zoom level."""
+        self._ensure_root_document()
         scale = max(math.hypot(self._view.transform().m11(), self._view.transform().m12()), .0001)
         # Narrowest matching stroke wins when detections are close together.
         for radius in (2., 4., 7.):
@@ -227,7 +242,8 @@ class ImageViewer(QWidget):
         return None
 
     def _root_editing_active(self):
-        return (self._root_document is not None and self._mask_editing_enabled
+        return ((self._root_document is not None or self._root_document_loader is not None)
+                and self._mask_editing_enabled
                 and not self._color_picking and self._mask_tool in (MaskTool.NONE, MaskTool.MOVE))
 
     def _cancel_root_selection(self):
@@ -237,6 +253,7 @@ class ImageViewer(QWidget):
             self._root_selection_preview = None
 
     def _start_root_selection(self, point, modifiers):
+        self._ensure_root_document()
         self._cancel_root_selection()
         if self._root_document is None:
             return

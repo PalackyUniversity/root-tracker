@@ -204,6 +204,46 @@ class RootInteractionTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication(['test', '-platform', 'offscreen'])
 
+    def test_browsing_defers_geometry_until_selecting_the_current_image(self):
+        from copy import copy
+        from root_tracker.gui.main_window import MainWindow
+        from root_tracker.gui.workflow_bar import WorkflowStep
+        from root_tracker.config import Config
+        from root_tracker.io.root_editing import editable_document
+        fixture = RootEditingTests()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        other = copy(fixture.image)
+        other.path = str(Path(fixture.temp.name) / 'other.png')
+        other.rsml_samples = {0: np.array([[80, y] for y in range(20, 61)])}
+        fixture.series.images.append(other)
+        with patch.object(MainWindow, '_load_last_folder'):
+            window = MainWindow(Config(n_clusters=2))
+        self.addCleanup(window.close)
+        window._remember_session = False
+        window._current_series = fixture.series
+        window._workflow_bar.blockSignals(True)
+        window._workflow_bar.set_current_step(WorkflowStep.TRACK)
+        window._workflow_bar.blockSignals(False)
+        window.show()
+        with patch('root_tracker.gui.root_editor.editable_document', wraps=editable_document) as build:
+            for image in (fixture.image, other, fixture.image, other):
+                window._current_image = image
+                window._display_image(image)
+            self.assertEqual(build.call_count, 0, 'Browsing must not trace roots or round-trip XML')
+            self.app.processEvents()
+            viewer = window._image_viewer
+            view = viewer._view
+            QTest.mouseClick(view.viewport(), Qt.LeftButton, pos=view.mapFromScene(QPointF(80, 40)))
+            self.assertEqual(viewer.selected_roots, {0})
+            self.assertEqual(viewer._root_document.roots[0].points[0], (80., 20.))
+            self.assertEqual(build.call_count, 1)
+            QTest.mouseClick(view.viewport(), Qt.LeftButton, pos=view.mapFromScene(QPointF(80, 40)))
+            self.assertEqual(build.call_count, 1)
+            window._root_editor.present(None, WorkflowStep.PREPROCESS)
+            self.assertEqual(viewer.selected_roots, set())
+            self.assertFalse(viewer._root_editing_active())
+
     def test_click_multiselect_and_drag_copy_target_assignment(self):
         from root_tracker.gui.image_viewer import ImageViewer
         from root_tracker.io.root_editing import editable_document
@@ -312,7 +352,7 @@ class RootInteractionTests(unittest.TestCase):
         viewer.resize(600, 600)
         viewer.show()
         viewer.set_image(fixture.image.image)
-        viewer.set_root_document(editable_document(fixture.image))
+        viewer.set_root_document_loader(lambda: editable_document(fixture.image))
         mask = np.zeros((100, 100), np.uint8)
         viewer.set_mask_data(mask, mask.copy())
         changes = []
