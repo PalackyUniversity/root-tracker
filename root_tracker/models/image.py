@@ -214,6 +214,23 @@ class ImageSeries:
     # Committed processing parameters for this group; paths and GUI state stay global.
     processing_settings: Optional[dict] = field(default=None, repr=False)
 
+    def plant_origins(self, count: int) -> list[tuple[int, int]]:
+        """Shared tracking origins, in registered image coordinates.
+
+        Keep per-image detections as inputs, but use the same rounded median
+        for preview and tracking. RSML replacements own their geometry.
+        """
+        origins = []
+        for index in range(count):
+            points = [(image.positions_x[index], image.positions_y[index])
+                      for image in self.images
+                      if image.rsml_document is None
+                      and index < min(len(image.positions_x), len(image.positions_y))]
+            if points:
+                x, y = np.median(points, axis=0)
+                origins.append((round(x), round(y)))
+        return origins
+
     def clear_tracking_results(self) -> None:
         """Clear tracking results for all images and reset pipeline state."""
         for img in self.images:

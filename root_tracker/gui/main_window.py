@@ -1018,8 +1018,9 @@ class MainWindow(QMainWindow):
             self._image_viewer.set_image(image, preserve_view=preserve_view)
 
             if step == WorkflowStep.PREPROCESS and image_data.image is not None:
-                self._image_viewer.set_centroids(list(zip(
-                    image_data.positions_x, image_data.positions_y)))
+                self._image_viewer.set_centroids(
+                    self._current_series.plant_origins(self._config.n_clusters)
+                    if self._current_series is not None else [])
 
             # Set mask data if in TRACK step
             if (step == WorkflowStep.TRACK and self._current_series is not None
@@ -1357,15 +1358,17 @@ class MainWindow(QMainWindow):
         self._refresh_tree_status()
 
     def _on_centroid_moved(self, index: int, x: float, y: float) -> None:
-        """Handle centroid drag - update image data and enable Re-detect."""
-        if self._current_image is None:
+        """Move this plant's shared origin and invalidate its group's tracking."""
+        if self._current_image is None or self._current_series is None:
             return
-        
-        # Update the position in image data
-        if self._current_image.positions_x and index < len(self._current_image.positions_x):
-            self._current_image.positions_x[index] = x
-        if self._current_image.positions_y and index < len(self._current_image.positions_y):
-            self._current_image.positions_y[index] = y
+
+        for image in self._current_series.images:
+            if (image.rsml_document is None
+                    and 0 <= index < min(len(image.positions_x), len(image.positions_y))):
+                image.positions_x[index] = round(x)
+                image.positions_y[index] = round(y)
+        self._current_series.clear_tracking_results()
+        self._refresh_tree_status()
         
         # Notify settings panel that centroids were modified
         self._settings_panel.mark_centroids_modified()

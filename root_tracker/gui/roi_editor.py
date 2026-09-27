@@ -368,7 +368,9 @@ class RoiEditor(QObject):
             if not preserve_view:
                 self.viewer.fit_in_view()
         elif using_result:
-            self.viewer.set_centroids(list(zip(image_data.positions_x, image_data.positions_y)))
+            series = self.window._current_series
+            self.viewer.set_centroids(
+                series.plant_origins(applied.n_clusters) if series is not None else [])
         if step == WorkflowStep.LOAD:
             self._plate_points = self._source_plate_points
             if config.crop.background_enabled:

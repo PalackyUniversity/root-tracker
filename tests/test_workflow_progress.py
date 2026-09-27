@@ -72,6 +72,39 @@ class WorkflowProgressTests(unittest.TestCase):
             w._display_image(image)
             self.assertEqual(w._image_viewer.get_centroids(), [])
 
+    def test_preprocess_shows_group_origins_in_both_display_paths(self):
+        w = self.window
+        images = []
+        for day, x, y in ((1, 80, 20), (2, 100, 40), (3, 90, 30)):
+            image = ImageData(datetime(2026, 1, day), '', 'group')
+            image.image = np.zeros((100, 150, 3), np.uint8)
+            image.positions_x, image.positions_y = [25, x], [10, y]
+            images.append(image)
+        w._current_series = ImageSeries('group', images)
+        # LOAD exercises the fallback; PREPROCESS exercises the ROI presenter.
+        for panel_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS):
+            w._settings_panel.set_step(panel_step)
+            with patch.object(w, '_ensure_series_loaded'), patch.object(w._workflow_bar, 'get_current_step', return_value=WorkflowStep.PREPROCESS):
+                for image in images:
+                    w._current_image = image
+                    w._display_image(image)
+                    self.assertEqual(w._image_viewer.get_centroids(), [(25, 10), (90, 30)])
+
+    def test_dragging_origin_updates_group_and_invalidates_tracking(self):
+        w = self.window
+        images = [ImageData(datetime(2026, 1, day), '', 'group') for day in (1, 2, 3)]
+        for image in images:
+            image.positions_x, image.positions_y = [25, 80], [10, 20]
+            image.image_annotated = np.zeros((100, 150, 3), np.uint8)
+        series = ImageSeries('group', images)
+        series.pipeline_state.tracked = True
+        w._current_series, w._current_image = series, images[0]
+        w._on_centroid_moved(1, 95, 35)
+        for image in images:
+            self.assertEqual((image.positions_x, image.positions_y), ([25, 95], [10, 35]))
+            self.assertIsNone(image.image_annotated)
+        self.assertFalse(series.pipeline_state.tracked)
+
     def test_settings_and_their_labels_explain_the_controls(self):
         from PySide6.QtWidgets import QComboBox, QSpinBox, QDoubleSpinBox, QCheckBox, QRadioButton, QFormLayout
         panel = self.window._settings_panel

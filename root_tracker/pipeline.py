@@ -356,15 +356,10 @@ class RootTrackingPipeline:
         """
         statistics = []
         
-        # Compute median positions across series
-        pos_x_median = []
-        pos_y_median = []
-        for i in range(self.config.n_clusters):
-            x_values = [img.positions_x[i] for img in series.images if img.rsml_document is None and img.positions_x]
-            y_values = [img.positions_y[i] for img in series.images if img.rsml_document is None and img.positions_y]
-            if x_values and y_values:
-                pos_x_median.append(round(np.median(x_values)))
-                pos_y_median.append(round(np.median(y_values)))
+        # Use the same group origins shown in Preprocess.
+        origins = series.plant_origins(self.config.n_clusters)
+        pos_x_median = [x for x, _ in origins]
+        pos_y_median = [y for _, y in origins]
         
         # Invalidate only export geometry at the start of each tracking run.
         for image_data in series.images:
