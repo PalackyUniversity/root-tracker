@@ -191,6 +191,10 @@ class ConfigEditor(QTabWidget):
         config._base_path = self._config._base_path
         return config
 
+    def edit_values(self):
+        """Snapshot displayed values without validation or conversion rounding."""
+        return deepcopy({key: reader() for key, reader in self._readers.items()})
+
 
 class PresetsDialog(QDialog):
     def __init__(self, store, current, parent=None, *, active_name=None):
@@ -203,7 +207,6 @@ class PresetsDialog(QDialog):
         self.selected_config = None
         self.selected_name = None
         self._loaded_name = None
-        self._loaded_values = current.to_dict()
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel(f'Active preset: {active_name}' if active_name else 'Active configuration: custom settings'))
         body = QHBoxLayout()
@@ -213,6 +216,7 @@ class PresetsDialog(QDialog):
         self.list.setMaximumWidth(200)
         body.addWidget(self.list)
         self.editor = ConfigEditor(current)
+        self._loaded_values = self.editor.edit_values()
         body.addWidget(self.editor, 1)
         layout.addLayout(body)
         row = QHBoxLayout()
@@ -249,24 +253,32 @@ class PresetsDialog(QDialog):
             self.list.setCurrentRow(-1)
         self.list.blockSignals(False)
 
-    def _discard_edits(self):
-        try:
-            dirty = self.editor.value().to_dict() != self._loaded_values
-        except Exception:
-            dirty = True
-        return not dirty or QMessageBox.question(self, 'Unsaved preset edits', 'Discard the unsaved preset edits?', QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel) == QMessageBox.StandardButton.Discard
+    def _discard_edits(self, action='close the preset settings'):
+        if self.editor.edit_values() == self._loaded_values:
+            return True
+        source = f'preset “{self._loaded_name}”' if self._loaded_name else 'the current configuration'
+        message = QMessageBox(self)
+        message.setWindowTitle('Unsaved preset edits')
+        message.setIcon(QMessageBox.Icon.Question)
+        message.setText(f'Discard your unsaved edits to {source} and {action}?')
+        message.setInformativeText('Only edits in this preset settings window will be discarded. Your saved preset and applied image settings will stay unchanged.')
+        message.setStandardButtons(QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
+        message.button(QMessageBox.StandardButton.Discard).setText('Discard preset edits')
+        message.button(QMessageBox.StandardButton.Cancel).setText('Keep editing')
+        message.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        return message.exec() == QMessageBox.StandardButton.Discard
 
     def _select(self, name):
         if not name or name == self._loaded_name:
             return
-        if not self._discard_edits():
+        if not self._discard_edits(f'view preset “{name}”'):
             self._refresh(self._loaded_name)
             return
         try:
             config = self.store.load(name)
             self.editor.set_config(config)
             self._loaded_name = name
-            self._loaded_values = config.to_dict()
+            self._loaded_values = self.editor.edit_values()
         except Exception as error:
             self._error(error)
             self._refresh(self._loaded_name)
@@ -284,7 +296,7 @@ class PresetsDialog(QDialog):
             config = self.editor.value()
             self.store.save(name, config)
             self._loaded_name = name
-            self._loaded_values = config.to_dict()
+            self._loaded_values = self.editor.edit_values()
             self._refresh(name)
         except Exception as error:
             self._error(error)
@@ -296,7 +308,7 @@ class PresetsDialog(QDialog):
         try:
             config = self.editor.value()
             self.store.save(self._loaded_name, config)
-            self._loaded_values = config.to_dict()
+            self._loaded_values = self.editor.edit_values()
         except Exception as error:
             self._error(error)
 
@@ -314,7 +326,7 @@ class PresetsDialog(QDialog):
 
     def import_yaml(self):
         path, _ = QFileDialog.getOpenFileName(self, 'Import preset', '', 'YAML (*.yaml *.yml)')
-        if not path or not self._discard_edits():
+        if not path or not self._discard_edits('import another preset'):
             return
         try:
             config = Config.from_yaml(path)
@@ -326,7 +338,7 @@ class PresetsDialog(QDialog):
             self.store.save(name, config)
             self.editor.set_config(config)
             self._loaded_name = name
-            self._loaded_values = config.to_dict()
+            self._loaded_values = self.editor.edit_values()
             self._refresh(name)
         except Exception as error:
             self._error(error)

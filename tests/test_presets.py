@@ -68,6 +68,44 @@ class PresetTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.store.path(name)
 
+    def test_open_and_close_precise_crop_settings_without_discard_prompt(self):
+        self.config.load_roi = (.512345678, .5, .7, .8, 0.)
+        self.store.save('Example', self.config)
+        with patch.object(QMessageBox, 'question') as question, patch.object(QMessageBox, 'exec') as prompt:
+            dialog = PresetsDialog(self.store, self.config, active_name='Example')
+            self.addCleanup(dialog.deleteLater)
+            self.assertEqual(dialog._loaded_name, 'Example')
+            dialog.reject()
+            question.assert_not_called()
+            prompt.assert_not_called()
+
+    def test_discard_prompt_explains_preset_and_action_and_cancel_preserves_edits(self):
+        self.store.save('Example', self.config)
+        self.store.save('Other', self.config)
+        dialog = PresetsDialog(self.store, self.config, active_name='Example')
+        self.addCleanup(dialog.deleteLater)
+        dialog.editor.findChild(QSpinBox, 'n_clusters').setValue(9)
+        messages = []
+
+        def cancel(message):
+            messages.append(message.text())
+            self.assertEqual(message.button(QMessageBox.StandardButton.Discard).text(), 'Discard preset edits')
+            self.assertEqual(message.button(QMessageBox.StandardButton.Cancel).text(), 'Keep editing')
+            return QMessageBox.StandardButton.Cancel
+
+        with patch.object(QMessageBox, 'exec', cancel):
+            dialog._select('Other')
+            self.assertEqual(dialog._loaded_name, 'Example')
+            self.assertEqual(dialog.editor.value().n_clusters, 9)
+            dialog.reject()
+        self.assertIn('Other', messages[0])
+        self.assertIn('Example', messages[0])
+        self.assertIn('close the preset settings', messages[1])
+        dialog.save()
+        with patch.object(QMessageBox, 'exec') as prompt:
+            dialog.reject()
+            prompt.assert_not_called()
+
     def test_deleted_bundled_presets_are_not_recreated(self):
         bundled = Path(self.temp.name)/'configs'
         bundled.mkdir()
