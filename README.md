@@ -7,9 +7,24 @@ A tool for tracking and analyzing plant root growth from time-series images.
 - **Automatic image preprocessing**: Cropping, rotation, and background removal
 - **Image registration**: Aligns time-series images using template matching
 - **Root tracking**: Segments and tracks individual roots across time
+- **Static debris filtering**: Uses the aligned series to reject persistent isolated objects without measurable extension
 - **Plant identification**: Clusters roots by plant using stem detection
 - **Statistical analysis**: Computes growth rates and root metrics
 - **Batch processing**: Parallel processing of multiple image series
+
+Static debris filtering runs automatically before root assignment when registration is enabled.
+It preserves components connected to growing roots and protects foreground near plant origins.
+Its spatial tolerance comes from the object’s measured thickness; there are no per-image or
+per-series settings. Single images, missing/incompatible frames, and series containing RSML
+replacements keep their existing detections. Debris connected to a root or appearing only
+later can remain; isolated real roots with no resolved growth can still be ambiguous.
+Rerun Track to apply this change to existing results.
+
+Root linking also checks physical gap support before using approximate historical
+matches to recover disconnected objects. Crossing decisions distinguish an
+established lateral from an independent exit of an arriving root, and short
+horizontal crossing junctions route in both directions. Upward terminal branches
+use their rooted physical junction when a remote gap has no established support.
 
 ## Architecture
 

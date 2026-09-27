@@ -11,7 +11,8 @@ def plant_ids(assignment):
     return assignment if isinstance(assignment, tuple) else (assignment,)
 
 
-def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_samples=None):
+def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_samples=None,
+                    *, filter_gaps=True):
     """Resolve physical merges/splits without inventing connections by proximity.
 
     Each shared flow retains its pre-merge tangent until it splits. A joint
@@ -21,21 +22,39 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
     # Short terminal twigs removed by the length filter reserve their real
     # outgoing direction, so an arriving root need not steal another exit.
     original_uppers = uppers
+    from .gap_evidence import GapEvidence
+    gap_evidence = GapEvidence(uppers)
     real_count = len(uppers)
     sinks = [dict(exit_corner)
              for upper in uppers for exit_corner in upper.get('terminal_exits', [])]
     uppers = list(uppers) + sinks
-    lower_by_point = {c['point']: c for c in lowers}
+    lower_by_point = {c['point']: dict(c) for c in lowers}
+    from .junction_clusters import junction_clusters, crossed_bridges
+    representative, bridges, original_sides = junction_clusters(uppers, lower_by_point)
+    original_incoming = {point: corner.get('junction_id')
+                         for point, corner in lower_by_point.items()}
+    for corner in lower_by_point.values():
+        if corner.get('junction_id'):
+            corner['junction_id'] = representative(corner['junction_id'])
+    internal_bottoms = {uppers[i]['lower_point'] for i in bridges}
+    cluster_bridges = {}
+    for i, (first, last) in bridges.items():
+        cluster_bridges.setdefault(representative(first), []).append(i)
     by_bottom = {u['lower_point']: i for i, u in enumerate(uppers) if 'lower_point' in u}
     base_parent = dict(base_pairs)
     incoming = {}
     tasks = {}
-    for corner in lowers:
-        if corner.get('junction_id'):
+    for corner in lower_by_point.values():
+        if corner.get('junction_id') and corner['point'] not in internal_bottoms:
             incoming.setdefault(corner['junction_id'], []).append(corner['point'])
     for i, upper in enumerate(uppers):
         upper.pop('parent_points', None)
+        if i in bridges:
+            continue
         junction = upper.get('junction_id')
+        if junction:
+            junction = representative(junction)
+            upper['junction_id'] = junction
         key = ('junction', junction) if junction else ('segment', i)
         tasks.setdefault(key, []).append(i)
 
@@ -173,11 +192,21 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
             # root follows it. Require its own downstream continuation.
             routes = {pid: route for pid, route in routes.items()
                       if pid in required or pid in proven_upgrades[id(upper)]}
+        current_pixels = set(map(tuple, upper.get('contour', np.empty((0, 1, 2)))[:, 0]))
+        def supported_parent(pid, point):
+            # Fuzzy temporal proximity can identify a shifted root, but cannot
+            # justify a new remote link to a compact island. Exact history is
+            # retained; otherwise the parent must pass the physical gap gate.
+            exact = current_pixels & (previous_samples or {}).get(pid, set())
+            return not filter_gaps or bool(exact) or gap_evidence.allows(upper, point)
+        routes = {pid: route for pid, route in routes.items()
+                  if supported_parent(pid, route[0])}
         for pid in sorted(required):
             if pid in routes:
                 continue
             candidates = [(point, flow[pid]) for point, flow in flows.items()
-                          if pid in flow and point[1] <= upper['point'][1]]
+                          if pid in flow and point[1] <= upper['point'][1]
+                          and supported_parent(pid, point)]
             if candidates:
                 routes[pid] = min(candidates, key=lambda route: sum(
                     (a - b) ** 2 for a, b in zip(route[0], upper['point'])))
@@ -306,6 +335,20 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
                     for pid in continuing:
                         if pid in ids:
                             routes[col][pid] = choices[ids.index(pid), col]
+            # Internal crossing corridors carry only identities whose chosen
+            # entry and exit actually traverse them, in either direction.
+            local_routes = {i: {} for i in cluster_bridges.get(key[1], [])}
+            for col, index in enumerate(indices):
+                for pid, route in routes[col].items():
+                    start = original_incoming.get(route[0])
+                    end = original_sides[index]
+                    for bridge in crossed_bridges(bridges, start, end):
+                        if bridge in local_routes:
+                            local_routes[bridge][pid] = route
+            for bridge, bridge_routes in local_routes.items():
+                contact_proof[bridge] = set(bridge_routes)
+                publish(bridge, bridge_routes)
+            for col, index in enumerate(indices):
                 publish(index, {pid: routes[col][pid] for pid in ids if pid in routes[col]})
         else:
             # Away from physical junctions retain the existing gap/temporal

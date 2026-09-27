@@ -58,3 +58,17 @@ The new RT55 test starts with measured contact evidence and rejects the original
 false-sharing seed. The older temporal fixture intentionally continues to test
 preservation of supplied shared history; new tracking-cache invalidation ensures
 actual series are recomputed from their first frame using the corrected decisions.
+
+`static_debris_rt75.npz` contains four 160×100 binary foreground crops from
+RT_26_2-75, April 27–30, 2026 (registered rows 1310:1470, columns 2550:2650).
+The crop shows the brown impurity near plant 6, visually checked against all
+four photographs. It fades and fragments rather than extending. Masks were
+captured using the existing in-vitro thresholds; the temporal filter receives
+no group ID or case-specific settings. No original photograph is included.
+
+`debris_followup.npz` contains April 27–30 detector inputs for RT17, RT34,
+RT51, RT58 and RT69, captured after static-island filtering with no manual
+exclusions. Numeric contour/width arrays and JSON metadata follow the contact
+fixture format (`contour_<frame>_<segment>`, `width_profile_<frame>_<segment>`).
+Tests rebuild ownership from the first frame, checking the reported crossing
+exits and rejected remote links. They include no photographs or saved ownership.

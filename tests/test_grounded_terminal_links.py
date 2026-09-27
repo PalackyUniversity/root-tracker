@@ -42,9 +42,14 @@ class GroundedTerminalLinkTests(unittest.TestCase):
         pairs, _, _ = self.synthetic(long_arrival=True)
         self.assertIn(((120, 80), (130, 75)), pairs)
 
-    def test_detached_same_plant_arm_keeps_its_existing_gap(self):
-        pairs, colored, _ = self.synthetic(same_owner=True)
-        self.assertIn(((90, 80), (130, 75)), pairs)
+    def test_same_plant_terminal_keeps_ownership_through_its_physical_junction(self):
+        pairs, colored, samples = self.synthetic(same_owner=True)
+        # Only the trunks have history here, not the remote gap or tiny arm.
+        # Same identity does not override its observed physical attachment.
+        self.assertNotIn(((90, 80), (130, 75)), pairs)
+        self.assertIn(((98, 84), (100, 82)), pairs)
+        self.assertIn((90, 80), samples[0])
+        self.assertNotIn((90, 80), samples[1])
         self.assertEqual(colored[(100, 130)], 0)
 
     def test_established_short_arrival_keeps_its_identity(self):

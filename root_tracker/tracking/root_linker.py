@@ -300,12 +300,16 @@ class RootLinker:
                         pixels = set(map(tuple, upper['contour'][:, 0].tolist()))
                         colored_samples[plant_id].update(pixels)
         
+        from .terminal_orientation import orient_terminals
+        orient_terminals(upper_corners, lower_corners, pairs, colored,
+                         set(zip(plant_positions_x, plant_positions_y)), previous_colored_samples)
         if previous_colored_samples or any(corner.get('junction_id') for corner in upper_corners):
             from .junction_router import route_junctions
             return route_junctions(
                 upper_corners, lower_corners,
                 {(x, y): n for n, (x, y) in enumerate(zip(plant_positions_x, plant_positions_y))},
-                pairs, self.config.n_clusters, previous_colored_samples)
+                pairs, self.config.n_clusters, previous_colored_samples,
+                filter_gaps=self.config.registration.enabled)
         return pairs, colored, colored_samples
     
     def draw_annotations(

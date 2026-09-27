@@ -25,6 +25,7 @@ class GapEvidence:
         self.trees = {key: cKDTree(points) for key, points in self.points.items()}
         self.extents = {key: float(np.linalg.norm(np.ptp(points, axis=0)))
                         for key, points in self.points.items()}
+        skeleton_extents = dict(self.extents)
         for upper in uppers:
             component = upper.get('component_id')
             if component in self.extents:
@@ -41,7 +42,9 @@ class GapEvidence:
                 # A span beyond two such diameters is tubular evidence even
                 # when segmentation leaves a long gap. This dimensionless shape
                 # check is unchanged by image scaling.
-                if self.extents[component] > 2 * np.sqrt(4 * area / np.pi):
+                # A foreground bounding box can include flares or discarded
+                # specks. Only the observed centerline establishes elongation.
+                if skeleton_extents[component] > 2 * np.sqrt(4 * area / np.pi):
                     self.elongated.add(component)
         self.cache = {}
 

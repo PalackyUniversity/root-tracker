@@ -390,6 +390,16 @@ class RootTrackingPipeline:
                     image_data.rsml_samples = {}
             return statistics
         
+        # Classify stationary islands before assignments can become temporal
+        # history. Use unmasked foreground: user exclusions must not turn an
+        # established root into an apparently disconnected object.
+        from .tracking.temporal_debris import filter_static_islands
+        root_masks = [self.thresholder.threshold(image.process)
+                      if image.process is not None and image.rsml_document is None
+                      else None for image in series.images]
+        if self.config.registration.enabled:
+            root_masks = filter_static_islands(root_masks, origins)
+
         previous_main = {}
         total_images = len(series.images)
         for idx, image_data in enumerate(series.images):
@@ -425,7 +435,7 @@ class RootTrackingPipeline:
             
             # Threshold to get root mask. Margins are already cropped out during
             # preprocessing, so there is no edge border left to clear here.
-            thresh = self.thresholder.threshold(image_data.process)
+            thresh = root_masks[idx]
             unmasked_thresh = thresh
 
             # Apply user mask if present (series-level mask)
