@@ -34,6 +34,11 @@ def _main_portions(upper, main_tree, lateral_tree):
     if not confirmed.any():
         return [upper['contour']], upper['point'], upper['lower_point']
     if not main.any():
+        # A shifted main can brush an old lateral at a junction. Sparse contact
+        # cannot classify its whole contour as lateral; require the same
+        # majority evidence used for a disconnected ownership assignment.
+        if np.count_nonzero(confirmed) * 2 < len(path):
+            return [upper['contour']], upper['point'], upper['lower_point']
         return [], None, None
     # A merged incoming lateral must not become the main's ancestry. Beyond
     # the first confirmed main run, keep distal continuation: an old gap in
@@ -195,6 +200,26 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
             if np.any(direct_tree.query(path)[0] <= radius):
                 direct_support.add(node['contour_index'])
 
+    # Counted near-pixel votes can prefer a short lateral at the old centerline
+    # over a whole main that moved sideways. Compare each supported candidate
+    # against the entire historical route, not just its close coincidences.
+    route_distances = {}
+    if previous:
+        reference = np.asarray(list(previous), dtype=float)
+        for index, pieces in geometries.items():
+            if not pieces:
+                continue
+            tree = cKDTree(np.concatenate([piece[:, 0] for piece in pieces]))
+            route_distances[index] = np.minimum(tree.query(reference)[0],
+                                                tree.query(reference + applied_shift)[0])
+
+    def route_quality(path, supported):
+        if route_distances and supported:
+            distances = [route_distances[index] for index in path if index in route_distances]
+            if distances:
+                return 1, -float(np.minimum.reduce(distances).mean())
+        return 0, 0.
+
     memo = {}
 
     def trace(point, visiting):
@@ -211,10 +236,12 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
         # parent the ownership solver happened to use for that same plant.
         candidates.extend(p for p in incoming.get(u.get('junction_id'), [])
                           if p != point and p[1] <= point[1] and p != parent)
+        own_support = support.get(u['contour_index'], 0)
         chosen, (score, path) = max(
             ((p, trace(p, visiting | {point})) for p in candidates),
-            key=lambda item: (item[1][0], physical_parent(u, item[0])))
-        own_support = support.get(u['contour_index'], 0)
+            key=lambda item: (*route_quality([u['contour_index']] + item[1][1],
+                                             own_support + item[1][0]),
+                              physical_parent(u, item[0])))
         # New distal growth can continue an established main. An unsupported
         # basal gap parent cannot extend it backwards into a newly detected
         # leaf edge or another root; physical connections remain admissible.
@@ -230,7 +257,7 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
         if not geometries[by_tip[tip]['contour_index']]:
             continue
         support_score, path = trace(tip, set())
-        score = (support_score, tip[1])
+        score = (*route_quality(path, support_score), tip[1])
         if best is None or score > best[0]:
             best = score, tip, path
     if best is None:

@@ -17,7 +17,8 @@ def turn(a, b):
 
 
 class ContactEvidence:
-    def __init__(self, uppers, lower_by_point, incoming, tasks, by_bottom):
+    def __init__(self, uppers, lower_by_point, incoming, tasks, by_bottom,
+                 historical_owner=None):
         self.uppers = uppers
         self.lowers = lower_by_point
         self.incoming = incoming
@@ -28,6 +29,7 @@ class ContactEvidence:
         self.parallel = set()
         self.travel = {}
         self.tangents = {}
+        self.historical_owner = historical_owner or (lambda index: None)
 
     def incoming_direction(self, point, fallback):
         """Estimate approach outside the junction's thinning distortion.
@@ -118,9 +120,24 @@ class ContactEvidence:
         cannot also prove that the same plant travelled through the corridor.
         Walk degree-two vertices so splitting a contour does not change proof.
         """
+        established = self.historical_owner(index)
+        widths, _ = self.arrivals(index, options)
+        angles = [routes[0][1] for routes in options.values() if len(routes) == 1]
+        crossing_limit = 0.
+        if len(widths) == len(options) == len(angles) == 2:
+            separation = turn(*angles)
+            if separation > 0:
+                crossing_limit = sum(widths.values()) / np.sin(np.deg2rad(separation / 2))
+        distance = 0.
+        previous_end = None
         visited = set()
         while index not in visited:
             visited.add(index)
+            path = contour_path(self.uppers[index]).astype(float)
+            distance += float(np.linalg.norm(np.diff(path, axis=0), axis=1).sum())
+            if previous_end is not None:
+                distance += float(np.linalg.norm(path[0] - previous_end))
+            previous_end = path[-1]
             bottom = self.uppers[index].get('lower_point')
             junction = self.lowers.get(bottom, {}).get('junction_id')
             children = self.tasks.get(('junction', junction), []) if junction else []
@@ -139,8 +156,19 @@ class ContactEvidence:
             # another output too. Each continuation must uniquely prefer a
             # distinct arrival and proceed forward along that arrival.
             owners = set()
-            for column in scores.T:
+            for child, column in zip(children, scores.T):
                 row = int(np.argmin(column))
+                owner = entries[row][0]
+                historical = self.historical_owner(child)
+                # An old lateral belongs to its established root, even if its
+                # heading happens to match a new arrival. A new exit can prove
+                # a crossing only inside the overlap footprint of the arriving
+                # strips; a distant side twig cannot upgrade an old trunk.
+                if historical is not None and historical[0] != owner:
+                    continue
+                if (established is not None and owner != established[0]
+                        and historical is None and distance > crossing_limit):
+                    continue
                 if (column[row] < 90 and np.count_nonzero(
                         np.isclose(column, column[row])) == 1
                         and entries[row][0] is not None):
@@ -170,10 +198,37 @@ class ContactEvidence:
         path = contour_path(upper)
         spacing = np.median(np.linalg.norm(np.diff(path, axis=0), axis=1)) if len(path) > 1 else 1.
         radius = max(1, int(round(max(widths.values()) / max(spacing, np.finfo(float).eps))))
-        measured = median_filter(profile, size=2 * radius + 1, mode='nearest')
+        # A short piece between junctions cannot contain the required
+        # interior window. For an already established bundle, continue the
+        # observation along its straightest physical exit; a lateral does not
+        # reset the measurement window merely by splitting the skeleton.
+        measured_profile = profile
+        cursor, visited = index, {index}
+        inherited = any(route[0] in self.bundles for routes in options.values()
+                        for route in routes)
+        while inherited and len(measured_profile) < 2 * radius:
+            bottom = self.uppers[cursor].get('lower_point')
+            junction = self.lowers.get(bottom, {}).get('junction_id')
+            children = [c for c in self.tasks.get(('junction', junction), [])
+                        if c not in visited and 'width_profile' in self.uppers[c]]
+            if not children:
+                break
+            direction = self.lowers.get(bottom, {}).get(
+                'angle', self.outgoing_direction(cursor))
+            child = min(children, key=lambda c: turn(direction, self.outgoing_direction(c)))
+            if turn(direction, self.outgoing_direction(child)) >= 90:
+                break
+            measured_profile = np.r_[measured_profile, self.uppers[child]['width_profile']]
+            visited.add(child)
+            cursor = child
+        measured = median_filter(measured_profile, size=2 * radius + 1, mode='nearest')
         # Exclude the junction bulge. Evidence must last at least one local
         # diameter beyond it; short corridors require topological evidence.
-        initial = measured[radius:2 * radius]
+        # An existing bundle already supplies the entrance evidence. A short
+        # wide continuation can end at the next junction; requiring another
+        # whole diameter past that junction would discard its shared prefix.
+        initial = (measured[:radius] if inherited and len(path) < 2 * radius
+                   else measured[radius:2 * radius])
         if len(initial) < radius:
             return None
         # Skeleton and distance-transform locations are quantized to pixels.
@@ -199,7 +254,10 @@ class ContactEvidence:
             if np.all(contraction[i:i + radius]):
                 cut = i
                 break
-        if cut is None:
+        if cut is None or cut >= len(path):
+            # A narrowing observed in the lookahead belongs to a later
+            # segment. This whole piece remains shared; its own centerline
+            # cannot determine the survivor at that downstream boundary.
             return len(path), winner
         if len(candidates) == 1:
             survivor = candidates[0]
@@ -218,7 +276,7 @@ class ContactEvidence:
             if abs(shift) < spacing:
                 return len(path), winner
             survivor = max(candidates, key=lambda pid: shift * centers[pid])
-        return cut, survivor
+        return min(cut, len(path)), survivor
 
     def arrivals(self, index, options):
         angle = np.deg2rad((self.uppers[index]['angle'] + 180) % 360)
@@ -268,10 +326,11 @@ class ContactEvidence:
         window = max(1, int(round(diameter / max(spacing, np.finfo(float).eps))))
         observed = float(np.median(values[:2 * window]))
         excess = right - left - diameter
-        contraction = np.clip((observed - diameter) / excess, 0., 1.) if excess > 0 else 1.
+        contraction = (np.clip((observed - diameter) / excess, 0., 1.)
+                       if excess > 0 and len(path) >= 2 * window else 1.)
         self.sections[bottom] = {pid: (widths[pid], (centers[pid] - middle) * contraction)
                                  for pid in widths}
-        if bundle or any(route[0] in self.bundles for route in routes.values()):
+        if bundle or len(routes) > 1:
             self.bundles.add(bottom)
             distance = float(np.linalg.norm(np.diff(path, axis=0), axis=1).sum())
             distance += max((self.travel.get(route[0], 0.) for route in routes.values()), default=0.)
@@ -283,7 +342,8 @@ class ContactEvidence:
             # calibers and intersection angle. Beyond that footprint, the
             # evidence describes a parallel bundle, whose lanes keep order.
             footprint = sum(widths.values()) / sine if sine > 0 else np.inf
-            if distance > footprint or any(route[0] in self.parallel for route in routes.values()):
+            if ((bundle and distance > footprint)
+                    or any(route[0] in self.parallel for route in routes.values())):
                 self.parallel.add(bottom)
 
     def supported(self, index, options, winner):

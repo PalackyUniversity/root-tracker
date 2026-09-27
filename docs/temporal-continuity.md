@@ -96,3 +96,44 @@ four days, the RT61 day28 terminal junction and preceding ownership, and RT70
 plant4's four-day assigned geometry, plus RT8 and RT26 main-continuity controls. Synthetic cases cover scale changes,
 legitimate gap arrivals, partial main highlighting of shared roots, merged
 lateral prefixes and incomplete historical main observations.
+
+
+## Whole-route motion and short physical crossings
+
+Main-root selection compares each historically supported candidate route to the
+whole previous main, using mean nearest distance with the accepted image
+alignment. The same comparison selects ancestry at reconnections and the final
+tip. A short lateral close to the old centerline therefore cannot win merely
+because the true main moved sideways. Sparse contact with a historical lateral
+also cannot exclude an entire shifted main contour: lateral exclusion requires
+majority support when no historical main samples are nearby.
+
+At a new two-root crossing, the measured incoming diameters and angle define
+its geometric footprint (sum of diameters divided by the sine of half the
+heading separation). Within that footprint, a previously unseen exit can
+continue the other incoming root even when the established trunk has historical
+ownership. Existing exit ownership remains protected. Parallel approaches,
+missing widths, and long lateral contacts do not provide this crossing proof.
+The footprint uses corridor arc length, including degree-two subdivisions.
+
+For an already proven shared bundle, a short graph edge must not erase sharing
+or lane order. Width observation continues into the next physical edge when
+necessary to observe the width transition. Sharing ends at the measured
+contraction, preserving the longer root's exclusive tail. Lookahead beyond the
+current edge never indexes the current contour past its end. New unproven
+contacts still require independent evidence before becoming shared.
+
+Recorded four-day tests cover RT40 bundle growth, RT45 complete distal main
+continuity, and RT56/RT69 exit identity. Synthetic controls cover reconnections,
+scale and subdivision changes, old lateral contacts, missing width evidence,
+and contractions beyond a short edge. These tests check actual labels and
+contour portions, rather than accepting a rendered image alone.
+
+
+When physical routing stalls on a skeleton cycle, fallback resolves one
+upstream dependency component at a time and immediately retries physical
+routing. Dependencies include both physical arrivals and grounded base links.
+An unrooted component may be skipped so an independently grounded downstream
+fragment can still recover. This prevents bulk fallback from assigning a merge
+before both roots arrive. RT37's recorded four-day sequence and reduced RT38/50
+cycle controls protect sharing and existing rooted fragments.

@@ -40,7 +40,8 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
         tasks.setdefault(key, []).append(i)
 
     from .contact_evidence import ContactEvidence
-    contacts = ContactEvidence(uppers, lower_by_point, incoming, tasks, by_bottom)
+    contacts = ContactEvidence(uppers, lower_by_point, incoming, tasks, by_bottom,
+                               historical_owner=lambda index: evidence(index)[0])
     contact_proof = {}
     contact_extents = {}
 
@@ -323,11 +324,51 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
             process_task(key, tasks[key])
         pending = [key for key in pending if any(i not in processed for i in tasks[key])]
         if len(processed) == before:
-            # A folded/ambiguous junction may not form a directed acyclic
-            # graph. Fall back to its rooted base links rather than fabricate
-            # a cycle or a connection to an unassigned fragment.
+            # Resolve only a root dependency cycle, then retry physical
+            # routing. Bulk fallback would process downstream contacts before
+            # their delayed arrivals, permanently discarding sharing evidence.
+            from scipy.sparse import csr_matrix
+            from scipy.sparse.csgraph import connected_components
+            task_by_index = {index: key for key, indices in tasks.items()
+                             for index in indices}
+            positions = {key: i for i, key in enumerate(pending)}
+            dependencies = np.zeros((len(pending), len(pending)), dtype=bool)
             for key in pending:
-                process_task(key, tasks[key], physical=False)
+                parents = list(incoming.get(key[1], [])) if key[0] == 'junction' else []
+                parents.extend(base_parent.get(uppers[i]['point']) for i in tasks[key])
+                for parent in parents:
+                    index = by_bottom.get(parent)
+                    dependency = task_by_index.get(index)
+                    if index is not None and dependency is None:
+                        # An internal connector is published by its junction
+                        # task rather than being a standalone task.
+                        dependency = ('junction', lower_by_point.get(parent, {}).get('junction_id'))
+                    if index not in processed and dependency in positions:
+                        dependencies[positions[key], positions[dependency]] = True
+            _, components = connected_components(
+                csr_matrix(dependencies), directed=True, connection='strong')
+            component_dependencies = {
+                component: set(components[np.any(dependencies[components == component], axis=0)]) - {component}
+                for component in dict.fromkeys(components)}
+            order, remaining = [], set(component_dependencies)
+            while remaining:
+                roots = [component for component in component_dependencies
+                         if component in remaining
+                         and not (component_dependencies[component] & remaining)]
+                order.extend(roots)
+                remaining.difference_update(roots)
+            # If an upstream cycle has no rooted base link at all, it cannot
+            # recover. Try the next component's own grounded links rather than
+            # abandon an otherwise recoverable downstream fragment.
+            for component in order:
+                members = np.flatnonzero(components == component)
+                for position in members:
+                    key = pending[position]
+                    process_task(key, tasks[key], physical=False)
+                    if len(processed) > before:
+                        break
+                if len(processed) > before:
+                    break
             pending = [key for key in pending if any(i not in processed for i in tasks[key])]
             if len(processed) == before:
                 break
