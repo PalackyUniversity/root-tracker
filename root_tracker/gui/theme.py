@@ -90,6 +90,16 @@ def button_stylesheet(palette: QPalette) -> str:
         }}
         QToolButton:pressed {{ background-color: {pressed}; }}
         QToolButton:focus {{ border-color: {accent.name()}; }}
+        LoadDialog QLineEdit {{
+            background-color: {surface.name()}; color: {text.name()};
+            border: 1px solid {border}; border-radius: 5px;
+            padding: 5px 8px 6px 8px; min-height: 18px;
+            selection-background-color: {accent.name()};
+            selection-color: palette(highlighted-text);
+        }}
+        LoadDialog QLineEdit:hover {{ border-color: {hover_border}; }}
+        LoadDialog QLineEdit:focus {{ border-color: {accent.name()}; }}
+        LoadDialog QLineEdit:disabled {{ background-color: {disabled_bg}; color: {disabled_text}; border-color: {border}; }}
         QComboBox {{
             combobox-popup: 0;
             background-color: {surface.name()}; color: {text.name()};
