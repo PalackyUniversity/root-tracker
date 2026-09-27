@@ -355,7 +355,22 @@ class RootTrackingPipeline:
             List of PlantStatistics objects.
         """
         statistics = []
-        
+        has_mask = series.user_mask is not None and bool(np.any(series.user_mask))
+        if has_mask and any(image.rsml_document is None
+                            and (image.rsml_unmasked_samples is None or image.main_root_samples is None)
+                            for image in series):
+            # Bootstrap once for old caches or datasets first opened with a mask.
+            # Subsequent mask strokes reuse this geometry; deletion stays cheap.
+            from copy import copy
+            unmasked = copy(series)
+            unmasked.images = [copy(image) for image in series]
+            unmasked.user_mask = unmasked.working_mask = None
+            self.track_and_analyze_series(unmasked, save_images=False)
+            for image, source in zip(series, unmasked):
+                if image.rsml_document is None:
+                    image.rsml_unmasked_samples = source.rsml_samples
+                    image.main_root_samples = source.main_root_samples
+
         # Use the same group origins shown in Preprocess.
         origins = series.plant_origins(self.config.n_clusters)
         pos_x_median = [x for x, _ in origins]
@@ -365,6 +380,9 @@ class RootTrackingPipeline:
         for image_data in series.images:
             image_data.rsml_samples = None
             image_data.root_depth_background = None
+            if not has_mask and image_data.rsml_document is None:
+                image_data.main_root_samples = np.empty((0, 3), dtype=np.int32)
+                image_data.tracking_overlay = np.empty((0, 5), dtype=np.int32)
         has_replacements = any(image.rsml_document is not None for image in series)
         if not pos_x_median and not has_replacements:
             for image_data in series.images:
@@ -376,6 +394,8 @@ class RootTrackingPipeline:
         for idx, image_data in enumerate(series.images):
             if image_data.rsml_document is not None:
                 from .io.rsml_replacement import render_replacement
+                from .io.root_mask import apply_root_mask
+                apply_root_mask(image_data, series.user_mask)
                 from .analysis.rsml_statistics import apply_measurements, image_statistics
                 apply_measurements(image_data)
                 statistics.extend(image_statistics(image_data))
@@ -532,14 +552,22 @@ class RootTrackingPipeline:
                 for k, v in colored_samples.items()
             }
             
+            if not has_mask:
+                image_data.rsml_unmasked_samples = image_data.rsml_samples
+
             # Draw links on image
             for upper, lower in pairs:
                 cv2.line(annotated, upper, lower, (255, 255, 255), 1)
             
+            # Preserve diagnostic markers separately from editable root strokes.
+            oy, ox = np.nonzero(np.any(annotated != image_data.image, axis=2))
+            image_data.tracking_overlay = np.column_stack((oy, ox, annotated[oy, ox])).astype(np.int32)
+
             # Compute per-plant statistics
             image_data.plant_length = []
             image_data.longest = []
             main_segments = {}
+            main_pixels = []
             from .tracking.junction_router import plant_ids
             
             for k in range(self.config.n_clusters):
@@ -605,6 +633,9 @@ class RootTrackingPipeline:
                 cv2.drawContours(mask_longest, conts, -1, 255, cv2.FILLED)
                 longest_length = cv2.countNonZero(mask_longest)
                 image_data.longest.append(longest_length)
+                if not has_mask:
+                    ys, xs = np.nonzero(mask_longest)
+                    main_pixels.extend(zip(np.full(len(xs), k), xs, ys))
                 
                 # Color the roots
                 color = self.linker.get_color(k)
@@ -678,6 +709,8 @@ class RootTrackingPipeline:
 
             # Save only the pixels needed to hide the markers instantly.
             ys, xs = np.nonzero(depth_mask)
+            if not has_mask:
+                image_data.main_root_samples = np.asarray(main_pixels, dtype=np.int32).reshape(-1, 3)
             image_data.root_depth_background = np.column_stack(
                 (ys, xs, annotated[ys, xs])
             ).astype(np.int32)
@@ -713,7 +746,13 @@ class RootTrackingPipeline:
         if series.images and all(image.rsml_document is not None for image in series):
             return True
         state = series.pipeline_state
+        if any(image.rsml_document is None and image.rsml_samples is not None
+               and image.main_root_samples is None for image in series):
+            return False  # Upgrade caches that predate editable main-root markings.
         config = self.config.for_series(series)
+        if (series.user_mask is not None and np.any(series.user_mask)
+                and any(image.rsml_document is None and image.rsml_unmasked_samples is None for image in series)):
+            return False  # Upgrade old masked caches with restorable geometry.
         return (
             state.tracked
             and state.tracking_config_hash == config.tracking_config_hash()

@@ -35,6 +35,8 @@ class SettingsPanel(QWidget):
         track_requested: Emitted for Track step action.
     """
 
+    root_assignment_requested = Signal(int)
+    root_delete_requested = Signal()
     show_max_root_depth_toggled = Signal(bool)
     detect_barcodes_toggled = Signal(bool)
     crop_edit_toggled = Signal(bool)
@@ -120,7 +122,7 @@ class SettingsPanel(QWidget):
         self._buttons_layout.addWidget(self._discard_btn)
 
         self._auto_reset_btn = QPushButton('Reset')
-        self._auto_reset_btn.setStatusTip('Restore the settings and mask from before automatic edits for this group and step.')
+        self._auto_reset_btn.setStatusTip('Restore the settings, mask, and manually deleted or reassigned roots for this group and step.')
         self._auto_reset_btn.clicked.connect(self.reset_auto_requested.emit)
         self._auto_reset_btn.hide()
         apply_layout.addWidget(self._auto_reset_btn)
@@ -189,6 +191,8 @@ class SettingsPanel(QWidget):
     
     def _install_setting_help(self):
         tips = {
+            '_root_assignment': 'Assign selected detections to this plant in the current image. The plant color changes with the assignment; corrections are saved immediately.',
+            '_delete_roots_btn': 'Remove only the selected detections from this image and update its measurements and exports.',
             '_n_clusters_spin': 'Expected number of plants in each image. Green stem detections are grouped into this many plant centers. Match this to the plants in the photograph.',
             '_reg_enabled_cb': 'Align photographs in a group to the first image so roots can be compared at consistent positions over time.',
             '_reg_margin_spin': 'Search border on each side as a fraction of image size (0.25 = 25%). Larger values allow larger shifts but take longer. Smaller images are padded enough to fit the reference.',
@@ -362,6 +366,21 @@ class SettingsPanel(QWidget):
     
     def _create_track_settings(self) -> None:
         """Create settings for Track step."""
+        self._selected_roots_group = QGroupBox("Selected roots")
+        selection_layout = QFormLayout(self._selected_roots_group)
+        self._root_selection_summary = QLabel()
+        selection_layout.addRow(self._root_selection_summary)
+        self._root_assignment = QComboBox()
+        self._root_assignment.activated.connect(
+            lambda index: self.root_assignment_requested.emit(self._root_assignment.itemData(index)))
+        selection_layout.addRow("Assigned plant:", self._root_assignment)
+        self._delete_roots_btn = QPushButton("Delete")
+        self._delete_roots_btn.clicked.connect(self.root_delete_requested.emit)
+        selection_layout.addRow(self._delete_roots_btn)
+        self._selected_roots_group.hide()
+        self._settings_layout.addWidget(self._selected_roots_group)
+
+
         # Tracking settings group
         group = QGroupBox("Tracking Settings")
         layout = QFormLayout(group)
@@ -397,6 +416,25 @@ class SettingsPanel(QWidget):
         self._mask_controls.reset_to_pan()
 
         self._store_original_values()
+
+    def set_root_selection(self, document, selected):
+        if self._current_step != WorkflowStep.TRACK:
+            return
+        self._selected_roots_group.setVisible(bool(selected))
+        if not selected or document is None:
+            return
+        from PySide6.QtGui import QColor, QIcon, QPixmap
+        from ..io.rsml_replacement import root_colors
+        colors = root_colors(document)
+        self._root_selection_summary.setText(f"{len(selected)} detection{'s' if len(selected) != 1 else ''} selected")
+        self._root_assignment.clear()
+        for index, plant_id in enumerate(document.plant_ids):
+            swatch = QPixmap(14, 14)
+            swatch.fill(QColor(*reversed(colors[index % len(colors)])))
+            self._root_assignment.addItem(QIcon(swatch), f"Plant {plant_id or index + 1}", index)
+        assignments = {document.roots[index].plant_index for index in selected}
+        self._root_assignment.setCurrentIndex(next(iter(assignments)) if len(assignments) == 1 else -1)
+        self._root_assignment.setPlaceholderText("Mixed assignments")
 
     def has_pending_mask_changes(self) -> bool:
         """

@@ -7,10 +7,10 @@ Provides pan/zoom functionality using QGraphicsView.
 from PySide6.QtWidgets import (
     QGraphicsView, QGraphicsScene, QGraphicsPixmapItem,
     QWidget, QVBoxLayout, QGraphicsEllipseItem, QGraphicsRectItem,
-    QGraphicsSimpleTextItem, QGraphicsPolygonItem, QApplication
+    QGraphicsSimpleTextItem, QGraphicsPolygonItem, QGraphicsPathItem, QApplication
 )
 from PySide6.QtCore import Qt, Signal, QPointF, QRectF, QEvent
-from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent, QTransform, QPolygonF, QPalette
+from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent, QTransform, QPolygonF, QPalette, QPainterPath, QPainterPathStroker
 import math
 import numpy as np
 import cv2
@@ -101,6 +101,9 @@ class ImageViewer(QWidget):
         centroid_moved: Emitted when a centroid is dragged (index, x, y).
     """
     
+    root_selection_changed = Signal()
+    root_assignment_requested = Signal(int)
+    root_delete_requested = Signal()
     zoom_changed = Signal(int)
     centroid_moved = Signal(int, float, float)  # index, x, y
     crop_changed = Signal(object)
@@ -120,6 +123,14 @@ class ImageViewer(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
+        self._root_selection_gesture = None
+        self._root_selection_preview = None
+        self._root_document = None
+        self._root_paths = []
+        self._root_highlights = []
+        self.selected_roots = set()
+        self._root_press = None
+        self._root_drop_target = None
         self._crop_overlay = None
         self._plate_outline = None
         self._color_picking = False
@@ -163,6 +174,103 @@ class ImageViewer(QWidget):
         # Pixmap item for displaying images
         self._pixmap_item: QGraphicsPixmapItem | None = None
     
+    def set_root_document(self, document, selected=()):
+        """Enable detection editing for this frame; clear stale selections."""
+        self._cancel_root_selection()
+        self._root_document = document
+        self._root_press = None
+        self._root_drop_target = None
+        self._root_paths = []
+        for root in document.roots if document is not None else ():
+            path = QPainterPath()
+            if root.points:
+                path.moveTo(*root.points[0][:2])
+                for point in root.points[1:]:
+                    path.lineTo(*point[:2])
+                if path.boundingRect().isNull():
+                    path.addEllipse(QPointF(*root.points[0][:2]), .5, .5)
+            self._root_paths.append(path)
+        self.select_roots(set(selected) & set(range(len(self._root_paths))))
+
+    def select_roots(self, selected):
+        self.selected_roots = set(selected)
+        self._draw_root_selection()
+        self.root_selection_changed.emit()
+
+    def _draw_root_selection(self):
+        for item in self._root_highlights:
+            self._scene.removeItem(item)
+        self._root_highlights = []
+        indices = self.selected_roots | ({self._root_drop_target} if self._root_drop_target is not None else set())
+        for index in indices:
+            item = QGraphicsPathItem(self._root_paths[index])
+            pen = QPen(QColor('#fbbf24' if index == self._root_drop_target else '#ffffff'), 3,
+                       Qt.PenStyle.DashLine)
+            pen.setCosmetic(True)
+            item.setPen(pen)
+            item.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+            item.setZValue(90)
+            self._scene.addItem(item)
+            self._root_highlights.append(item)
+
+    def root_at(self, point, excluded=()):
+        """Hit tolerance stays constant on screen at every zoom level."""
+        scale = max(math.hypot(self._view.transform().m11(), self._view.transform().m12()), .0001)
+        # Narrowest matching stroke wins when detections are close together.
+        for radius in (2., 4., 7.):
+            stroker = QPainterPathStroker()
+            stroker.setWidth(radius * 2 / scale)
+            for index, path in enumerate(self._root_paths):
+                if index not in excluded and path.boundingRect().adjusted(-radius/scale, -radius/scale, radius/scale, radius/scale).contains(point):
+                    if stroker.createStroke(path).contains(point):
+                        return index
+        return None
+
+    def _root_editing_active(self):
+        return (self._root_document is not None and self._mask_editing_enabled
+                and not self._color_picking and self._mask_tool in (MaskTool.NONE, MaskTool.MOVE))
+
+    def _cancel_root_selection(self):
+        self._root_selection_gesture = None
+        if self._root_selection_preview is not None:
+            self._scene.removeItem(self._root_selection_preview)
+            self._root_selection_preview = None
+
+    def _start_root_selection(self, point, modifiers):
+        self._cancel_root_selection()
+        if self._root_document is None:
+            return
+        path = QPainterPath(point)
+        additive = modifiers & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
+        self._root_selection_gesture = (point, path, self.selected_roots.copy() if additive else set())
+        self._root_selection_preview = QGraphicsPathItem()
+        pen = QPen(QColor('#60a5fa'), 1, Qt.PenStyle.DashLine)
+        pen.setCosmetic(True)
+        self._root_selection_preview.setPen(pen)
+        self._root_selection_preview.setBrush(QColor(96, 165, 250, 50))
+        self._root_selection_preview.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+        self._root_selection_preview.setZValue(95)
+        self._scene.addItem(self._root_selection_preview)
+        self._update_root_selection(point)
+
+    def _update_root_selection(self, point):
+        start, stroke, base = self._root_selection_gesture
+        area = QPainterPath()
+        if self._mask_tool == MaskTool.RECT_SELECT:
+            area.addRect(QRectF(start, point).normalized())
+        else:
+            stroke.lineTo(point)
+            stroker = QPainterPathStroker()
+            stroker.setWidth(self._brush_size)
+            stroker.setCapStyle(Qt.PenCapStyle.RoundCap)
+            stroker.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+            area = stroker.createStroke(stroke)
+            area.addEllipse(point, self._brush_size / 2, self._brush_size / 2)
+        self._root_selection_preview.setPath(area)
+        selected = {index for index, path in enumerate(self._root_paths)
+                    if area.intersects(path) or area.contains(path)}
+        self.select_roots(base | selected)
+
     def set_crop(self, shape, box):
         self.clear_crop()
         self._crop_overlay = CropOverlay(shape, box, self._pixmap_item)
@@ -217,6 +325,7 @@ class ImageViewer(QWidget):
         preserve_view = preserve_view and self._pixmap_item is not None
 
         if image is None:
+            self.set_root_document(None)
             if self._pixmap_item is not None:
                 self._scene.removeItem(self._pixmap_item)
                 self._pixmap_item = None
@@ -485,7 +594,7 @@ class ImageViewer(QWidget):
             self._update_restore_preview()
 
         # Show/hide visual feedback items
-        if tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER):
+        if tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER, MaskTool.BRUSH_SELECT):
             if self._brush_cursor is None:
                 self._brush_cursor = BrushCursor(size)
                 self._scene.addItem(self._brush_cursor)
@@ -682,7 +791,7 @@ class ZoomableGraphicsView(QGraphicsView):
             return
         if active and self._pan_previous is None:
             if (not viewer._mask_editing_enabled or viewer._color_picking
-                    or viewer._mask_draw_button is not None
+                    or viewer._mask_draw_button is not None or viewer._root_selection_gesture is not None
                     or viewer._mask_tool in (MaskTool.NONE, MaskTool.MOVE)):
                 return
             self._pan_previous = (viewer._mask_tool, viewer._brush_size)
@@ -695,11 +804,16 @@ class ZoomableGraphicsView(QGraphicsView):
             viewer.set_mask_tool(tool, size)
 
     def eventFilter(self, watched, event):
+        # Do not query Qt windows during unrelated widget creation/destruction;
+        # that can re-enter application filters while wrappers are being freed.
+        kind = event.type()
+        if kind not in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease,
+                        QEvent.Type.ShortcutOverride, QEvent.Type.WindowDeactivate):
+            return False
         # Application-wide callbacks can arrive while Qt tears down the view.
         if not isValid(self) or not isValid(watched):
             return False
         if isinstance(watched, QWidget) and watched.window() == self.window():
-            kind = event.type()
             if kind in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease, QEvent.Type.ShortcutOverride):
                 if event.key() == Qt.Key.Key_Alt:
                     viewer = self.parent()
@@ -739,7 +853,7 @@ class ZoomableGraphicsView(QGraphicsView):
         viewer = self.parent()
         if (event.modifiers() & Qt.KeyboardModifier.ShiftModifier
                 and isinstance(viewer, ImageViewer) and viewer._mask_editing_enabled
-                and viewer._mask_tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER)):
+                and viewer._mask_tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER, MaskTool.BRUSH_SELECT)):
             delta = event.angleDelta().y()
             remainder = getattr(self, '_diameter_wheel_remainder', 0) + delta
             steps = int(remainder / 120)
@@ -784,6 +898,21 @@ class ZoomableGraphicsView(QGraphicsView):
             super().mousePressEvent(event)
             return
 
+        if viewer._root_editing_active() and event.button() == Qt.MouseButton.LeftButton:
+            index = viewer.root_at(self.mapToScene(event.position().toPoint()))
+            toggle = bool(event.modifiers() & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier))
+            if index is not None:
+                selection = viewer.selected_roots ^ {index} if toggle else {index}
+                # Preserve a multiple selection while dragging one of its roots.
+                if not toggle and index in viewer.selected_roots:
+                    selection = viewer.selected_roots
+                viewer.select_roots(selection)
+                viewer._root_press = (event.position().toPoint(), index, toggle)
+                event.accept()
+                return
+            if not toggle:
+                viewer.select_roots(set())
+
         if viewer._mask_draw_button is not None:
             event.accept()
             return
@@ -810,6 +939,12 @@ class ZoomableGraphicsView(QGraphicsView):
         # Check if a masking tool is active
         if viewer._mask_tool == MaskTool.NONE or viewer._mask_tool == MaskTool.MOVE:
             super().mousePressEvent(event)
+            return
+
+        if viewer._mask_tool in (MaskTool.BRUSH_SELECT, MaskTool.RECT_SELECT):
+            if event.button() == Qt.MouseButton.LeftButton:
+                viewer._start_root_selection(self.mapToScene(event.position().toPoint()), event.modifiers())
+            event.accept()
             return
 
         # Initialize working mask if needed
@@ -867,10 +1002,25 @@ class ZoomableGraphicsView(QGraphicsView):
 
         scene_pos = self.mapToScene(event.position().toPoint())
 
+        if viewer._root_press is not None:
+            start, _, _ = viewer._root_press
+            if (event.position().toPoint() - start).manhattanLength() >= QApplication.startDragDistance():
+                viewer._root_drop_target = viewer.root_at(scene_pos, viewer.selected_roots)
+                self.viewport().setCursor(Qt.CursorShape.DragLinkCursor if viewer._root_drop_target is not None
+                                          else Qt.CursorShape.ForbiddenCursor)
+                viewer._draw_root_selection()
+            event.accept()
+            return
+
         # Update brush cursor position
         if viewer._brush_cursor is not None:
             viewer._brush_cursor.setPos(scene_pos)
             viewer._brush_cursor.show()
+
+        if viewer._root_selection_gesture is not None:
+            viewer._update_root_selection(scene_pos)
+            event.accept()
+            return
 
         # Handle drawing - update preview for brush (just add points to graphics path)
         if viewer._drawing and viewer._mask_tool in (MaskTool.BRUSH, MaskTool.BRUSH_ERASER):
@@ -895,6 +1045,28 @@ class ZoomableGraphicsView(QGraphicsView):
         viewer = self.parent()
         if not isinstance(viewer, ImageViewer):
             super().mouseReleaseEvent(event)
+            return
+
+        if viewer._root_selection_gesture is not None and event.button() == Qt.MouseButton.LeftButton:
+            viewer._update_root_selection(self.mapToScene(event.position().toPoint()))
+            viewer._cancel_root_selection()
+            event.accept()
+            return
+
+        if viewer._root_press is not None and event.button() == Qt.MouseButton.LeftButton:
+            start, index, toggle = viewer._root_press
+            viewer._root_press = None
+            target = None
+            if (event.position().toPoint() - start).manhattanLength() >= QApplication.startDragDistance():
+                target = viewer.root_at(self.mapToScene(event.position().toPoint()), viewer.selected_roots)
+            elif not toggle:
+                viewer.select_roots({index})
+            viewer._root_drop_target = None
+            self.viewport().unsetCursor()
+            viewer._draw_root_selection()
+            if target is not None:
+                viewer.root_assignment_requested.emit(viewer._root_document.roots[target].plant_index)
+            event.accept()
             return
 
         if self._pan_previous is not None:
@@ -990,6 +1162,20 @@ class ZoomableGraphicsView(QGraphicsView):
 
     def keyPressEvent(self, event):
         viewer = self.parent()
+        if isinstance(viewer, ImageViewer) and viewer._mask_editing_enabled and (
+                viewer._root_editing_active() or viewer._mask_tool in (MaskTool.BRUSH_SELECT, MaskTool.RECT_SELECT)):
+            if event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace) and viewer.selected_roots:
+                viewer.root_delete_requested.emit()
+                event.accept()
+                return
+            if event.key() == Qt.Key.Key_Escape:
+                viewer._cancel_root_selection()
+                viewer._root_press = None
+                viewer._root_drop_target = None
+                self.viewport().unsetCursor()
+                viewer.select_roots(set())
+                event.accept()
+                return
         if event.key() == Qt.Key.Key_Escape and isinstance(viewer, ImageViewer) and viewer._color_picking:
             viewer.set_color_picking(False)
             viewer.color_pick_cancelled.emit()

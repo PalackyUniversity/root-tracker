@@ -331,6 +331,8 @@ class ImageTree(QWidget):
     def _image_status(self, image, series, preprocess_hash, tracking_hash):
         if image.is_set_aside:
             return 'excluded', 'Set aside; excluded from processing'
+        if image.rsml_unmasked_document is not None:
+            return 'edited', 'Manually corrected detections; Reset restores the original roots'
         if image.rsml_document is not None:
             return 'rsml', 'Roots replaced with RSML; statistics use imported geometry; automatic tracking will not overwrite it'
         if self._step == WorkflowStep.LOAD:
@@ -368,6 +370,7 @@ class ImageTree(QWidget):
             verb = 'checked' if config.data.detect_barcodes else 'loaded'
         light = self.palette().color(QPalette.ColorRole.Base).lightness() >= 128
         colors = {
+            'edited': QColor('#1766a5' if light else '#80bfff'),
             'rsml': QColor('#7744aa' if light else '#c4a0ff'),
             'done': QColor('#237a45' if light else '#74c69d'),
             'warning': QColor('#9a5b00' if light else '#ffad42'),
@@ -377,7 +380,7 @@ class ImageTree(QWidget):
             'running': QColor('#1766a5' if light else '#80bfff'),
             'excluded': self.palette().color(QPalette.ColorRole.PlaceholderText),
         }
-        symbols = {'rsml': 'RSML', 'done': '✓', 'pending': '○', 'outdated': '↻', 'running': '…', 'excluded': '—'}
+        symbols = {'edited': 'Edited', 'rsml': 'RSML', 'done': '✓', 'pending': '○', 'outdated': '↻', 'running': '…', 'excluded': '—'}
         has_rsml = any(image.rsml_document is not None for series in self._series_dict.values() for image in series)
         self._tree.setColumnWidth(1, 52 if has_rsml else 30)
         for index in range(self._tree.topLevelItemCount()):
@@ -408,16 +411,16 @@ class ImageTree(QWidget):
                 pending = id(series) in self._pending_series_ids and status != 'excluded'
                 if pending:
                     detail += '; Unapplied settings changes'
-                child.setText(1, 'RSML' if status == 'rsml' else '⚠' if warning else '●' if pending else symbols[status])
+                child.setText(1, symbols[status] if status in ('rsml', 'edited') else '⚠' if warning else '●' if pending else symbols[status])
                 child.setIcon(0, self.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning)
-                              if metadata_warning and status == 'rsml' else QIcon())
+                              if metadata_warning and status in ('rsml', 'edited') else QIcon())
                 child.setTextAlignment(1, Qt.AlignmentFlag.AlignCenter)
-                child.setForeground(1, colors['rsml' if status == 'rsml' else 'warning' if warning else 'modified' if pending else status])
+                child.setForeground(1, colors[status if status in ('rsml', 'edited') else 'warning' if warning else 'modified' if pending else status])
                 child.setData(1, Qt.ItemDataRole.UserRole, status)
                 child.setToolTip(1, f'{label}: {detail}')
                 child.setData(1, Qt.ItemDataRole.AccessibleTextRole, f'{image.filename}: {label}. {detail}')
             count = sum(s != 'excluded' for s in statuses)
-            done = statuses.count('done') + statuses.count('rsml')
+            done = statuses.count('done') + statuses.count('rsml') + statuses.count('edited')
             status = ('excluded' if not count else 'done' if done == count else
                       'running' if 'running' in statuses else
                       'outdated' if 'outdated' in statuses else 'pending')
@@ -427,6 +430,8 @@ class ImageTree(QWidget):
             group.setForeground(1, colors['warning' if warnings else 'modified' if pending else status])
             group.setData(1, Qt.ItemDataRole.UserRole, status)
             detail = f'{label}: {done} of {count} images {verb}' if count else 'Set aside; excluded from processing'
+            if 'edited' in statuses:
+                detail += f'; {statuses.count("edited")} manually edited image(s)'
             if 'rsml' in statuses:
                 detail += f'; {statuses.count("rsml")} RSML replacement(s)'
             if status == 'running':

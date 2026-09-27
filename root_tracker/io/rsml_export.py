@@ -2,6 +2,7 @@
 from copy import copy
 from datetime import datetime, timezone
 import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -119,10 +120,16 @@ def _document(image, image_name: str, group: str, index: int) -> ET.Element:
     # Registration does not establish temporal root IDs.
     ET.SubElement(sequence, 'unified').text = 'false'
     scene = ET.SubElement(root, 'scene')
+    main = {}
+    if image.main_root_samples is not None:
+        for owner, x, y in image.main_root_samples:
+            main.setdefault(int(owner), set()).add((int(x), int(y)))
     for plant_id, points in sorted(image.rsml_samples.items()):
         plant = ET.SubElement(scene, 'plant', id=str(plant_id + 1), label=f'Plant {plant_id + 1}')
         for root_index, path in enumerate(trace_paths(points), 1):
             element = ET.SubElement(plant, 'root', id=f'p{plant_id + 1}-r{root_index}', label='Skeleton path')
+            if image.main_root_samples is not None:
+                element.set('root-tracker-main-points', json.dumps([p for p in path if p in main.get(plant_id, set())]))
             polyline = ET.SubElement(ET.SubElement(element, 'geometry'), 'polyline')
             # A degenerate two-point polyline preserves isolated detections at
             # zero length and remains readable by tools requiring line segments.
@@ -146,6 +153,8 @@ def export_series_rsml(series: ImageSeries, config: Config, directory: Path,
     if image_index is not None and not 0 <= image_index < len(series.images):
         raise ValueError('The selected image is not in this series')
     series = _export_source(series, config, image_index)
+    from .rsml_replacement import restore_measurements
+    restore_measurements(series)
     frames = list(enumerate(series)) if image_index is None else [(image_index, series.images[image_index])]
     for _, image in frames:
         if image.rsml_document is not None:

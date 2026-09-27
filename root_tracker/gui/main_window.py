@@ -328,7 +328,6 @@ class MainWindow(QMainWindow):
         self._evaluation_timer.setSingleShot(True)
         self._evaluation_timer.timeout.connect(self._evaluate_selected_step)
         self._auto_apply_baselines = {}
-        self._auto_mask_baselines = {}
         self._mask_refresh_active = False
         self._auto_apply_timer = QTimer(self)
         self._auto_apply_timer.setSingleShot(True)
@@ -363,6 +362,8 @@ class MainWindow(QMainWindow):
         self._setup_menu()
         from .roi_editor import RoiEditor
         self._roi_editor = RoiEditor(self)
+        from .root_editor import RootEditor
+        self._root_editor = RootEditor(self)
         self._connect_signals()
         
         # Start on Load step with settings panel and image viewer hidden
@@ -382,6 +383,9 @@ class MainWindow(QMainWindow):
     
     def closeEvent(self, event):
         """Handle application close - cleanup any running workers."""
+        if not self._root_editor.close():
+            event.ignore()
+            return
         self._settings_panel.finish_color_picker()
         self._apply_auto_settings(evaluate=False)
         self._auto_apply_timer.stop()
@@ -715,7 +719,6 @@ class MainWindow(QMainWindow):
         for field in fields(Config):
             setattr(self._config, field.name, deepcopy(getattr(config, field.name)))
         self._auto_apply_baselines.clear()
-        self._auto_mask_baselines.clear()
         self._settings_drafts.clear()
         self._mask_drafts.clear()
         self._current_series = self._current_image = None
@@ -765,6 +768,8 @@ class MainWindow(QMainWindow):
 
     def _reload_images(self, reset_group_settings=False) -> None:
         """Reload images from the current input folder."""
+        if not self._root_editor.flush():
+            return
         # Create pipeline and load images
         self._pipeline = RootTrackingPipeline(self._config)
         
@@ -781,7 +786,6 @@ class MainWindow(QMainWindow):
             self._settings_panel.finish_color_picker()
             self._roi_editor.reset()
             self._auto_apply_baselines.clear()
-            self._auto_mask_baselines.clear()
             self._auto_apply_timer.stop()
             self._settings_drafts.clear()
             self._mask_drafts.clear()
@@ -956,6 +960,8 @@ class MainWindow(QMainWindow):
 
         # Determine which image to show based on workflow step
         step = self._workflow_bar.get_current_step()
+        if step != WorkflowStep.TRACK:
+            self._root_editor.present(None, step)
         editor_presented = self._roi_editor.present(image_data, step, preserve_view=preserve_view)
         
         if step == WorkflowStep.LOAD:
@@ -1009,7 +1015,9 @@ class MainWindow(QMainWindow):
             # TRACK: prefer annotated image, fall back to preprocessed
             if image_data.rsml_document is not None:
                 from ..io.rsml_replacement import render_replacement
-                image = render_replacement(image_data)
+                from ..io.root_mask import apply_root_mask
+                apply_root_mask(image_data, self._current_series.user_mask if self._current_series else None)
+                image = render_replacement(image_data, show_max_root_depth=self._config.gui.show_max_root_depth)
             elif image_data.image_annotated is not None:
                 image = image_data.tracking_preview(self._config.gui.show_max_root_depth)
             elif image_data.image is not None:
@@ -1043,7 +1051,7 @@ class MainWindow(QMainWindow):
 
             # Set mask data if in TRACK step
             if (step == WorkflowStep.TRACK and self._current_series is not None
-                    and image_data.rsml_document is None):
+                    and (image_data.rsml_document is None or image_data.rsml_unmasked_document is not None)):
                 # Erase mask if dimensions don't match (preprocessing changed the crop)
                 user_mask = self._current_series.user_mask
                 if user_mask is not None and user_mask.shape[:2] != image.shape[:2]:
@@ -1057,6 +1065,9 @@ class MainWindow(QMainWindow):
                 # Clear mask data in other steps
                 self._image_viewer.set_mask_data(None, None)
     
+        self._root_editor.present(image_data, step)
+        self._sync_auto_apply_controls()
+
     def _on_step_changed(self, step: WorkflowStep) -> None:
         """Handle workflow step change."""
         # Don't allow step changes while processing
@@ -1262,7 +1273,6 @@ class MainWindow(QMainWindow):
     def _invalidate_preprocessing(self, series):
         # A same-sized rotated crop still changes mask coordinates.
         series.clear_preprocessing_results()
-        self._auto_mask_baselines.pop(series.group, None)
         self._mask_drafts.discard(series.group)
         mask_io.delete_mask(series, self._config)
 
@@ -1419,17 +1429,12 @@ class MainWindow(QMainWindow):
         return (self._auto_preview_action.isChecked() and
                 self._settings_panel._current_step in (WorkflowStep.LOAD, WorkflowStep.PREPROCESS, WorkflowStep.TRACK))
 
-    def _auto_mask_changed(self):
+    def _has_resettable_mask(self):
         series = self._current_series
-        if (series is None or self._settings_panel._current_step != WorkflowStep.TRACK
-                or series.group not in self._auto_mask_baselines):
+        if series is None or self._settings_panel._current_step != WorkflowStep.TRACK:
             return False
-        baseline = self._auto_mask_baselines[series.group]
-        mask = series.working_mask
-        if mask is None or baseline is None:
-            other = baseline if mask is None else mask
-            return other is not None and bool(np.any(other))
-        return not np.array_equal(mask, baseline)
+        return any(mask is not None and bool(np.any(mask))
+                   for mask in (series.user_mask, series.working_mask))
 
     def _sync_auto_apply_controls(self):
         panel = self._settings_panel
@@ -1437,7 +1442,7 @@ class MainWindow(QMainWindow):
         baseline = self._auto_apply_baselines.get(key)
         panel.set_auto_apply_mode(self._auto_apply_enabled(),
                                   (baseline is not None and panel.get_current_values() != baseline)
-                                  or self._auto_mask_changed())
+                                  or self._has_resettable_mask() or self._root_editor.has_manual_edits())
 
     def _apply_auto_settings(self, *, evaluate=True):
         if not self._auto_apply_enabled() or self._current_series is None or self._pipeline is None:
@@ -1454,9 +1459,6 @@ class MainWindow(QMainWindow):
             return
         key = (self._current_series.group, panel._current_step)
         self._auto_apply_baselines.setdefault(key, deepcopy(panel._original_values))
-        if (panel._current_step == WorkflowStep.TRACK
-                and self._current_series.group not in self._auto_mask_baselines):
-            self._auto_mask_baselines[self._current_series.group] = deepcopy(self._current_series.user_mask)
         self._settings_drafts.pop(key, None)
         panel._store_original_values()
         # Use the regular invalidation/processing path, without closing crop
@@ -1470,21 +1472,29 @@ class MainWindow(QMainWindow):
         panel = self._settings_panel
         key = (self._current_series.group, panel._current_step)
         baseline = self._auto_apply_baselines.get(key)
-        if baseline is None:
+        had_roots = self._root_editor.has_manual_edits()
+        roots_reset = self._root_editor.reset() if had_roots else False
+        if had_roots and not roots_reset:
             return
+        if baseline is None and not roots_reset and not self._has_resettable_mask():
+            return
+        if baseline is None:
+            baseline = deepcopy(panel._original_values)
         panel.finish_color_picker()
         series = self._current_series
-        if panel._current_step == WorkflowStep.TRACK and series.group in self._auto_mask_baselines:
-            mask = self._auto_mask_baselines[series.group]
-            # An empty array stages removal of an applied mask; None means no draft.
-            if mask is None and series.user_mask is not None:
-                mask = np.zeros_like(series.user_mask)
-            series.working_mask = deepcopy(mask)
+        if panel._current_step == WorkflowStep.TRACK:
+            mask = series.working_mask if series.working_mask is not None else series.user_mask
+            series.working_mask = np.zeros_like(mask) if mask is not None else None
             self._image_viewer.set_mask_data(series.user_mask, series.working_mask)
             panel._mask_dirty = series.has_pending_mask_changes()
-        panel.set_pending_values(deepcopy(baseline))
+        if baseline is not None:
+            panel.set_pending_values(deepcopy(baseline))
         self._auto_apply_timer.stop()
-        self._apply_auto_settings()
+        # One processing run combines settings/mask reset with root restoration.
+        self._apply_auto_settings(evaluate=not roots_reset)
+        if roots_reset:
+            self._preserve_tracking_view_for = self._current_image
+            self._auto_process_for_tracking(self._current_series)
         self._sync_auto_apply_controls()
 
     def _on_auto_preview_toggled(self, enabled: bool) -> None:
@@ -1519,6 +1529,8 @@ class MainWindow(QMainWindow):
     
     def _on_set_aside_requested(self, item: ImageData | ImageSeries) -> None:
         """Handle request to set an item aside (move to aside/ folder)."""
+        if not self._root_editor.flush():
+            return
         base_dir = self._config.data.input
         aside_base = os.path.join(base_dir, "aside")
         
@@ -1591,6 +1603,8 @@ class MainWindow(QMainWindow):
 
     def _on_unset_aside_requested(self, item: ImageData | ImageSeries) -> None:
         """Handle request to restore an item from aside."""
+        if not self._root_editor.flush():
+            return
         base_dir = self._config.data.input
         aside_base = os.path.join(base_dir, "aside")
         
@@ -1640,6 +1654,8 @@ class MainWindow(QMainWindow):
         )
         
         if confirm == QMessageBox.StandardButton.Yes:
+            if not self._root_editor.flush():
+                return
             try:
                 for image_data in items_to_delete:
                     if os.path.exists(image_data.path):
@@ -2198,7 +2214,14 @@ class MainWindow(QMainWindow):
         # Step 2: Check if preprocessing is needed
         preprocess_hash = self._config.preprocess_config_hash()
         state = series.pipeline_state
-        if not state.preprocessed or state.preprocess_config_hash != preprocess_hash:
+        # Edited/imported frames are skipped by preprocessing. Reset can return
+        # one to native tracking while the series-level cache flag remains valid.
+        missing_native_data = any(
+            image.rsml_document is None and (image.image is None or image.process is None)
+            for image in series
+        )
+        if (not state.preprocessed or state.preprocess_config_hash != preprocess_hash
+                or missing_native_data):
             # Need preprocessing, then tracking
             self._auto_process_pending_tracking = True
             self._preprocess_group(series, force=True, hide_progress=False)
@@ -2259,6 +2282,7 @@ class MainWindow(QMainWindow):
     
     def _lock_ui(self) -> None:
         """Lock UI during processing. Called by ProcessingContext.__enter__."""
+        self._root_editor.present(None, WorkflowStep.LOAD)
         self._roi_editor.set_locked(True)
         allow_mask = self._mask_refresh_active and self._state == ProcessingState.TRACKING
         self._image_viewer.set_mask_editing_enabled(allow_mask)
@@ -2299,6 +2323,7 @@ class MainWindow(QMainWindow):
         self._workflow_bar.setEnabled(True)
         self._roi_editor.set_locked(False)
         self._image_viewer.set_mask_editing_enabled(True)
+        self._root_editor.present(self._current_image, self._workflow_bar.get_current_step())
         
         # Handle step restoration if cancelled
         if restore_step and self._step_before_processing is not None:
@@ -2420,6 +2445,7 @@ class MainWindow(QMainWindow):
             img.root_depth_background = None
             img.colored_samples = {}
             img.rsml_samples = None
+            img.rsml_unmasked_samples = None
             img.rsml_background = None
 
     # Removed _is_operation_running - replaced by checking _state != ProcessingState.IDLE
@@ -2526,6 +2552,8 @@ class MainWindow(QMainWindow):
         Returns:
             True if completed successfully, False if cancelled.
         """
+        if not self._root_editor.flush():
+            return False
         if self._pipeline is None or not self._series_dict:
             return
 
@@ -2669,6 +2697,8 @@ class MainWindow(QMainWindow):
         series = next((series for series in self._series_dict.values()
                        if any(candidate is image for candidate in series)), None)
         if series is None:
+            return
+        if not self._root_editor.flush():
             return
         from ..io.rsml import read_rsml
         from ..io.rsml_replacement import replace_roots, restore_measurements

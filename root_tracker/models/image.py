@@ -70,6 +70,10 @@ class ImageData:
     # Sparse pixels beneath depth markers: columns y, x, B, G, R.
     root_depth_background: Optional[np.ndarray] = field(default=None, repr=False)
 
+    # Unmasked main-root pixels: plant index, x, y.
+    main_root_samples: Optional[np.ndarray] = field(default=None, repr=False)
+    tracking_overlay: Optional[np.ndarray] = field(default=None, repr=False)
+
     # Affine mapping from detected-plate pixels to the displayed processed image.
     plate_transform: list[float] = field(default_factory=list)
 
@@ -90,9 +94,16 @@ class ImageData:
     # Export-only snapshot; never consumed by tracking. None identifies old caches.
     rsml_samples: dict[int, np.ndarray] | None = field(default=None, repr=False)
 
+    # Native geometry retained before exclusions, so Restore survives manual edits.
+    rsml_unmasked_samples: dict[int, np.ndarray] | None = field(default=None, repr=False)
+
     # User replacements are authoritative and survive cache/result invalidation.
     rsml_document: Optional["RSMLDocument"] = field(default=None, repr=False)
     rsml_background: Optional[np.ndarray] = field(default=None, repr=False)
+    # Manual corrections before reversible group exclusions are applied.
+    rsml_unmasked_document: Optional["RSMLDocument"] = field(default=None, repr=False)
+    rsml_original_document: Optional["RSMLDocument"] = field(default=None, repr=False)
+    rsml_root_sources: tuple[int, ...] = field(default_factory=tuple, repr=False)
 
     # Source metadata is independent of processing caches and settings.
     camera_metadata: dict[str, str] | None = field(default=None, repr=False)
@@ -101,6 +112,9 @@ class ImageData:
     def clear_tracking_results(self) -> None:
         """Clear all tracking/analysis results, preserving preprocessing data."""
         self.root_depth_background = None
+        self.rsml_unmasked_samples = None
+        self.main_root_samples = None
+        self.tracking_overlay = None
         if self.rsml_document is not None:
             self.colored_samples = {}
             self.rsml_samples = None
@@ -170,6 +184,8 @@ class ImageData:
             diff=self.diff.copy() if self.diff is not None else None,
             image_annotated=self.image_annotated.copy() if self.image_annotated is not None else None,
             root_depth_background=self.root_depth_background.copy() if self.root_depth_background is not None else None,
+            main_root_samples=self.main_root_samples.copy() if self.main_root_samples is not None else None,
+            tracking_overlay=self.tracking_overlay.copy() if self.tracking_overlay is not None else None,
             green_areas=self.green_areas.copy(),
             plate_transform=self.plate_transform.copy(),
             positions_x=self.positions_x.copy(),
@@ -182,7 +198,12 @@ class ImageData:
             longest=self.longest.copy(),
             colored_samples={k: v.copy() for k, v in self.colored_samples.items()},
             rsml_document=self.rsml_document,
+            rsml_unmasked_document=self.rsml_unmasked_document,
+            rsml_original_document=self.rsml_original_document,
+            rsml_root_sources=self.rsml_root_sources,
             rsml_background=self.rsml_background.copy() if self.rsml_background is not None else None,
+            rsml_unmasked_samples=({k: v.copy() for k, v in self.rsml_unmasked_samples.items()}
+                                   if self.rsml_unmasked_samples is not None else None),
             rsml_samples=({k: v.copy() for k, v in self.rsml_samples.items()}
                           if self.rsml_samples is not None else None),
         )

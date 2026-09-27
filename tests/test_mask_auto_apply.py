@@ -93,6 +93,160 @@ class MaskAutoApplyTests(unittest.TestCase):
         self.assertFalse(self.panel._auto_reset_btn.isEnabled())
         self.assertFalse(mask_io.get_mask_path(self.series, self.w._config).exists())
 
+    def test_manual_root_edit_still_allows_exclude_and_restore(self):
+        from root_tracker.io.root_editing import editable_document, edit_roots
+        doc = editable_document(self.image)
+        self.assertTrue(doc.roots)
+        edit_roots(self.image, doc, {0}, plant_index=0)
+        self.w._display_image(self.image)
+        original_length = self.image.total_length
+        mask = self.paint()
+        QTest.qWait(50)
+        self.w._display_image(self.image)
+        self.assertLess(self.image.total_length, original_length)
+        np.testing.assert_array_equal(self.w._image_viewer.get_working_mask(), mask)
+        self.w._on_mask_erase_all()
+        QTest.qWait(50)
+        self.w._display_image(self.image)
+        self.assertEqual(self.image.total_length, original_length)
+        self.assertFalse(np.any(self.w._image_viewer.get_working_mask()))
+
+    def test_edit_preserves_tracking_markers_and_main_paths_through_cache_and_reload(self):
+        from root_tracker.io import series_cache
+        from root_tracker.io.root_editing import editable_document, edit_roots
+        from root_tracker.io.rsml_replacement import load_replacement, render_replacement
+        main = self.image.main_root_samples.copy()
+        overlay = self.image.tracking_overlay.copy()
+        self.assertGreater(len(main), 0)
+        self.assertGreater(len(overlay), 0)
+        series_cache.save_series(self.series, self.w._config)
+        self.image.main_root_samples = self.image.tracking_overlay = None
+        series_cache.load_series(self.series, self.w._config)
+        np.testing.assert_array_equal(self.image.main_root_samples, main)
+        np.testing.assert_array_equal(self.image.tracking_overlay, overlay)
+        doc = editable_document(self.image)
+        self.assertIn(b'root-tracker-main-points', doc.source_bytes)
+        edit_roots(self.image, doc, {0}, delete=True)
+        fresh = ImageData(self.image.date, self.image.path, self.image.barcode)
+        self.assertTrue(load_replacement(fresh))
+        render_replacement(fresh)
+        np.testing.assert_array_equal(fresh.rsml_background[overlay[:, 0], overlay[:, 1]], overlay[:, 2:])
+
+    def test_delete_is_immediate_and_reset_waits_for_save_then_restores_native_roots(self):
+        import threading
+        from root_tracker.io import rsml_replacement
+        self.w._image_tree.set_series({'a': self.series})
+        self.w._display_image(self.image)
+        self.w._image_viewer.select_roots({0})
+        original_length = self.image.total_length
+        entered = threading.Event()
+        release = threading.Event()
+        write_threads = []
+        save = rsml_replacement._save_replacement
+        def delayed_save(*args):
+            write_threads.append(threading.get_ident())
+            entered.set()
+            release.wait(3)
+            return save(*args)
+        with patch.object(rsml_replacement, '_save_replacement', side_effect=delayed_save):
+            try:
+                self.panel._delete_roots_btn.click()
+                self.assertTrue(entered.wait(1))
+                self.assertLess(self.image.total_length, original_length)
+                self.assertNotEqual(write_threads, [threading.get_ident()])
+                self.assertTrue(self.panel._auto_reset_btn.isEnabled())
+                row = self.w._image_tree._tree.topLevelItem(0).child(0)
+                self.assertEqual(row.text(1), 'Edited')
+            finally:
+                release.set()
+            self.panel._auto_reset_btn.click()
+        self.assertIsNone(self.image.rsml_document)
+        self.assertEqual(self.image.total_length, original_length)
+        self.assertFalse(rsml_replacement.replacement_path(self.image.path).exists())
+        self.assertNotIn(row.text(1), ('RSML', 'Edited'))
+        self.assertFalse(self.panel._auto_reset_btn.isEnabled())
+
+    def test_reset_rebuilds_skipped_preprocessing_before_showing_tracked_image(self):
+        self.w._display_image(self.image)
+        self.w._image_viewer.select_roots({0})
+        original_length = self.image.total_length
+        photo = self.image.image.copy()
+        processed = self.image.process.copy()
+        self.panel._delete_roots_btn.click()
+        self.assertTrue(self.w._root_editor.flush())
+        # Reopened edited frames are skipped during preprocessing, even though
+        # the series as a whole is marked preprocessed with the current config.
+        self.image.clear_preprocessing_results()
+        self.assertTrue(self.series.pipeline_state.preprocessed)
+
+        def prepare(image, **kwargs):
+            image.image = photo.copy()
+            image.process = processed.copy()
+            image.positions_x, image.positions_y = [20], [5]
+
+        def preprocess(series, **kwargs):
+            worker = ProcessWorker(self.w._pipeline, series, self.w._config, 'preprocess')
+            worker._run_preprocess()
+            self.w._continue_auto_track()
+            self.w._display_image(self.image)
+
+        with patch.object(self.w._pipeline, 'preprocess_image', side_effect=prepare), \
+                patch.object(self.w, '_preprocess_group', side_effect=preprocess) as run_preprocess:
+            self.panel._auto_reset_btn.click()
+        run_preprocess.assert_called_once()
+        self.assertIsNone(self.image.rsml_document)
+        self.assertEqual(self.image.total_length, original_length)
+        self.assertIsNotNone(self.image.image_annotated)
+        self.assertFalse(np.array_equal(self.image.image_annotated, photo))
+        self.assertTrue(self.series.pipeline_state.tracked)
+
+    def test_exclusions_before_first_manual_edit_remain_restorable(self):
+        from root_tracker.io.root_editing import editable_document, edit_roots
+        from root_tracker.io.rsml_replacement import restore_measurements
+        from root_tracker.io import series_cache
+        self.series.user_mask = np.zeros((40, 40), np.uint8)
+        self.series.user_mask[30:, :] = 255
+        # Old caches opened with an existing mask need an unmasked snapshot.
+        self.image.rsml_unmasked_samples = None
+        self.w._pipeline.track_and_analyze_series(self.series, save_images=False)
+        self.assertTrue(any(y >= 30 for points in self.image.rsml_unmasked_samples.values() for _, y in points))
+        series_cache.save_series(self.series, self.w._config)
+        self.image.rsml_unmasked_samples = None
+        series_cache.load_series(self.series, self.w._config)
+        self.assertIsNotNone(self.image.rsml_unmasked_samples)
+        edit_roots(self.image, editable_document(self.image), {0}, plant_index=0, mask=self.series.user_mask)
+        restore_measurements(self.series)
+        hidden_length = self.image.total_length
+        self.series.user_mask = None
+        restore_measurements(self.series)
+        self.assertGreater(self.image.total_length, hidden_length)
+        self.assertTrue(any(point[1] >= 30 for root in self.image.rsml_document.roots for point in root.points))
+
+    def test_background_save_failure_keeps_edits_and_can_retry(self):
+        from root_tracker.io import rsml_replacement
+        from PySide6.QtWidgets import QMessageBox
+        self.w._display_image(self.image)
+        self.w._image_viewer.select_roots({0})
+        with patch.object(rsml_replacement, '_save_replacement', side_effect=OSError('disk full')):
+            self.panel._delete_roots_btn.click()
+            with patch('root_tracker.gui.root_editor.QMessageBox.critical', return_value=QMessageBox.StandardButton.Cancel):
+                self.assertFalse(self.w._root_editor.flush())
+        self.assertIsNotNone(self.image.rsml_unmasked_document)
+        self.assertTrue(self.w._root_editor.has_manual_edits())
+        self.w._root_editor._queue_save(self.image)
+        self.assertTrue(self.w._root_editor.flush())
+        self.assertTrue(rsml_replacement.replacement_path(self.image.path).exists())
+
+    def test_reset_roots_also_discards_mask_stroke_waiting_for_auto_apply(self):
+        self.w._display_image(self.image)
+        self.w._image_viewer.select_roots({0})
+        self.panel._delete_roots_btn.click()
+        self.paint()  # Do not let the debounce timer commit this stroke.
+        self.panel._auto_reset_btn.click()
+        self.assertIsNone(self.image.rsml_document)
+        self.assertEqual(self.image.total_area, self.original_area)
+        self.assertTrue(self.series.user_mask is None or not np.any(self.series.user_mask))
+
     def test_manual_mode_stages_edits_until_enabled(self):
         self.w._auto_preview_action.setChecked(False)
         mask = self.paint()
@@ -106,7 +260,21 @@ class MaskAutoApplyTests(unittest.TestCase):
         self.w._apply_auto_settings()
         np.testing.assert_array_equal(self.series.user_mask, mask)
 
-    def test_clear_and_reset_restore_existing_mask(self):
+    def test_reset_clears_existing_mask_without_session_edits(self):
+        mask = np.zeros((40, 40), np.uint8)
+        mask[30:, :] = 255
+        self.series.user_mask = mask.copy()
+        self.series.working_mask = None
+        mask_io.save_mask(self.series, self.w._config)
+        self.w._display_image(self.image)
+        self.assertTrue(self.panel._auto_reset_btn.isEnabled())
+        self.panel._auto_reset_btn.click()
+        self.assertFalse(np.any(self.series.user_mask))
+        self.assertFalse(mask_io.get_mask_path(self.series, self.w._config).exists())
+        self.assertEqual(self.image.total_area, self.original_area)
+        self.assertFalse(self.panel._auto_reset_btn.isEnabled())
+
+    def test_clear_then_reset_settings_does_not_restore_existing_mask(self):
         baseline = np.zeros((40, 40), np.uint8)
         baseline[30:, :] = 255
         self.series.user_mask = baseline.copy()
@@ -115,8 +283,13 @@ class MaskAutoApplyTests(unittest.TestCase):
         self.w._on_mask_erase_all()
         self.w._apply_auto_settings()
         self.assertFalse(np.any(self.series.user_mask))
+        self.assertFalse(self.panel._auto_reset_btn.isEnabled())
+        self.panel._min_contour_area_spin.setValue(2)
+        self.w._apply_auto_settings()
+        self.assertTrue(self.panel._auto_reset_btn.isEnabled())
         self.panel._auto_reset_btn.click()
-        np.testing.assert_array_equal(self.series.user_mask, baseline)
+        self.assertFalse(np.any(self.series.user_mask))
+        self.assertFalse(mask_io.get_mask_path(self.series, self.w._config).exists())
 
     def test_busy_tracking_defers_latest_mask_and_navigation_does_not_start_worker(self):
         mask = self.paint()

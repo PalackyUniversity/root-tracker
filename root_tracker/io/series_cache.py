@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 CACHE_DIR_NAME = ".root_tracker_cache"
 
 # Image array fields to persist (per ImageData)
-_ARRAY_FIELDS = ("image", "process", "canny", "diff", "image_annotated", "root_depth_background")
+_ARRAY_FIELDS = ("image", "process", "canny", "diff", "image_annotated", "root_depth_background", "main_root_samples", "tracking_overlay")
 
 # Scalar fields to persist in metadata (per ImageData)
 _SCALAR_FIELDS = (
@@ -78,6 +78,9 @@ def save_series(series: ImageSeries, config: Config) -> Optional[Path]:
 
         # Per-image arrays
         for idx, img in enumerate(series.images):
+            if img.rsml_unmasked_samples is not None:
+                for plant_id, points in img.rsml_unmasked_samples.items():
+                    arrays[f"unmasked_rsml_{idx}_{plant_id}"] = points
             if img.rsml_samples is not None:
                 for plant_id, points in img.rsml_samples.items():
                     arrays[f"rsml_{idx}_{plant_id}"] = points
@@ -109,6 +112,8 @@ def save_series(series: ImageSeries, config: Config) -> Optional[Path]:
         for img in series.images:
             img_meta = {"rsml_plant_ids": (list(img.rsml_samples)
                         if img.rsml_samples is not None else None)}
+            img_meta["unmasked_rsml_plant_ids"] = (list(img.rsml_unmasked_samples)
+                                                    if img.rsml_unmasked_samples is not None else None)
             for field_name in _SCALAR_FIELDS:
                 img_meta[field_name] = getattr(img, field_name, None)
             for field_name in _LIST_FIELDS:
@@ -266,6 +271,8 @@ def load_series(series: ImageSeries, config: Config, *, require_identity: bool =
         for idx, img in enumerate(series.images):
             # Old caches do not contain separable depth markers.
             img.root_depth_background = None
+            img.main_root_samples = None
+            img.tracking_overlay = None
             # Arrays
             for field_name in _ARRAY_FIELDS:
                 key = f"{field_name}_{idx}"
@@ -273,7 +280,11 @@ def load_series(series: ImageSeries, config: Config, *, require_identity: bool =
                     setattr(img, field_name, data[key])
 
             img.rsml_samples = None
+            img.rsml_unmasked_samples = None
             if idx < len(images_meta):
+                full_ids = images_meta[idx].get("unmasked_rsml_plant_ids")
+                if full_ids is not None and identity_matches:
+                    img.rsml_unmasked_samples = {int(pid): data[f"unmasked_rsml_{idx}_{pid}"] for pid in full_ids}
                 plant_ids = images_meta[idx].get("rsml_plant_ids")
                 if plant_ids is not None and identity_matches:
                     img.rsml_samples = {int(pid): data[f"rsml_{idx}_{pid}"] for pid in plant_ids}

@@ -79,6 +79,8 @@ def refresh_statistics(series, statistics):
     previous_records = []
     for image in series.images:
         if image.rsml_document is not None:
+            from ..io.root_mask import apply_root_mask
+            apply_root_mask(image, series.user_mask)
             apply_measurements(image)
             records = image_statistics(image)
         else:
