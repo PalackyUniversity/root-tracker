@@ -11,7 +11,7 @@ data:
   statistics: "statistics_in_vitro.csv"
 
 margin_top: 0.1
-margin_bottom: 0.1
+margin_bottom: 0.05
 margin_left: 0.03
 margin_right: 0.03
 rotation: 180

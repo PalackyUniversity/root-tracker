@@ -96,7 +96,7 @@ class Config:
     # General settings
     # Margins for cropping sides (0-1)
     margin_top: float = 0.0
-    margin_bottom: float = 0.03
+    margin_bottom: float = 0.05
     margin_left: float = 0.03
     margin_right: float = 0.03
     
