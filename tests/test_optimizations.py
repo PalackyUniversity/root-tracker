@@ -28,7 +28,8 @@ def reference_threshold(image, config):
     keep, ignore = [], set()
     for n, (cnt, h) in enumerate(zip(contours, hierarchy[0])):
         mask = np.zeros_like(image)
-        cv2.drawContours(mask, [cnt], 0, 255, cv2.FILLED)
+        component = [cnt] + [child for child, info in zip(contours, hierarchy[0]) if info[3] == n]
+        cv2.drawContours(mask, component, -1, 255, cv2.FILLED)
         if h[3] == -1:
             area = cv2.countNonZero(mask)
             overlap = cv2.countNonZero(cv2.bitwise_and(high, mask))

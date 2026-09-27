@@ -68,11 +68,16 @@ class RootThresholder:
             # Check if this is an outer contour (not a hole)
             if h[3] == -1:
                 if len(cnt) > self.config.threshold.min_contour_length:
-                    # Only rasterize this contour's bounding box. The overlap
-                    # rule still includes its filled interior, including holes.
+                    # Rasterize this component with its holes intact. Enclosed
+                    # background and separate islands are not candidate roots.
                     x, y, w, height = cv2.boundingRect(cnt)
                     temp_mask = np.zeros((height, w), dtype=np.uint8)
-                    cv2.drawContours(temp_mask, [cnt], 0, 255, cv2.FILLED,
+                    component = [cnt]
+                    child = h[2]
+                    while child != -1:
+                        component.append(contours[child])
+                        child = hierarchy[0][child][0]
+                    cv2.drawContours(temp_mask, component, -1, 255, cv2.FILLED,
                                      offset=(-x, -y))
                     # Check if enough of the contour passes high threshold
                     high_overlap = cv2.countNonZero(cv2.bitwise_and(

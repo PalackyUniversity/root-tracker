@@ -273,6 +273,7 @@ class Config:
     def tracking_config_hash(self) -> str:
         """Hash of config values that affect tracking."""
         values = (
+            "foreground-brightness-v2",
             "root-depth-overlay-v1",
             self.data.filename_template, self.data.date_format,
             self.threshold.low, self.threshold.high,
