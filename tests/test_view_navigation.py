@@ -60,6 +60,31 @@ class ViewNavigationTests(unittest.TestCase):
         self.assertAlmostEqual(viewer._view.transform().m11(), before_scale)
         self.assertLessEqual((after - before).manhattanLength(), 1)
 
+    def test_horizontal_wheel_pans_without_zooming(self):
+        self.viewer._set_zoom(2)
+        view = self.viewer._view
+        point = view.viewport().rect().center()
+        for pixels, angle in [(QPoint(), QPoint(120, 0)),
+                              (QPoint(), QPoint(-120, 0)),
+                              (QPoint(35, 0), QPoint(120, 0)),
+                              (QPoint(-35, 0), QPoint())]:
+            with self.subTest(pixels=pixels, angle=angle):
+                before = view.mapToScene(point)
+                transform = view.transform()
+                event = QWheelEvent(QPointF(point), QPointF(view.viewport().mapToGlobal(point)),
+                                    pixels, angle, Qt.MouseButton.NoButton,
+                                    Qt.KeyboardModifier.NoModifier,
+                                    Qt.ScrollPhase.NoScrollPhase, False)
+                QApplication.sendEvent(view.viewport(), event)
+                after = view.mapToScene(point)
+                direction = pixels.x() or angle.x()
+                self.assertLess((after.x() - before.x()) * direction, 0)
+                self.assertEqual(after.y(), before.y())
+                self.assertEqual(view.transform(), transform)
+                self.assertTrue(event.isAccepted())
+                if pixels.x():
+                    self.assertAlmostEqual((before.x() - after.x()) * 2, pixels.x())
+
     def test_application_filter_ignores_events_during_view_destruction(self):
         view = self.viewer._view
         view.deleteLater()

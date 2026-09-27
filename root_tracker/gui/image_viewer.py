@@ -724,7 +724,18 @@ class ZoomableGraphicsView(QGraphicsView):
         return super().eventFilter(watched, event)
 
     def wheelEvent(self, event: QWheelEvent) -> None:
-        """Keep the scene point beneath the cursor fixed at every zoom level."""
+        """Pan with the horizontal wheel; anchor vertical-wheel zoom at the cursor."""
+        horizontal_pixels = event.pixelDelta().x()
+        horizontal_angle = event.angleDelta().x()
+        if horizontal_pixels or horizontal_angle:
+            scrollbar = self.horizontalScrollBar()
+            # Smooth devices report pixels; mouse wheels report 120 units per notch.
+            distance = horizontal_pixels or (
+                horizontal_angle / 120 * QApplication.wheelScrollLines() * scrollbar.singleStep())
+            scrollbar.setValue(scrollbar.value() - round(distance))
+            self._diameter_wheel_remainder = 0
+            event.accept()
+            return
         viewer = self.parent()
         if (event.modifiers() & Qt.KeyboardModifier.ShiftModifier
                 and isinstance(viewer, ImageViewer) and viewer._mask_editing_enabled
