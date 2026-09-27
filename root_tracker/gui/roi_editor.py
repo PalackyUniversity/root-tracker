@@ -43,6 +43,8 @@ class RoiEditor(QObject):
         self._source_key = None
         self._hsv = None
         self._source_canvas = None
+        self._view_frame_image = None
+        self._view_frame_matrix = None
         self._preview_cache = PreviewCache()
         self._prefetch_timer = QTimer(self)
         self._prefetch_timer.setSingleShot(True)
@@ -164,8 +166,12 @@ class RoiEditor(QObject):
             if source is None:
                 return None
             cropper = ImageCropper(snapshot)
-            return ((source, cropper.plate_outline(source)) if step == WorkflowStep.LOAD else
-                    (cropper.process(source), None))
+            if step == WorkflowStep.LOAD:
+                return source, cropper.plate_outline(source), np.eye(3)
+            canvas, matrix = cropper.crop_result(source)
+            frame = np.eye(3)
+            frame[:2] = matrix
+            return canvas, None, frame
         return key, prepare
 
     def _source(self, image_data, step, config):
@@ -176,8 +182,37 @@ class RoiEditor(QObject):
         if result is None:
             return None
         self._source_key = request[0]
-        self._source_canvas, self._source_plate_points = result
+        self._source_canvas, self._source_plate_points, self._source_matrix = result
         return self._source_canvas
+
+    def result_frame(self, image_data):
+        """Original-photo pixels → applied analysis/registration pixels."""
+        source = self._source(image_data, WorkflowStep.PREPROCESS, self.window._config)
+        if source is None:
+            return None
+        analysis = np.eye(3)
+        if image_data.plate_transform:
+            analysis[:2] = np.asarray(image_data.plate_transform).reshape(2, 3)
+        else:
+            _, analysis[:2], _ = roi.extraction_geometry(
+                source.shape, ImageCropper(self.window._config).analysis_roi(source.shape))
+        return analysis @ self._source_matrix
+
+    def preserve_view_frame(self, image_data, frame, old_viewport, preserve_view, *, editing=False):
+        """Keep the viewed photo point across steps, crops, and registration.
+
+        View geometry survives editor reset; each frame maps from the original
+        photo so Load, plate editing, and analysis results share coordinates.
+        """
+        if (preserve_view and frame is not None and
+                self._view_frame_image is image_data and self._view_frame_matrix is not None and
+                not np.allclose(self._view_frame_matrix, frame)):
+            self.viewer.preserve_frame_position(
+                old_viewport, self._view_frame_matrix @ np.linalg.inv(frame))
+        if not editing:
+            self.viewer.straighten_view()
+        self._view_frame_image = image_data
+        self._view_frame_matrix = frame.copy() if frame is not None else None
 
     def _prefetch_neighbors(self):
         series, current = self.window._current_series, self.window._current_image
@@ -314,6 +349,7 @@ class RoiEditor(QObject):
                 if source is not None:
                     _, matrix = roi.extract(source, ImageCropper(applied).analysis_roi(source.shape))
                     frame_matrix[:2] = matrix
+            original_frame = self.result_frame(image_data)
         else:
             canvas = self._source(image_data, step, config)
             if canvas is None:
@@ -335,6 +371,7 @@ class RoiEditor(QObject):
                 if not editing:
                     canvas, matrix = roi.extract(canvas, box)
                     frame_matrix[:2] = matrix
+            original_frame = frame_matrix @ self._source_matrix
         if canvas is not self._canvas:
             self._canvas = canvas
             self._hsv = None
@@ -355,12 +392,7 @@ class RoiEditor(QObject):
             color = (255, 200, 60) if step == WorkflowStep.LOAD else (80, 255, 120)
             display[outline > 0] = color
         self.viewer.set_image(display, preserve_view=preserve_view)
-        if (preserve_view and
-                getattr(self, '_frame_scope', None) == scope and self._frame_matrix is not None and
-                not np.allclose(self._frame_matrix, frame_matrix)):
-            self.viewer.preserve_frame_position(old_viewport, self._frame_matrix @ np.linalg.inv(frame_matrix))
-        if not editing:
-            self.viewer.straighten_view()
+        self.preserve_view_frame(image_data, original_frame, old_viewport, preserve_view, editing=editing)
         self._frame_scope, self._frame_matrix = scope, frame_matrix
         if editing:
             self.viewer.set_crop(canvas.shape, box)

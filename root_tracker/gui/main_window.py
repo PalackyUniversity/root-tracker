@@ -337,6 +337,7 @@ class MainWindow(QMainWindow):
         self._mask_drafts = set()
         self._restoring_settings = False
         self._current_image: ImageData | None = None
+        self._displayed_image: ImageData | None = None
         self._current_series: ImageSeries | None = None
         
         # Processing state management (new unified system)
@@ -711,6 +712,7 @@ class MainWindow(QMainWindow):
         self._settings_drafts.clear()
         self._mask_drafts.clear()
         self._current_series = self._current_image = None
+        self._displayed_image = None
         self._workflow_bar.blockSignals(True)
         self._workflow_bar._completed_steps.clear()
         self._workflow_bar.set_current_step(WorkflowStep.LOAD)
@@ -776,6 +778,7 @@ class MainWindow(QMainWindow):
             self._mask_drafts.clear()
             self._current_series = None
             self._current_image = None
+            self._displayed_image = None
             self._restore_settings_draft()
             
             if not self._series_dict:
@@ -930,8 +933,10 @@ class MainWindow(QMainWindow):
         # Update button states for new selection
         self._update_process_button_states()
     
-    def _display_image(self, image_data: ImageData, *, preserve_view: bool = False) -> None:
-        """Display an image in the viewer."""
+    def _display_image(self, image_data: ImageData, *, preserve_view: bool | None = None) -> None:
+        """Display an image, retaining the view when refreshing the same image."""
+        if preserve_view is None:
+            preserve_view = image_data is self._displayed_image
         step = self._workflow_bar.get_current_step()
         # Reload from cache if arrays were freed
         if self._current_series is not None and step != WorkflowStep.LOAD:
@@ -1005,11 +1010,19 @@ class MainWindow(QMainWindow):
             self._image_viewer.clear_barcode_overlay()
 
         if editor_presented:
+            self._displayed_image = image_data
             self._image_viewer.set_mask_data(None, None)
             return
 
         if image is not None:
+            old_viewport = self._image_viewer._view.viewportTransform()
             self._image_viewer.set_image(image, preserve_view=preserve_view)
+            frame = (self._roi_editor.result_frame(image_data)
+                     if step == WorkflowStep.TRACK and any(result is not None for result in
+                         (image_data.image, image_data.process, image_data.image_annotated))
+                     else np.eye(3))
+            self._roi_editor.preserve_view_frame(image_data, frame, old_viewport, preserve_view)
+            self._displayed_image = image_data
 
             if step == WorkflowStep.PREPROCESS and image_data.image is not None:
                 self._image_viewer.set_centroids(
@@ -1067,9 +1080,6 @@ class MainWindow(QMainWindow):
             # LOAD: just refresh display
             if self._current_image:
                 self._display_image(self._current_image)
-
-        # Reset zoom to fit when switching steps
-        QTimer.singleShot(0, self._image_viewer, self._image_viewer.fit_in_view)
 
         self._update_process_button_states()
 
@@ -2090,7 +2100,7 @@ class MainWindow(QMainWindow):
             editing = viewer._drawing or viewer._rect_start_point is not None
             already_shown = self._mask_refresh_active and self._current_image is getattr(self, '_mask_image_published', None)
             if self._current_image and not already_shown and not (self._mask_refresh_active and (newer_mask or editing)):
-                self._display_image(self._current_image, preserve_view=preserve_view)
+                self._display_image(self._current_image, preserve_view=preserve_view or None)
         elif error_msg and error_msg != "Cancelled":
             QMessageBox.critical(self, "Error", f"Tracking failed:\n{error_msg}")
         

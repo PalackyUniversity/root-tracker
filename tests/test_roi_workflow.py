@@ -60,6 +60,56 @@ class RoiWorkflowTests(unittest.TestCase):
         self.w._restore_settings_draft()
         self.w._display_image(self.w._current_image)
 
+    def test_step_changes_and_result_refresh_keep_pan_and_zoom(self):
+        self.w._config.crop.background_enabled = False
+        self.w._config.preprocess_roi = (.5, .5, 1., 1., 0.)
+        self.w._pipeline = None  # Exercise navigation without scheduling workers.
+        self.w._image_viewer.show()
+        self.w._settings_panel.show()
+        self.w.show()
+        self.app.processEvents()
+        viewer = self.w._image_viewer
+        viewer._set_zoom(2)
+        viewer._view.centerOn(120, 90)
+        before = viewer._view.viewportTransform()
+        for step in (WorkflowStep.PREPROCESS, WorkflowStep.TRACK, WorkflowStep.LOAD):
+            with self.subTest(step=step):
+                self.w._workflow_bar.set_current_step(step)
+                self.w._on_step_changed(step)
+                self.app.processEvents()
+                self.assertEqual(viewer._view.viewportTransform(), before)
+                self.w._display_image(self.w._current_image)
+                self.assertEqual(viewer._view.viewportTransform(), before)
+
+    def test_step_changes_follow_original_point_through_rotation_crop_and_registration(self):
+        config = self.w._config
+        config.rotation = 90
+        config.crop.background_enabled = False
+        config.preprocess_roi = (.5, .5, .5, .5, 0.)
+        data = self.w._current_image
+        # Original (150, 110) -> rotated (129, 150) -> cropped/registered (76, 66).
+        data.image = np.zeros((160, 120, 3), np.uint8)
+        data.plate_transform = [1., 0., -53., 0., 1., -84.]
+        self.w._pipeline = None
+        self.show_window()
+        self.w._restore_settings_draft()
+        self.w._roi_editor.reset()
+        self.w._display_image(data, preserve_view=False)
+        viewer = self.w._image_viewer
+        viewer._set_zoom(2.)
+        viewer._view.centerOn(150.5, 110.5)
+        before = viewer._view.viewportTransform().map(QPointF(150.5, 110.5))
+        for step, point in ((WorkflowStep.PREPROCESS, (76.5, 66.5)),
+                            (WorkflowStep.TRACK, (76.5, 66.5)),
+                            (WorkflowStep.LOAD, (150.5, 110.5))) * 2:
+            with self.subTest(step=step):
+                self.w._workflow_bar.set_current_step(step)
+                self.w._on_step_changed(step)
+                self.app.processEvents()
+                after = viewer._view.viewportTransform().map(QPointF(*point))
+                self.assertLessEqual((after-before).manhattanLength(), 2.)
+                self.assertAlmostEqual(viewer._zoom_factor, 2.)
+
     def test_manual_hsv_preview_updates_during_drag_and_survives_navigation(self):
         control = self.w._settings_panel._color_control
         control.swatches[0].click()
