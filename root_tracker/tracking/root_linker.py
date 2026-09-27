@@ -187,6 +187,8 @@ class RootLinker:
                         self.compute_distance(up_point, p) for p in parents):
                     lower = lower_by_point.pop(bottom)
                     upper['point'], upper['lower_point'] = bottom, up_point
+                    if 'width_profile' in upper:
+                        upper['width_profile'] = upper['width_profile'][::-1].copy()
                     upper['angle'], lower['angle'] = lower['angle'], upper['angle']
                     upper_junction = upper.pop('junction_id', None)
                     lower_junction = lower.pop('junction_id', None)

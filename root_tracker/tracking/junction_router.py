@@ -39,6 +39,11 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
         key = ('junction', junction) if junction else ('segment', i)
         tasks.setdefault(key, []).append(i)
 
+    from .contact_evidence import ContactEvidence
+    contacts = ContactEvidence(uppers, lower_by_point, incoming, tasks, by_bottom)
+    contact_proof = {}
+    contact_extents = {}
+
     colored = dict(origins)
     flows = {point: {pid: 90.} for point, pid in origins.items()}
     samples = {pid: set() for pid in range(n_clusters)}
@@ -140,14 +145,21 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
         if index >= real_count or not routes or 'lower_point' not in upper:
             return
         supported, continuing = evidence(index)
-        proven_upgrades[id(upper)] = {pid for pid in routes if downstream_owner(index, pid)}
+        if len(routes) > 1 and index not in contact_extents and not contact_proof.get(index):
+            options_here = {pid: [route] for pid, route in routes.items()}
+            winner = supported[0] if supported is not None and supported[0] in routes else next(iter(routes))
+            extent = contacts.width_support(index, options_here, winner)
+            if extent is not None:
+                contact_extents[index] = extent
+                contact_proof[index] = set(routes)
+        proven_upgrades[id(upper)] = {pid for pid in routes if downstream_owner(index, pid)} | contact_proof.get(index, set())
         required = set(continuing)
         if supported is not None:
             required.add(supported[0])
             # Touching an established root is not evidence that the arriving
             # root follows it. Require its own downstream continuation.
             routes = {pid: route for pid, route in routes.items()
-                      if pid in required or downstream_owner(index, pid)}
+                      if pid in required or pid in proven_upgrades[id(upper)]}
         for pid in sorted(required):
             if pid in routes:
                 continue
@@ -167,6 +179,21 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
         tangent = lower_by_point.get(bottom, {}).get('angle', (upper['angle'] + 180) % 360)
         flows[bottom] = {pid: value[1] if len(ids) > 1 else tangent
                          for pid, value in routes.items()}
+        # Carry individual calibers through a bundle, rather than treating
+        # its combined width as the diameter of each participating root.
+        contacts.remember(index, routes, index in contact_extents)
+        extent = contact_extents.get(index)
+        if extent is not None:
+            from .temporal_fragments import contour_path
+            path = contour_path(upper)
+            cut, survivor = extent
+            if cut < len(path) and survivor in routes:
+                historical_fragments.setdefault(id(upper), []).extend([
+                    (tuple(routes), path[:cut], False),
+                    ((survivor,), path[cut:], True)])
+                # The width observation proves sharing only before this tip.
+                proven_upgrades[id(upper)] = set()
+                flows[bottom] = {survivor: tangent}
         if 'contour' in upper:
             pixels = set(map(tuple, upper['contour'][:, 0].tolist()))
             for pid in ids:
@@ -204,6 +231,12 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
                     # Only break equal-direction ties by lateral order.
                     scores[row, col] = turn(route) + abs(
                         row / max(1, len(ids) - 1) - col / max(1, len(indices) - 1)) * 1e-6
+                    # A measured parallel bundle preserves transverse order
+                    # at separation. Original entry headings can point across
+                    # each other after a long curved shared section.
+                    if (len(parents) == 1 and parents[0] in contacts.parallel
+                            and len(indices) == len(ids)):
+                        scores[row, col] = abs(row - col)
                     supported, _ = history[index]
                     if supported is not None and supported[0] != pid:
                         scores[row, col] += 180. * supported[1]
@@ -212,10 +245,22 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
             rows, cols = linear_sum_assignment(scores)
             for row, col in zip(rows, cols):
                 routes[col][ids[row]] = choices[row, col]
-            # Fewer exits than identities: keep the remaining identities in
-            # the best shared exit, instead of discarding them at a merge.
+            # A root may terminate at a contact. A shortage of exits alone
+            # cannot establish sharing. Legacy callers without a foreground
+            # profile retain the geometry-only behavior.
             for row in set(range(len(ids))) - set(rows):
                 col = int(np.argmin(scores[row]))
+                index = indices[col]
+                if 'width_profile' in uppers[index]:
+                    winner = next(iter(routes[col]))
+                    candidates = set(routes[col]) | {ids[row]}
+                    corridor_options = {pid: options[pid] for pid in ids if pid in candidates}
+                    proof, extent = contacts.supported(index, corridor_options, winner)
+                    if ids[row] not in proof:
+                        continue
+                    contact_proof.setdefault(index, set()).update(proof)
+                    if extent is not None:
+                        contact_extents[index] = extent
                 routes[col][ids[row]] = choices[row, col]
             # More exits than identities: keep normal same-plant branching.
             for col in set(range(len(indices))) - set(cols):
@@ -226,6 +271,14 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
                 # roots have separated. Preserve both identities on a strongly
                 # supported continuation of the existing shared geometry.
                 _, continuing = history[index]
+                if len(parents) == 1 and parents[0] in contacts.bundles:
+                    winner = next(iter(routes[col]))
+                    extent = contacts.width_support(index, options, winner)
+                    if extent is not None:
+                        contact_extents[index] = extent
+                        contact_proof[index] = set(ids)
+                        for row, pid in enumerate(ids):
+                            routes[col][pid] = choices[row, col]
                 if len(continuing) > 1:
                     for pid in continuing:
                         if pid in ids:

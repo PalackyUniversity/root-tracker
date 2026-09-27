@@ -71,6 +71,8 @@ def preserve_historical_fragments(uppers, history, pairs, colored, samples, upgr
             fragment['point'] = tuple(part[0])
             fragment['lower_point'] = tuple(part[-1])
             fragment['contour'] = np.concatenate((part, part[-2:0:-1]))[:, None].copy()
+            if 'width_profile' in upper:
+                fragment['width_profile'] = upper['width_profile'][start:end].copy()
             fragment['parent_points'] = {pid: parents[pid] for pid in ids}
             bottom = fragment['lower_point']
             colored[bottom] = ids[0] if len(ids) == 1 else tuple(ids)

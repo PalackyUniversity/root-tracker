@@ -44,3 +44,17 @@ These assert that touching roots cannot take over an established neighboring
 trunk/lateral, that RT17's long shared root retains both owners, and that
 RT55 retains a short historically shared portion inside a longer segment. Frame dates
 use each series' actual final three/four-day sequence.
+
+`root_contact_evidence.npz` adds ordered foreground-width profiles to complete
+April 27–30 sequences for RT_26_2-3, -17, -22, -33, -37, -40, -51, -53, -55,
+-59, -62 and -69. `width_<frame>_<segment>` is twice the foreground distance
+transform sampled along the contour from its upper to lower endpoint. Metadata
+and contours use the format above; archives contain numeric arrays and JSON,
+not pickled objects. Captures use the same cached preprocessing and series masks
+as the other fixtures. RT33 currently provides replay/metadata checks only, not
+a claim that its disputed branch has been corrected.
+
+The new RT55 test starts with measured contact evidence and rejects the original
+false-sharing seed. The older temporal fixture intentionally continues to test
+preservation of supplied shared history; new tracking-cache invalidation ensures
+actual series are recomputed from their first frame using the corrected decisions.

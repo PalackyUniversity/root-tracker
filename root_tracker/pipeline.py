@@ -465,6 +465,12 @@ class RootTrackingPipeline:
                     short_upper['junction_id'] = junction
                     terminal_exits.setdefault(junction, []).append(short_upper)
             
+            # Measure foreground caliber before the skeleton loses width.
+            root_width = 2 * cv2.distanceTransform(
+                (thresh_filtered > 0).astype(np.uint8), cv2.DIST_L2,
+                cv2.DIST_MASK_PRECISE)
+            from .tracking.temporal_fragments import contour_path
+
             # Analyze corners of each segment
             upper_corners = []
             lower_corners = []
@@ -495,6 +501,8 @@ class RootTrackingPipeline:
                     upper_info['contour_index'] = cnt_n
                     upper_info['contour'] = cnt
                     upper_info['lower_point'] = lower_info['point']
+                    path = contour_path(upper_info)
+                    upper_info['width_profile'] = root_width[path[:, 1], path[:, 0]]
                     upper_corners.append(upper_info)
                     
                     if lower_info['point'] not in endpoints:
