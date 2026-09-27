@@ -88,7 +88,10 @@ class GreenAreaDetector:
             Tuple of (x_positions, y_positions, areas) for each cluster,
             sorted left-to-right by x position.
         """
-        if not contours:
+        # Early frames can show fewer stems than the configured plant count.
+        # Keep preprocessing their pixels; tracking uses the shared origins
+        # from other dates. Partial clusters would shift plant identities.
+        if len(contours) < self.config.n_clusters:
             return [], [], []
         
         # Extract centroids and areas from contours

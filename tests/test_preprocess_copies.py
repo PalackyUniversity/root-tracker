@@ -103,6 +103,25 @@ class PreprocessCopyTests(unittest.TestCase):
             self.assertIsNone(data.process)
             np.testing.assert_array_equal(original, before)
 
+    def test_too_few_stems_still_prepares_image_for_series_tracking(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Config(rotation=0, n_clusters=6)
+            config.green.min_area = 10
+            config.data.output = directory
+            pipeline = RootTrackingPipeline(config)
+            original = self.photograph()
+            contours, _ = pipeline.green_detector.find_green_contours(
+                pipeline.cropper.process(original))
+            self.assertGreater(len(contours), 0)
+            self.assertLess(len(contours), config.n_clusters)
+            data = ImageData(datetime(2026, 1, 1), 'unused.png', 'test')
+            pipeline.preprocess_image(data, original=original)
+            self.assertIsNotNone(data.image)
+            self.assertIsNotNone(data.process)
+            self.assertIsNotNone(data.canny)
+            self.assertTrue(data.plate_transform)
+            self.assertEqual(data.positions_x, [])
+
 
 if __name__ == '__main__':
     unittest.main()

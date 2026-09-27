@@ -346,7 +346,10 @@ class ImageTree(QWidget):
             return 'pending', 'Barcode not checked yet'
 
         state = series.pipeline_state
-        prepared = state.preprocessed and bool(image.positions_x)
+        # The crop transform survives cache eviction and also records completed
+        # preprocessing for early frames with too few visible stems. Keep the
+        # positions fallback for caches created before transforms were stored.
+        prepared = state.preprocessed and bool(image.plate_transform or image.positions_x)
         if self._step == WorkflowStep.PREPROCESS:
             has_result = prepared
             current = state.preprocess_config_hash == preprocess_hash
@@ -457,7 +460,7 @@ class ImageTree(QWidget):
             # Show just the folder name, not the full path
             folder_name = os.path.basename(folder_path.rstrip(os.sep))
             self._folder_label.setText(folder_name)
-            self._folder_label.setToolTip(folder_path)  # Full path on hover
+            self._folder_label.setToolTip(folder_path)
     
     def _populate_tree(self) -> None:
         """Populate the tree with the current series data."""

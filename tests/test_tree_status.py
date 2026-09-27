@@ -77,6 +77,18 @@ class TreeStatusTests(unittest.TestCase):
         self.tree.set_step(WorkflowStep.TRACK, self.config)
         self.assertEqual([self.status(i) for i in range(3)], ['done', 'pending', 'pending'])
 
+    def test_prepared_frame_without_stems_is_complete_even_after_arrays_are_freed(self):
+        self.mark_preprocessed()
+        image = self.images[2]
+        image.plate_transform = [1., 0., -10., 0., 1., -20.]
+        self.tree.set_step(WorkflowStep.PREPROCESS, self.config)
+        self.assertEqual(self.status(2), 'done')
+        self.series.pipeline_state.tracked = True
+        self.series.pipeline_state.tracking_config_hash = self.config.tracking_config_hash()
+        image.total_length = 0
+        self.tree.set_step(WorkflowStep.TRACK, self.config)
+        self.assertEqual(self.status(2), 'done')
+
     def test_changed_preprocessing_settings_invalidate_tracking_status(self):
         self.mark_preprocessed()
         self.series.pipeline_state.tracked = True
