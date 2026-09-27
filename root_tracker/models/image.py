@@ -211,6 +211,8 @@ class ImageSeries:
     # User-defined mask for root removal (applies to all images in series)
     user_mask: Optional[np.ndarray] = field(default=None, repr=False)
     working_mask: Optional[np.ndarray] = field(default=None, repr=False)
+    # Committed processing parameters for this group; paths and GUI state stay global.
+    processing_settings: Optional[dict] = field(default=None, repr=False)
 
     def clear_tracking_results(self) -> None:
         """Clear tracking results for all images and reset pipeline state."""

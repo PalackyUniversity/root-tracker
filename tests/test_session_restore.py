@@ -39,6 +39,7 @@ class SessionRestoreTests(unittest.TestCase):
                 working.registration.margin_ratio = .3
                 working.threshold.min_contour_length = 23
                 series = ImageSeries('plant', [ImageData(datetime(2026, 4, 27), 'plant.26-04-27.JPG', 'plant')])
+                series.processing_settings = working.processing_settings()
                 state = series.pipeline_state
                 state.preprocessed = state.tracked = True
                 state.preprocess_config_hash = working.preprocess_config_hash()
@@ -51,6 +52,7 @@ class SessionRestoreTests(unittest.TestCase):
                 reopened = MainWindow()
                 try:
                     restored = reopened._config
+                    self.assertEqual(reopened._session_group_settings['plant'], series.processing_settings)
                     self.assertEqual(restored.load_roi, working.load_roi)
                     self.assertEqual(tuple(restored.green.hsv_lower), working.green.hsv_lower)
                     self.assertEqual(restored.threshold.min_contour_length, 23)

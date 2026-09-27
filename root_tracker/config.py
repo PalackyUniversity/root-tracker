@@ -217,6 +217,21 @@ class Config:
     def to_yaml(self, path):
         Path(path).write_text(yaml.safe_dump(self.to_dict(), sort_keys=False), encoding='utf-8')
 
+    def processing_settings(self) -> dict:
+        """Copy the processing parameters without dataset paths or GUI preferences."""
+        return {key: value for key, value in self.to_dict().items()
+                if key not in ('data', 'gui')}
+
+    def for_series(self, series) -> "Config":
+        """Combine global data settings with a group's committed parameters."""
+        if series.processing_settings is None:
+            return self
+        values = self.to_dict()
+        values.update(series.processing_settings)
+        config = Config.from_dict(values)
+        config._base_path = self.base_path
+        return config
+
     @property
     def base_path(self) -> Path:
         """Get the base path for the project."""

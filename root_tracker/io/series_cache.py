@@ -93,6 +93,7 @@ def save_series(series: ImageSeries, config: Config) -> Optional[Path]:
         # Build metadata dict
         state = series.pipeline_state
         metadata = {
+            "processing_settings": series.processing_settings,
             "rsml_identity": _rsml_identity(series),
             "preprocess_config_hash": state.preprocess_config_hash,
             "tracking_config_hash": state.tracking_config_hash,
@@ -167,6 +168,9 @@ def load_series_state(series: ImageSeries, config: Config) -> bool:
 
         meta_bytes = data["_metadata"].tobytes()
         metadata = json.loads(meta_bytes.decode("utf-8"))
+
+        if series.processing_settings is None:
+            series.processing_settings = metadata.get("processing_settings")
 
         # Restore pipeline state
         state = series.pipeline_state
@@ -243,6 +247,9 @@ def load_series(series: ImageSeries, config: Config, *, require_identity: bool =
         if require_identity and not identity_matches:
             data.close()
             return False
+
+        if series.processing_settings is None:
+            series.processing_settings = metadata.get("processing_settings")
 
         # Restore pipeline state
         state = series.pipeline_state
@@ -334,8 +341,9 @@ def has_valid_cache(series: ImageSeries, config: Config) -> bool:
         cached_preprocess_hash = metadata.get("preprocess_config_hash", "")
         cached_tracking_hash = metadata.get("tracking_config_hash", "")
 
-        current_preprocess_hash = config.preprocess_config_hash()
-        current_tracking_hash = config.tracking_config_hash()
+        group_config = config.for_series(series)
+        current_preprocess_hash = group_config.preprocess_config_hash()
+        current_tracking_hash = group_config.tracking_config_hash()
 
         return (
             cached_preprocess_hash == current_preprocess_hash

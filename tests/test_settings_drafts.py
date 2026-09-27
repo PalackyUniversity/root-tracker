@@ -119,9 +119,45 @@ class SettingsDraftTests(unittest.TestCase):
             panel._apply_btn.click()
         self.assertEqual(self.w._config.threshold.min_contour_area, 111)
         self.select(self.groups[1])
-        self.assertEqual(panel._min_contour_area_spin.value(), 111)
+        self.assertEqual(panel._min_contour_area_spin.value(), 100)
         self.assertEqual(panel._min_contour_length_spin.value(), 23)
         self.assertTrue(panel._discard_btn.isEnabled())
+
+    def test_applied_tracking_settings_only_invalidate_selected_group(self):
+        from root_tracker.pipeline import RootTrackingPipeline
+        self.w._pipeline = RootTrackingPipeline(self.w._config)
+        for series in self.groups:
+            state = series.pipeline_state
+            state.preprocessed = state.tracked = True
+            state.preprocess_config_hash = self.w._config.preprocess_config_hash()
+            state.tracking_config_hash = self.w._config.tracking_config_hash()
+            series.images[0].positions_x = [10]
+            series.images[0].total_length = 42
+        self.select(self.groups[0])
+        self.w._settings_panel._min_contour_area_spin.setValue(111)
+        self.w._on_apply_settings(evaluate=False)
+        self.assertTrue(self.w._pipeline.is_tracking_current(self.groups[1]))
+        tree = self.w._image_tree
+        tree.set_step(WorkflowStep.TRACK, self.w._config)
+        self.assertEqual(tree._tree.topLevelItem(1).text(1), '✓')
+        self.select(self.groups[1])
+        self.assertEqual(self.w._config.threshold.min_contour_area, 100)
+        self.select(self.groups[0])
+        self.assertEqual(self.w._config.threshold.min_contour_area, 111)
+
+    def test_update_all_copies_already_applied_settings_to_other_groups(self):
+        from root_tracker.pipeline import RootTrackingPipeline
+        self.w._pipeline = RootTrackingPipeline(self.w._config)
+        self.groups[1].processing_settings = self.w._config.processing_settings()
+        self.groups[1].processing_settings['n_clusters'] = 9
+        self.select(self.groups[0])
+        self.w._settings_panel._min_contour_area_spin.setValue(111)
+        self.w._on_apply_settings(evaluate=False)
+        with patch.object(self.w._workflow_bar, 'get_current_step', return_value=WorkflowStep.TRACK):
+            self.w._on_apply_all_settings()
+        self.select(self.groups[1])
+        self.assertEqual(self.w._config.threshold.min_contour_area, 111)
+        self.assertEqual(self.w._config.n_clusters, 9)
 
     def test_tree_status_column_is_compact(self):
         self.assertEqual(self.w._image_tree._tree.columnWidth(1), 30)

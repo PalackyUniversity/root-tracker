@@ -651,10 +651,11 @@ class RootTrackingPipeline:
         if series.images and all(image.rsml_document is not None for image in series):
             return True
         state = series.pipeline_state
+        config = self.config.for_series(series)
         return (
             state.tracked
-            and state.tracking_config_hash == self.config.tracking_config_hash()
-            and state.preprocess_config_hash == self.config.preprocess_config_hash()
+            and state.tracking_config_hash == config.tracking_config_hash()
+            and state.preprocess_config_hash == config.preprocess_config_hash()
         )
 
     def export_results(self, statistics: list[PlantStatistics]) -> str:
@@ -687,7 +688,9 @@ class RootTrackingPipeline:
                 stats = state.last_statistics
             else:
                 # If not tracked yet, track it now (synchronously)
-                stats = self.track_and_analyze_series(series)
+                pipeline = (self if series.processing_settings is None
+                            else RootTrackingPipeline(self.config.for_series(series)))
+                stats = pipeline.track_and_analyze_series(series)
             if any(image.rsml_document is not None for image in series):
                 from .analysis.rsml_statistics import refresh_statistics
                 stats = refresh_statistics(series, stats)
@@ -716,6 +719,8 @@ class RootTrackingPipeline:
         Returns:
             List of statistics dictionaries.
         """
+        # The CLI's explicit pipeline config governs a fresh full run.
+        series.processing_settings = self.config.processing_settings()
         try:
             self.preprocess_series(series)
             self.register_series(series)
@@ -805,6 +810,7 @@ def preprocess_and_cache_worker(args: tuple) -> str:
         config, series = args
         queue = None
 
+    config = config.for_series(series)
     pipeline = RootTrackingPipeline(config)
     
     # Callback to put progress into queue
@@ -844,6 +850,7 @@ def track_and_cache_worker(args: tuple) -> tuple:
         config, series = args
         queue = None
 
+    config = config.for_series(series)
     pipeline = RootTrackingPipeline(config)
 
     # Callback to put progress into queue

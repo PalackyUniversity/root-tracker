@@ -160,16 +160,16 @@ class RoiWorkflowTests(unittest.TestCase):
         self.assertIsNone(mask_io.load_mask(series, self.w._config))
         self.assertFalse(panel.is_dirty())
 
-    def test_shared_crop_change_also_invalidates_other_groups_masks(self):
+    def test_local_crop_change_preserves_other_groups_masks(self):
         other = self.groups[1]
         other.pipeline_state.preprocessed = True
         other.user_mask = np.ones((30, 40), np.uint8)*255
         mask_io.save_mask(other, self.w._config)
         self.w._settings_panel.set_crop((.5, .5, .7, .7, 15.))
         self.w._settings_panel._apply_btn.click()
-        self.assertIsNone(other.user_mask)
-        self.assertIsNone(mask_io.load_mask(other, self.w._config))
-        self.assertFalse(other.pipeline_state.preprocessed)
+        self.assertIsNotNone(other.user_mask)
+        self.assertIsNotNone(mask_io.load_mask(other, self.w._config))
+        self.assertTrue(other.pipeline_state.preprocessed)
 
     def test_preprocess_editor_uses_uncropped_source_and_picks_green(self):
         self.w._workflow_bar.set_current_step(WorkflowStep.PREPROCESS)
@@ -692,8 +692,9 @@ class RoiWorkflowTests(unittest.TestCase):
         self.w._auto_preview_action.setChecked(True)
         self.w._settings_panel.set_crop((.5, .5, .7, .8, 0.))
         self.w._on_group_selected(self.groups[1])
-        self.assertEqual(self.w._config.load_roi, (.5, .5, .7, .8, 0.))
+        self.assertIsNone(self.w._config.load_roi)
         self.w._on_group_selected(self.groups[0])
+        self.assertEqual(self.w._config.load_roi, (.5, .5, .7, .8, 0.))
         self.w._settings_panel._auto_reset_btn.click()
         self.assertIsNone(self.w._config.load_roi)
 

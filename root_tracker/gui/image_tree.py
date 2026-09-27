@@ -356,8 +356,6 @@ class ImageTree(QWidget):
     def refresh_status(self) -> None:
         """Update only status cells; preserve focus, selection, expansion and scroll."""
         config = self._status_config
-        preprocess_hash = config.preprocess_config_hash()
-        tracking_hash = config.tracking_config_hash()
         label = STEP_NAMES[self._step]
         verb = 'done'
         if self._step == WorkflowStep.LOAD:
@@ -380,6 +378,9 @@ class ImageTree(QWidget):
         for index in range(self._tree.topLevelItemCount()):
             group = self._tree.topLevelItem(index)
             series = self._item_to_data[id(group)]
+            group_config = config.for_series(series)
+            preprocess_hash = group_config.preprocess_config_hash()
+            tracking_hash = group_config.tracking_config_hash()
             statuses = []
             warnings = []
             for child_index in range(group.childCount()):

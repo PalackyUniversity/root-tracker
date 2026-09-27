@@ -278,6 +278,7 @@ class MainWindow(QMainWindow):
         self._remember_session = config is None
         self._startup_preset = False
         self._active_preset_name = None
+        self._session_group_settings = {}
         if config is None:
             from pathlib import Path
             store = self._get_preset_store()
@@ -291,6 +292,7 @@ class MainWindow(QMainWindow):
                         config = restored
                         self._active_preset_name = session.get('preset')
                         self._startup_preset = True
+                        self._session_group_settings = session.get('groups', {})
                 except (TypeError, ValueError, KeyError):
                     pass  # Fall back to the saved preset if the session is invalid.
             saved = preferences.value('active_preset', '')
@@ -410,6 +412,9 @@ class MainWindow(QMainWindow):
         self._settings.setValue('last_session', json.dumps({
             'config': config.to_dict(),
             'preset': self._active_preset_name,
+            'groups': {name: series.processing_settings
+                       for name, series in self._series_dict.items()
+                       if series.processing_settings is not None},
         }))
         self._settings.sync()
     
@@ -699,10 +704,10 @@ class MainWindow(QMainWindow):
         self._auto_apply_timer.stop()
         self._evaluation_timer.stop()
         self._roi_editor.reset()
-        if (config.data.input == self._config.data.input and
-                config.preprocess_config_hash() != self._config.preprocess_config_hash()):
+        if config.data.input == self._config.data.input:
             for series in self._series_dict.values():
-                self._invalidate_preprocessing(series)
+                if config.preprocess_config_hash() != self._config.for_series(series).preprocess_config_hash():
+                    self._invalidate_preprocessing(series)
         # Keep references held by SettingsPanel and other widgets valid.
         for field in fields(Config):
             setattr(self._config, field.name, deepcopy(getattr(config, field.name)))
@@ -729,7 +734,7 @@ class MainWindow(QMainWindow):
         self._image_viewer.clear_barcode_overlay()
         self._image_tree.set_filter_aside(False)
         self._image_tree.set_step(WorkflowStep.LOAD, self._config)
-        self._reload_images()
+        self._reload_images(reset_group_settings=True)
         self._active_preset_name = name
         self._settings.setValue('active_preset', str(self._get_preset_store().path(name)))
         self.statusBar().showMessage(f'Preset applied: {name}', 5000)
@@ -753,13 +758,21 @@ class MainWindow(QMainWindow):
             
             self._reload_images()
 
-    def _reload_images(self) -> None:
+    def _reload_images(self, reset_group_settings=False) -> None:
         """Reload images from the current input folder."""
         # Create pipeline and load images
         self._pipeline = RootTrackingPipeline(self._config)
         
         try:
             self._series_dict = self._pipeline.load_images()
+            for name, series in self._series_dict.items():
+                if reset_group_settings:
+                    series.processing_settings = self._config.processing_settings()
+                elif name in self._session_group_settings:
+                    series.processing_settings = self._session_group_settings[name]
+                elif series.processing_settings is None:
+                    series.processing_settings = self._config.processing_settings()
+            self._session_group_settings.clear()
             self._settings_panel.finish_color_picker()
             self._roi_editor.reset()
             self._auto_apply_baselines.clear()
@@ -1177,11 +1190,22 @@ class MainWindow(QMainWindow):
             self._auto_apply_timer.start()
 
     def _activate_group_settings(self, series):
+        self._ensure_group_settings()
         self._settings_panel.finish_color_picker()
         self._apply_auto_settings(evaluate=False)
         self._save_settings_draft()
         self._current_series = series
+        if series is not None:
+            config = self._config.for_series(series)
+            for name in config.processing_settings():
+                setattr(self._config, name, deepcopy(getattr(config, name)))
         self._restore_settings_draft()
+
+    def _ensure_group_settings(self):
+        """Snapshot inherited defaults before any group changes the active config."""
+        for series in self._series_dict.values():
+            if series.processing_settings is None:
+                series.processing_settings = self._config.processing_settings()
 
     def _discard_settings_changes(self):
         self._settings_panel.finish_color_picker()
@@ -1196,25 +1220,26 @@ class MainWindow(QMainWindow):
             self._image_viewer.set_mask_data(series.user_mask, series.working_mask)
         self._restore_settings_draft()
 
-    def _update_config_from_panel(self) -> None:
+    def _update_config_from_panel(self, config=None) -> None:
         """Update config object from settings panel values."""
+        config = self._config if config is None else config
         values = self._settings_panel.get_current_values()
         from .roi_editor import apply_editor_values
-        apply_editor_values(self._config, values)
+        apply_editor_values(config, values)
         for key, value in values.items():
-            if hasattr(self._config, key):
-                setattr(self._config, key, value)
+            if hasattr(config, key):
+                setattr(config, key, value)
 
             # Handle nested registration settings
             if key == "reg_enabled":
-                self._config.registration.enabled = value
+                config.registration.enabled = value
             elif key == "reg_margin":
-                self._config.registration.margin_ratio = value
+                config.registration.margin_ratio = value
             # Handle nested threshold settings
             elif key == "min_contour_area":
-                self._config.threshold.min_contour_area = value
+                config.threshold.min_contour_area = value
             elif key == "min_contour_length":
-                self._config.threshold.min_contour_length = value
+                config.threshold.min_contour_length = value
     
     def _invalidate_preprocessing(self, series):
         # A same-sized rotated crop still changes mask coordinates.
@@ -1232,6 +1257,7 @@ class MainWindow(QMainWindow):
         step = self._settings_panel._current_step
 
         # Handle mask application in Track step
+        self._ensure_group_settings()
         mask_changed = False
         mask_refresh = False
         if step == WorkflowStep.TRACK:
@@ -1266,18 +1292,14 @@ class MainWindow(QMainWindow):
 
         # Update config from settings panel
         self._update_config_from_panel()
+        self._current_series.processing_settings = self._config.processing_settings()
 
         # Determine what changed
         preprocess_changed = (old_preprocess_hash != self._config.preprocess_config_hash())
         tracking_changed = (old_tracking_hash != self._config.tracking_config_hash())
 
         if preprocess_changed:
-            # Settings are shared. Every affected mask uses the old geometry,
-            # even when the new crop has exactly the same pixel dimensions.
-            for series in self._series_dict.values():
-                self._invalidate_preprocessing(series)
-            if not any(series is self._current_series for series in self._series_dict.values()):
-                self._invalidate_preprocessing(self._current_series)
+            self._invalidate_preprocessing(self._current_series)
             if not evaluate:
                 pass  # The newly selected group/step will evaluate these settings.
             elif step == WorkflowStep.LOAD:
@@ -1300,51 +1322,37 @@ class MainWindow(QMainWindow):
         self._refresh_tree_status()
 
     def _on_apply_all_settings(self) -> None:
-        """Handle Apply All button - propagate settings to ALL groups.
-
-        This only changes the parameters and marks every already-evaluated
-        group dirty; it does NOT eagerly recompute all groups. Dirty groups
-        are recomputed lazily when the final "track all and export"
-        computation runs (their stale pipeline state forces a rerun there).
-        Only the currently-viewed group is recomputed now, for immediate
-        visual feedback.
-        """
+        """Copy this step's settings to all groups; recompute only the current one."""
         if self._pipeline is None or not self._series_dict:
             return
-
-        step = self._workflow_bar.get_current_step()
-        # Snapshot config hashes BEFORE updating
-        old_preprocess_hash = self._config.preprocess_config_hash()
-        old_tracking_hash = self._config.tracking_config_hash()
-
-        # Update config from settings panel
-        self._update_config_from_panel()
-
-        preprocess_changed = (old_preprocess_hash != self._config.preprocess_config_hash())
-        tracking_changed = (old_tracking_hash != self._config.tracking_config_hash())
-
-        if preprocess_changed:
-            # Mark every group dirty (frees arrays + invalidates pipeline state)
-            # so the final all-groups computation reprocesses them.
-            for series in self._series_dict.values():
+        self._ensure_group_settings()
+        preprocess_current = tracking_current = False
+        for series in self._series_dict.values():
+            config = self._config.for_series(series)
+            before_preprocess = config.preprocess_config_hash()
+            before_tracking = config.tracking_config_hash()
+            self._update_config_from_panel(config)
+            series.processing_settings = config.processing_settings()
+            preprocess_changed = before_preprocess != config.preprocess_config_hash()
+            tracking_changed = before_tracking != config.tracking_config_hash()
+            if preprocess_changed:
                 self._invalidate_preprocessing(series)
-            # Recompute only the current group so the user sees the new result.
-            if self._current_series is not None:
-                if step == WorkflowStep.LOAD:
+            elif tracking_changed:
+                series.clear_tracking_results()
+            if series is self._current_series:
+                preprocess_current = preprocess_changed
+                tracking_current = tracking_changed
+        self._update_config_from_panel()
+        if self._current_series is not None:
+            if preprocess_current:
+                if self._settings_panel._current_step == WorkflowStep.LOAD:
                     if self._current_image:
                         self._display_image(self._current_image, preserve_view=True)
                 else:
                     self._preprocess_group(self._current_series, force=True)
-        elif tracking_changed:
-            for series in self._series_dict.values():
-                series.clear_tracking_results()
-            # Retrack only the current group for immediate feedback.
-            if self._current_series is not None:
+            elif tracking_current:
                 self._preserve_tracking_view_for = self._current_image
                 self._on_track_roots()
-            elif self._current_image:
-                self._display_image(self._current_image, preserve_view=True)
-
         self._restore_settings_draft()
         self._refresh_tree_status()
 
@@ -1810,14 +1818,13 @@ class MainWindow(QMainWindow):
         if self._pipeline is None or not self._series_dict:
             return
 
-        current_hash = self._config.preprocess_config_hash()
         if force:
             unprocessed_groups = list(self._series_dict.values())
         else:
             unprocessed_groups = [
                 s for s in self._series_dict.values()
                 if not s.pipeline_state.preprocessed
-                or s.pipeline_state.preprocess_config_hash != current_hash
+                or s.pipeline_state.preprocess_config_hash != self._config.for_series(s).preprocess_config_hash()
             ]
 
         if not unprocessed_groups:
@@ -1893,7 +1900,7 @@ class MainWindow(QMainWindow):
                             f.result()
                             # Update pipeline state in main process
                             series.pipeline_state.preprocessed = True
-                            series.pipeline_state.preprocess_config_hash = current_hash
+                            series.pipeline_state.preprocess_config_hash = self._config.for_series(series).preprocess_config_hash()
                             series.pipeline_state.invalidate_from('track')
                             # Read only lightweight per-image metadata for status;
                             # processed arrays remain on disk until selected.
@@ -2439,25 +2446,19 @@ class MainWindow(QMainWindow):
             self._settings_panel.set_groups_out_of_sync(False)
             return
 
-        step = self._workflow_bar.get_current_step()
         others = [
             s for s in self._series_dict.values()
             if s is not self._current_series
         ]
 
-        if step == WorkflowStep.PREPROCESS:
-            current_hash = self._config.preprocess_config_hash()
-            out_of_sync = any(
-                not (s.pipeline_state.preprocessed
-                     and s.pipeline_state.preprocess_config_hash == current_hash)
-                for s in others
-            )
-        elif step == WorkflowStep.TRACK:
-            out_of_sync = any(
-                not self._pipeline.is_tracking_current(s) for s in others
-            )
-        else:
-            out_of_sync = False
+        out_of_sync = False
+        for series in others:
+            config = deepcopy(self._config.for_series(series))
+            before = (config.preprocess_config_hash(), config.tracking_config_hash())
+            self._update_config_from_panel(config)
+            if before != (config.preprocess_config_hash(), config.tracking_config_hash()):
+                out_of_sync = True
+                break
 
         self._settings_panel.set_groups_out_of_sync(out_of_sync)
 
@@ -2669,7 +2670,7 @@ class MainWindow(QMainWindow):
         destination = QFileDialog.getExistingDirectory(self, f"Export to RSML: {image.filename}")
         if destination:
             with ProcessingContext(self, ProcessingState.RSML_EXPORT):
-                RSMLExportDialog([series], deepcopy(self._config), destination,
+                RSMLExportDialog([series], deepcopy(self._config.for_series(series)), destination,
                                  self, image_index=index).exec()
 
     def _on_export_results(self) -> None:

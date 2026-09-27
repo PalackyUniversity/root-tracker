@@ -97,7 +97,7 @@ class SettingsPanel(QWidget):
         # Apply to this group button
         self._apply_btn = QPushButton("Apply settings")
         self._apply_btn.setEnabled(False)
-        self._apply_btn.setStatusTip("No changes to apply. Settings are shared: Apply previews this group; other groups use them when next processed. Masks affect this group only.")
+        self._apply_btn.setStatusTip("No changes to apply. Settings and masks affect this group only.")
         self._apply_btn.clicked.connect(self._on_apply_clicked)
         apply_layout.addWidget(self._apply_btn)
         
@@ -413,27 +413,27 @@ class SettingsPanel(QWidget):
         # "Apply to this group" reflects pending edits to the current group.
         if self._is_dirty:
             self._apply_btn.setEnabled(True)
-            self._apply_btn.setStatusTip("Use shared settings and preview this group. Other groups use them when next processed. Mask changes affect this group only.")
+            self._apply_btn.setStatusTip("Apply these settings to this group and preview the result. Other groups keep their own settings.")
         else:
             self._apply_btn.setEnabled(False)
-            self._apply_btn.setStatusTip("No changes to apply. Settings are shared: Apply previews this group; other groups use them when next processed. Masks affect this group only.")
+            self._apply_btn.setStatusTip("No changes to apply. Settings and masks affect this group only.")
 
         self._discard_btn.setEnabled(self._is_dirty)
         self.dirty_changed.emit(self._is_dirty)
 
         # "Apply to all groups" stays enabled whenever applying would change at
-        # least one group — i.e. there are pending edits, or some other group was
-        # last evaluated with different settings. It is disabled only when every
+        # least one group — i.e. there are pending edits, or some other group
+        # has different committed settings. It is disabled only when every
         # other group already matches the current settings.
         apply_all_enabled = self._is_dirty or self._groups_out_of_sync
         self._apply_all_btn.setEnabled(apply_all_enabled)
         if apply_all_enabled:
-            self._apply_all_btn.setStatusTip("Use shared settings, mark other results for recalculation, and preview this group. Other groups are processed later; masks are not copied.")
+            self._apply_all_btn.setStatusTip("Copy this step's settings to all groups and mark affected results for recalculation. Other groups are processed later; masks are not copied.")
         else:
             self._apply_all_btn.setStatusTip("All groups already use these settings. Update all marks other results for recalculation and previews this group; it does not immediately process every group. Masks are not copied.")
 
     def set_groups_out_of_sync(self, out_of_sync: bool) -> None:
-        """Set whether some other group was last evaluated with different settings.
+        """Set whether another group has different settings for the current step.
 
         Controls the "Apply to all groups" button independently of pending edits:
         the button stays enabled while any other group is out of sync, so the user

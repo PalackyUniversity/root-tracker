@@ -191,7 +191,7 @@ class WorkflowProgressTests(unittest.TestCase):
         panel = w._settings_panel
         self.assertFalse(panel._apply_btn.styleSheet())
         self.assertFalse(any('Settings are shared' in label.text() for label in panel.findChildren(QLabel)))
-        self.assertIn('shared', panel._apply_btn.statusTip())
+        self.assertIn('this group only', panel._apply_btn.statusTip())
         self.assertFalse(panel._apply_btn.toolTip())
         w._begin_operation_progress('preprocess')
         w._on_worker_progress(50, 100)
