@@ -67,6 +67,9 @@ class ImageData:
     diff: Optional[np.ndarray] = field(default=None, repr=False)
     image_annotated: Optional[np.ndarray] = field(default=None, repr=False)
     
+    # Sparse pixels beneath depth markers: columns y, x, B, G, R.
+    root_depth_background: Optional[np.ndarray] = field(default=None, repr=False)
+
     # Affine mapping from detected-plate pixels to the displayed processed image.
     plate_transform: list[float] = field(default_factory=list)
 
@@ -93,6 +96,7 @@ class ImageData:
 
     def clear_tracking_results(self) -> None:
         """Clear all tracking/analysis results, preserving preprocessing data."""
+        self.root_depth_background = None
         if self.rsml_document is not None:
             self.colored_samples = {}
             self.rsml_samples = None
@@ -107,6 +111,15 @@ class ImageData:
         self.colored_samples = {}
         self.rsml_samples = None
         self.image_annotated = None
+
+    def tracking_preview(self, show_max_root_depth: bool = True):
+        """Hide depth markers without recomputing roots or changing exports."""
+        if show_max_root_depth or self.image_annotated is None or self.root_depth_background is None:
+            return self.image_annotated
+        preview = self.image_annotated.copy()
+        pixels = self.root_depth_background
+        preview[pixels[:, 0], pixels[:, 1]] = pixels[:, 2:]
+        return preview
 
     def clear_preprocessing_results(self) -> None:
         """Clear all preprocessing results (and tracking, since it depends on them)."""
@@ -150,6 +163,7 @@ class ImageData:
             canny=self.canny.copy() if self.canny is not None else None,
             diff=self.diff.copy() if self.diff is not None else None,
             image_annotated=self.image_annotated.copy() if self.image_annotated is not None else None,
+            root_depth_background=self.root_depth_background.copy() if self.root_depth_background is not None else None,
             green_areas=self.green_areas.copy(),
             plate_transform=self.plate_transform.copy(),
             positions_x=self.positions_x.copy(),

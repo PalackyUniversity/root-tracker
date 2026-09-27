@@ -4,7 +4,7 @@ Load dialog for selecting input folder.
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-    QLineEdit, QPushButton, QFileDialog, QFormLayout, QCheckBox
+    QLineEdit, QPushButton, QFileDialog, QFormLayout
 )
 from ..combo_box import RoundedComboBox as QComboBox
 from PySide6.QtCore import Qt
@@ -163,15 +163,6 @@ class LoadDialog(QDialog):
         form.labelForField(path_layout).setToolTip(self._path_edit.toolTip())
         layout.addLayout(form)
         
-        # Barcode detection checkbox
-        self._barcode_checkbox = QCheckBox("Detect barcodes in images")
-        self._barcode_checkbox.setChecked(self.detect_barcodes)
-        self._barcode_checkbox.setToolTip(
-            "Automatically detect and verify barcodes in images.\n"
-            "Disable if your images don't have barcodes."
-        )
-        layout.addWidget(self._barcode_checkbox)
-        
         # Help text
         help_label = QLabel(
             "<i>Tip: Images should be organized in folders or have consistent naming.</i>"
@@ -247,8 +238,5 @@ class LoadDialog(QDialog):
                 return
         else:
             self.date_format = current_fmt
-        
-        # Get barcode detection preference
-        self.detect_barcodes = self._barcode_checkbox.isChecked()
         
         self.accept()

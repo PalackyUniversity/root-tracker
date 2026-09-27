@@ -364,6 +364,7 @@ class RootTrackingPipeline:
         # Invalidate only export geometry at the start of each tracking run.
         for image_data in series.images:
             image_data.rsml_samples = None
+            image_data.root_depth_background = None
         has_replacements = any(image.rsml_document is not None for image in series)
         if not pos_x_median and not has_replacements:
             for image_data in series.images:
@@ -391,6 +392,7 @@ class RootTrackingPipeline:
 
             # Create annotated copy — never mutate image_data.image
             annotated = image_data.image.copy()
+            depth_mask = np.zeros(annotated.shape[:2], dtype=np.uint8)
 
             # Draw plant markers
             for i, (x, y) in enumerate(zip(pos_x_median, pos_y_median)):
@@ -515,11 +517,11 @@ class RootTrackingPipeline:
                     top = (pos_x_median[k], pos_y_median[k])
                     bottom = (pos_x_median[k], pos_y_median[k])
                 
-                # Draw main root indicator
-                cv2.line(annotated, top, (top[0] + 100, top[1]), (255, 255, 255), 1)
-                cv2.line(annotated, (top[0] + 100, top[1]), (top[0] + 100, bottom[1]), (255, 255, 255), 3)
-                cv2.line(annotated, (top[0] + 100, bottom[1]), bottom, (255, 255, 255), 1)
-                
+                # Keep depth markers separate until root annotations are complete.
+                cv2.line(depth_mask, top, (top[0] + 100, top[1]), 255, 1)
+                cv2.line(depth_mask, (top[0] + 100, top[1]), (top[0] + 100, bottom[1]), 255, 3)
+                cv2.line(depth_mask, (top[0] + 100, bottom[1]), bottom, 255, 1)
+
                 # Trace longest path (backtracking from bottom)
                 mask_longest = np.zeros_like(skeleton_split)
                 conts = []
@@ -615,7 +617,13 @@ class RootTrackingPipeline:
                 
                 statistics.append(stats)
             
-            # Store annotated image
+            # Save only the pixels needed to hide the markers instantly.
+            ys, xs = np.nonzero(depth_mask)
+            image_data.root_depth_background = np.column_stack(
+                (ys, xs, annotated[ys, xs])
+            ).astype(np.int32)
+            annotated[ys, xs] = 255
+            # Store annotated image (exports retain the depth markers).
             image_data.image_annotated = annotated
 
             # Publish calculated pixels before any image encoding or cache I/O.

@@ -34,6 +34,8 @@ class SettingsPanel(QWidget):
         track_requested: Emitted for Track step action.
     """
 
+    show_max_root_depth_toggled = Signal(bool)
+    detect_barcodes_toggled = Signal(bool)
     crop_edit_toggled = Signal(bool)
     crop_preview_changed = Signal()
     color_preview_toggled = Signal(bool)
@@ -162,6 +164,7 @@ class SettingsPanel(QWidget):
                 item.widget().deleteLater()
         
         if step == WorkflowStep.LOAD:
+            self._create_barcode_settings()
             self._create_crop_settings(load=True)
             self._buttons_widget.show()
             self._store_original_values()
@@ -199,6 +202,22 @@ class SettingsPanel(QWidget):
                 label = form.labelForField(widget)
                 if label is not None:
                     label.setStatusTip(tip)
+
+    def _create_barcode_settings(self):
+        group = QGroupBox("Verify barcodes")
+        layout = QVBoxLayout(group)
+        self._detect_barcodes_cb = RightAlignedCheckBox("Enable barcode verification")
+        self._detect_barcodes_cb.setChecked(self._config.data.detect_barcodes)
+        self._detect_barcodes_cb.setStatusTip("Read barcodes from photographs and compare them with the identifiers in their filenames. Applies to all groups.")
+        self._detect_barcodes_cb.toggled.connect(self.detect_barcodes_toggled.emit)
+        layout.addWidget(self._detect_barcodes_cb)
+        self._settings_layout.addWidget(group)
+
+    def sync_barcode_setting(self):
+        if self._current_step == WorkflowStep.LOAD:
+            blocked = self._detect_barcodes_cb.blockSignals(True)
+            self._detect_barcodes_cb.setChecked(self._config.data.detect_barcodes)
+            self._detect_barcodes_cb.blockSignals(blocked)
 
     def _create_crop_settings(self, *, load):
         group = QGroupBox('Manual crop' if load else 'Crop within plate')
@@ -355,6 +374,15 @@ class SettingsPanel(QWidget):
         layout.addRow("Min contour length:", self._min_contour_length_spin)
 
         self._settings_layout.addWidget(group)
+
+        display_group = QGroupBox("Display options")
+        display_layout = QVBoxLayout(display_group)
+        self._show_max_root_depth_cb = RightAlignedCheckBox("Show max root depth")
+        self._show_max_root_depth_cb.setChecked(self._config.gui.show_max_root_depth)
+        self._show_max_root_depth_cb.setStatusTip("Show or hide depth markers immediately in the preview. Depth measurements are always calculated.")
+        self._show_max_root_depth_cb.toggled.connect(self.show_max_root_depth_toggled.emit)
+        display_layout.addWidget(self._show_max_root_depth_cb)
+        self._settings_layout.addWidget(display_group)
 
         self._mask_controls = MaskControls()
         self._mask_controls.set_mask_available(self._mask_available)

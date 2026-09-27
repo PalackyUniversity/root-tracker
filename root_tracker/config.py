@@ -72,6 +72,7 @@ class CropConfig:
 @dataclass
 class GuiConfig:
     """Workflow defaults saved alongside processing presets."""
+    show_max_root_depth: bool = True
     auto_apply: bool = True
     load_crop_editing: bool = True
     preprocess_crop_editing: bool = False
@@ -195,6 +196,12 @@ class Config:
         if not isinstance(raw, dict):
             raise ValueError('Configuration must contain named settings')
         values = dict(raw)
+        # Migrate the original processing option to a preview preference.
+        threshold = dict(values.get('threshold', {}))
+        if 'show_max_root_depth' in threshold:
+            gui = dict(values.get('gui', {}))
+            gui.setdefault('show_max_root_depth', threshold.pop('show_max_root_depth'))
+            values.update(threshold=threshold, gui=gui)
         nested = {}
         for name, kind in (('data', DataConfig), ('green', GreenConfig),
                            ('threshold', ThresholdConfig), ('registration', RegistrationConfig),
@@ -266,6 +273,7 @@ class Config:
     def tracking_config_hash(self) -> str:
         """Hash of config values that affect tracking."""
         values = (
+            "root-depth-overlay-v1",
             self.data.filename_template, self.data.date_format,
             self.threshold.low, self.threshold.high,
             self.threshold.min_contour_area, self.threshold.min_contour_length,

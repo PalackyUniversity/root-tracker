@@ -448,6 +448,8 @@ class MainWindow(QMainWindow):
         
         # Right panel: Settings
         self._settings_panel = SettingsPanel(self._config)
+        self._settings_panel.detect_barcodes_toggled.connect(self._on_detect_barcodes_toggled)
+        self._settings_panel.show_max_root_depth_toggled.connect(self._on_show_max_root_depth_toggled)
         self._settings_panel.setMinimumWidth(360)
         self._settings_panel.setMaximumWidth(480)
         self._splitter.addWidget(self._settings_panel)
@@ -594,13 +596,6 @@ class MainWindow(QMainWindow):
         self._auto_preview_action.toggled.connect(self._on_auto_preview_toggled)
         view_menu.addAction(self._auto_preview_action)
         
-        self._detect_barcodes_action = QAction("Detect &Barcodes", self)
-        self._detect_barcodes_action.setCheckable(True)
-        self._detect_barcodes_action.setChecked(self._config.data.detect_barcodes)
-        self._detect_barcodes_action.setStatusTip("Read barcodes from photographs and compare them with the identifiers in their filenames. Turn off for images without barcodes.")
-        self._detect_barcodes_action.toggled.connect(self._on_detect_barcodes_toggled)
-        view_menu.addAction(self._detect_barcodes_action)
-        
         # Help menu
         help_menu = MenuBarPopup(menubar, "&Help")
         menubar.addMenu(help_menu)
@@ -721,8 +716,7 @@ class MainWindow(QMainWindow):
         self._workflow_bar.set_current_step(WorkflowStep.LOAD)
         self._workflow_bar.blockSignals(False)
         self._settings_panel.set_step(WorkflowStep.LOAD)
-        for action, value in ((self._auto_preview_action, config.gui.auto_apply),
-                              (self._detect_barcodes_action, config.data.detect_barcodes)):
+        for action, value in ((self._auto_preview_action, config.gui.auto_apply),):
             action.blockSignals(True)
             action.setChecked(value)
             action.blockSignals(False)
@@ -817,8 +811,8 @@ class MainWindow(QMainWindow):
             self._settings.setValue("date_format", self._config.data.date_format)
             self._settings.setValue("detect_barcodes", self._config.data.detect_barcodes)
             
-            # Update menu action to match current setting
-            self._detect_barcodes_action.setChecked(self._config.data.detect_barcodes)
+            # Update the Load panel to match current setting
+            self._settings_panel.sync_barcode_setting()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load images:\n{e}")
 
@@ -1000,7 +994,7 @@ class MainWindow(QMainWindow):
                 from ..io.rsml_replacement import render_replacement
                 image = render_replacement(image_data)
             elif image_data.image_annotated is not None:
-                image = image_data.image_annotated
+                image = image_data.tracking_preview(self._config.gui.show_max_root_depth)
             elif image_data.image is not None:
                 image = image_data.image
             elif image_data.process is not None:
@@ -1477,8 +1471,13 @@ class MainWindow(QMainWindow):
         if self._auto_apply_enabled() and self._settings_panel._is_dirty:
             self._auto_apply_timer.start()
 
+    def _on_show_max_root_depth_toggled(self, enabled: bool) -> None:
+        self._config.gui.show_max_root_depth = enabled
+        if self._current_image is not None:
+            self._display_image(self._current_image, preserve_view=True)
+
     def _on_detect_barcodes_toggled(self, enabled: bool) -> None:
-        """Handle Detect Barcodes menu toggle."""
+        """Handle the Load panel barcode verification toggle."""
         self._config.data.detect_barcodes = enabled
         self._refresh_tree_status()
         # Save to settings for persistence
@@ -2385,6 +2384,7 @@ class MainWindow(QMainWindow):
             img.canny = None
             img.diff = None
             img.image_annotated = None
+            img.root_depth_background = None
             img.colored_samples = {}
             img.rsml_samples = None
             img.rsml_background = None
@@ -2762,8 +2762,8 @@ class MainWindow(QMainWindow):
                             self._config.data.detect_barcodes = saved_detect.lower() == "true"
                         else:
                             self._config.data.detect_barcodes = bool(saved_detect)
-                        # Update menu action to match loaded setting
-                        self._detect_barcodes_action.setChecked(self._config.data.detect_barcodes)
+                        # Update the Load panel to match loaded setting
+                        self._settings_panel.sync_barcode_setting()
                     
                     self._reload_images()
             except Exception:

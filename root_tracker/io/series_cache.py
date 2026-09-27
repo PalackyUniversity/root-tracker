@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 CACHE_DIR_NAME = ".root_tracker_cache"
 
 # Image array fields to persist (per ImageData)
-_ARRAY_FIELDS = ("image", "process", "canny", "diff", "image_annotated")
+_ARRAY_FIELDS = ("image", "process", "canny", "diff", "image_annotated", "root_depth_background")
 
 # Scalar fields to persist in metadata (per ImageData)
 _SCALAR_FIELDS = (
@@ -264,6 +264,8 @@ def load_series(series: ImageSeries, config: Config, *, require_identity: bool =
         # Restore per-image arrays and metadata
         images_meta = metadata.get("images", [])
         for idx, img in enumerate(series.images):
+            # Old caches do not contain separable depth markers.
+            img.root_depth_background = None
             # Arrays
             for field_name in _ARRAY_FIELDS:
                 key = f"{field_name}_{idx}"
