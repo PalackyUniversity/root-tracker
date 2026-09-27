@@ -2,7 +2,7 @@
 import unittest
 import numpy as np
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QPoint, QPointF, Qt
+from PySide6.QtCore import QPoint, QPointF, Qt, QEvent, QCoreApplication
 from PySide6.QtGui import QWheelEvent
 from PySide6.QtTest import QTest
 from root_tracker.gui.image_viewer import ImageViewer
@@ -59,6 +59,12 @@ class ViewNavigationTests(unittest.TestCase):
         after = viewer._view.mapToScene(viewer._view.viewport().rect().center())
         self.assertAlmostEqual(viewer._view.transform().m11(), before_scale)
         self.assertLessEqual((after - before).manhattanLength(), 1)
+
+    def test_application_filter_ignores_events_during_view_destruction(self):
+        view = self.viewer._view
+        view.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.assertFalse(view.eventFilter(self.viewer, QEvent(QEvent.Type.FocusOut)))
 
     def test_alt_drag_over_crop_and_handles_pans_without_editing(self):
         viewer = self.viewer

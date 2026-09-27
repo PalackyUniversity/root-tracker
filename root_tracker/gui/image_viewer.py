@@ -14,6 +14,7 @@ from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QM
 import math
 import numpy as np
 import cv2
+from shiboken6 import isValid
 
 from .crop_overlay import CropOverlay
 from .theme import scrollbar_stylesheet, is_light
@@ -694,6 +695,9 @@ class ZoomableGraphicsView(QGraphicsView):
             viewer.set_mask_tool(tool, size)
 
     def eventFilter(self, watched, event):
+        # Application-wide callbacks can arrive while Qt tears down the view.
+        if not isValid(self) or not isValid(watched):
+            return False
         if isinstance(watched, QWidget) and watched.window() == self.window():
             kind = event.type()
             if kind in (QEvent.Type.KeyPress, QEvent.Type.KeyRelease, QEvent.Type.ShortcutOverride):
