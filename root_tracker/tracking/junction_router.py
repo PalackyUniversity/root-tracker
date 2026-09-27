@@ -156,7 +156,15 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
             if extent is not None:
                 contact_extents[index] = extent
                 contact_proof[index] = set(routes)
-        proven_upgrades[id(upper)] = {pid for pid in routes if downstream_owner(index, pid)} | contact_proof.get(index, set())
+        # An exit proves continuation only for a root physically arriving at
+        # this segment's entrance. A gap/temporal base link can come from one
+        # old pixel at the far end; its downstream neighbor must not thereby
+        # acquire the entire established upstream root.
+        arrivals = incoming.get(upper.get('junction_id'), [])
+        proven_upgrades[id(upper)] = {
+            pid for pid, route in routes.items()
+            if route[0] in arrivals and downstream_owner(index, pid)
+        } | contact_proof.get(index, set())
         required = set(continuing)
         if supported is not None:
             required.add(supported[0])

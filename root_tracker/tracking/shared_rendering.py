@@ -5,8 +5,11 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt
 
 
-def draw_shared_segments(image, uppers, colored, main_segments, linker):
+def draw_shared_segments(image, uppers, colored, main_segments, linker, main_samples=None):
     """Paint ordered color bands around each shared segment's centerline."""
+    if main_samples is not None:
+        _draw_role_fragments(image, uppers, colored, linker, main_samples)
+        return
     for upper in uppers:
         owners = colored.get(upper.get('lower_point'))
         if not isinstance(owners, tuple) or len(owners) < 2 or 'contour' not in upper:
@@ -49,3 +52,27 @@ def draw_shared_segments(image, uppers, colored, main_segments, linker):
                 color = tuple(min(c + 170, 255) for c in color)
             selected = band == i
             image[ys[selected] + y0, xs[selected] + x0] = color
+
+
+def _draw_role_fragments(image, uppers, colored, linker, main_samples):
+    """Split display geometry where a plant's main role changes, not ownership."""
+    from itertools import groupby
+    from .temporal_fragments import contour_path
+    for upper in uppers:
+        owners = colored.get(upper.get('lower_point'))
+        if not isinstance(owners, tuple) or len(owners) < 2:
+            continue
+        path = contour_path(upper)
+        roles = [tuple(pid for pid in owners if tuple(point) in main_samples.get(pid, set()))
+                 for point in path]
+        for role, entries in groupby(enumerate(roles), key=lambda item: item[1]):
+            indices = [index for index, _ in entries]
+            points = path[indices]
+            if len(points) == len(path):
+                contour = upper['contour']
+            else:
+                contour = np.concatenate((points, points[-2:0:-1])).reshape(-1, 1, 2)
+            fragment = dict(upper, point=tuple(points[0]), lower_point=tuple(points[-1]),
+                            contour=contour, contour_index=0)
+            draw_shared_segments(image, [fragment], {fragment['lower_point']: owners},
+                                 {0: set(role)}, linker)

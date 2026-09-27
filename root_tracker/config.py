@@ -278,6 +278,7 @@ class Config:
             "directional-shared-junctions-v4-contact-tangents",
             "root-depth-overlay-v1",
             "temporal-main-and-fragment-continuity-v1",
+            "contact-provenance-and-main-roles-v1",
             self.data.filename_template, self.data.date_format,
             self.threshold.low, self.threshold.high,
             self.threshold.min_contour_area, self.threshold.min_contour_length,

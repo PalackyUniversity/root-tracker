@@ -171,6 +171,10 @@ class RootLinker:
         upper_corners_sorted = sorted(upper_corners, key=lambda c: c['point'][1])
         lower_corners_sorted = sorted(lower_corners, key=lambda c: c['point'][1])
         lower_by_point = {corner['point']: corner for corner in lower_corners}
+        junction_arrivals = {}
+        for corner in lower_corners:
+            if corner.get('junction_id'):
+                junction_arrivals.setdefault(corner['junction_id'], []).append(corner['point'])
         
         pairs = []
         colored_samples = {n: set() for n in range(self.config.n_clusters)}
@@ -252,6 +256,23 @@ class RootLinker:
                     continue
                 if self.config.registration.enabled and not gap_evidence.allows(upper, lower['point']):
                     continue
+                # A free terminal arm may face slightly upward from a rooted
+                # junction. Its whole component's length cannot justify an
+                # unrelated remote root entering that tiny arm. Assess the
+                # observed arm itself, preserving established/same-component
+                # links and independently observed longer incoming roots.
+                bottom_junction = lower_by_point.get(upper.get('lower_point'), {}).get('junction_id')
+                if (not upper.get('junction_id') and bottom_junction
+                        and 'contour' in upper):
+                    grounded = {colored[point] for point in junction_arrivals.get(bottom_junction, ())
+                                if point != upper.get('lower_point') and point in colored}
+                    component = upper.get('component_id')
+                    same_component = (component is not None
+                                      and gap_evidence.components.get(lower['point']) == component)
+                    if grounded and colored[lower['point']] not in grounded and not same_component:
+                        arm_extent = float(np.linalg.norm(np.ptp(upper['contour'][:, 0], axis=0)))
+                        if self.compute_distance(up_point, lower['point']) > arm_extent:
+                            continue
                 
                 cost = self.compute_link_cost(
                     upper, lower, min_diff_x,

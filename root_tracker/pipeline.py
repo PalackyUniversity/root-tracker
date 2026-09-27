@@ -575,6 +575,7 @@ class RootTrackingPipeline:
             image_data.plant_length = []
             image_data.longest = []
             main_segments = {}
+            current_main_samples = {}
             main_pixels = []
             from .tracking.junction_router import plant_ids
             
@@ -593,8 +594,8 @@ class RootTrackingPipeline:
                 plant_length = cv2.countNonZero(mask_to_count)
                 image_data.plant_length.append(plant_length)
                 
-                from .tracking.main_root import select_main_path
-                bottom, main_indices = select_main_path(
+                from .tracking.main_root import select_main_geometry
+                bottom, main_geometry = select_main_geometry(
                     upper_corners, colored, pairs, k, previous_main.get(k, set()),
                     lower_corners,
                     (previous_colored_samples or {}).get(k))
@@ -609,14 +610,15 @@ class RootTrackingPipeline:
                 cv2.line(depth_mask, (top[0] + 100, bottom[1]), bottom, 255, 1)
 
                 mask_longest = np.zeros_like(skeleton_split)
-                conts = [segment_contours[i] for i in main_indices]
-                for i in main_indices:
+                conts = [contour for pieces in main_geometry.values() for contour in pieces]
+                for i in main_geometry:
                     main_segments.setdefault(i, set()).add(k)
 
                 cv2.drawContours(mask_longest, conts, -1, 255, cv2.FILLED)
                 longest_length = cv2.countNonZero(mask_longest)
                 image_data.longest.append(longest_length)
                 ys, xs = np.nonzero(mask_longest)
+                current_main_samples[k] = set(zip(xs.tolist(), ys.tolist()))
                 if len(xs):
                     previous_main.setdefault(k, set()).update(zip(xs.tolist(), ys.tolist()))
                 if not has_mask:
@@ -690,7 +692,8 @@ class RootTrackingPipeline:
             # Shared segments are painted last so neither plant overwrites
             # the other's half, including on highlighted main-root paths.
             from .tracking.shared_rendering import draw_shared_segments
-            draw_shared_segments(annotated, upper_corners, colored, main_segments, self.linker)
+            draw_shared_segments(annotated, upper_corners, colored, main_segments, self.linker,
+                                 main_samples=current_main_samples)
 
             # Save only the pixels needed to hide the markers instantly.
             ys, xs = np.nonzero(depth_mask)

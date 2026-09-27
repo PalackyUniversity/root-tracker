@@ -67,3 +67,32 @@ Synthetic tests additionally cover subdivision, shared roots' individual
 parents, scale changes, missing observations, partial historical contact, and
 attempts to align a missing main onto another root. Cache invalidation forces
 tracking to replay in time order with these rules.
+
+## Contact provenance and merged main contours
+
+A downstream exit proves a shared corridor only when that plant physically
+arrives at the corridor's upstream junction. A temporal or gap link cannot use
+a contact at the far end to acquire the entire upstream root. Independent
+contact evidence and already established shared history remain valid.
+
+For a tiny free terminal arm ending at an already rooted junction, an external
+plant cannot enter over a gap longer than that arm's own observed extent. The
+whole connected component's length is not evidence for this small arm. Existing
+historical links, same-owner links, same-component connections and observed
+longer incoming roots remain admissible. The rule scales with image geometry.
+
+When segmentation merges an incoming lateral with a main contour, main identity
+is applied to contour portions. Sustained historical lateral evidence excludes
+the incoming prefix and its ancestry; established main evidence takes priority
+within the measured root radius. Distal continuation remains possible even if
+an earlier detection gap left some intermediate pixels without a main label.
+An unsupported gap parent cannot grow the main backwards onto a newly observed
+leaf edge. Direct support for its ancestry remains valid even when a global
+alignment cannot explain local motion. Rendered highlights,
+measurements and exported main samples all use the same selected portions.
+
+Additional numeric regression fixtures record RT59 contact provenance across
+four days, the RT61 day28 terminal junction and preceding ownership, and RT70
+plant4's four-day assigned geometry, plus RT8 and RT26 main-continuity controls. Synthetic cases cover scale changes,
+legitimate gap arrivals, partial main highlighting of shared roots, merged
+lateral prefixes and incomplete historical main observations.
