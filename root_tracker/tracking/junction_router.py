@@ -192,13 +192,17 @@ def route_junctions(uppers, lowers, origins, base_pairs, n_clusters, previous_sa
             # root follows it. Require its own downstream continuation.
             routes = {pid: route for pid, route in routes.items()
                       if pid in required or pid in proven_upgrades[id(upper)]}
-        current_pixels = set(map(tuple, upper.get('contour', np.empty((0, 1, 2)))[:, 0]))
+        current_pixels = set(map(tuple, upper['contour'][:, 0].tolist())) if 'contour' in upper else set()
+        exact_owners = {}
         def supported_parent(pid, point):
             # Fuzzy temporal proximity can identify a shifted root, but cannot
             # justify a new remote link to a compact island. Exact history is
             # retained; otherwise the parent must pass the physical gap gate.
-            exact = current_pixels & (previous_samples or {}).get(pid, set())
-            return not filter_gaps or bool(exact) or gap_evidence.allows(upper, point)
+            if not filter_gaps:
+                return True
+            if pid not in exact_owners:
+                exact_owners[pid] = not current_pixels.isdisjoint((previous_samples or {}).get(pid, ()))
+            return exact_owners[pid] or gap_evidence.allows(upper, point)
         routes = {pid: route for pid, route in routes.items()
                   if supported_parent(pid, route[0])}
         for pid in sorted(required):

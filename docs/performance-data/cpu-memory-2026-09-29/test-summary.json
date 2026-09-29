@@ -1,0 +1,13 @@
+{
+  "suite_tests": 429,
+  "failure_reports": 4,
+  "failing_tests": 3,
+  "skipped": 1,
+  "all_failure_reports_reproduced_before_changes": true,
+  "failures": [
+    "test_followup_routing.FollowupRoutingTests.test_reported_failures_replayed_with_fresh_ownership_history: group51/day30/(1402,933)",
+    "test_image_metadata.MetadataGuiTests.test_background_extraction_populates_images",
+    "test_roi_geometry.RoiGeometryTests.test_bundled_default_crop_matches_plate_margins: two shapes"
+  ],
+  "note": "Seven resource tests and six registration tests also passed separately after the final additions."
+}

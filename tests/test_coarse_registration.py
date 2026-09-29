@@ -54,6 +54,8 @@ class CoarseRegistrationTests(unittest.TestCase):
                     for output, source in zip(actual[:3], (image, edges, edges)):
                         reference = cv2.copyMakeBorder(source, my, my, mx, mx, cv2.BORDER_CONSTANT)
                         np.testing.assert_array_equal(output, reference[top:top+203, left:left+219])
+                        self.assertTrue(output.flags.owndata)
+                        self.assertTrue(output.flags.c_contiguous)
 
     def test_large_translations_with_odd_and_different_shapes(self):
         template = self.edge_image((733, 819))

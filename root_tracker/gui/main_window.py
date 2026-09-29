@@ -29,6 +29,7 @@ from ..config import Config
 from ..models import ImageData, ImageSeries
 from ..pipeline import RootTrackingPipeline, preprocess_and_cache_worker, track_and_cache_worker
 from ..io import mask_io, series_cache
+from ..resources import batch_worker_count, batch_thread_count, initialize_batch_worker
 
 from .workflow_bar import WorkflowBar, WorkflowStep
 from .image_tree import ImageTree
@@ -1870,7 +1871,7 @@ class MainWindow(QMainWindow):
             self._display_image(self._current_image)
     
     def _preprocess_all_groups(self, force: bool = False) -> bool:
-        """Preprocess all unprocessed groups in parallel using all CPU cores.
+        """Preprocess groups with memory-bounded parallel workers.
 
         Submits each group to a ProcessPoolExecutor. Workers save results
         to disk cache. Progress bar tracks completed groups.
@@ -1923,7 +1924,10 @@ class MainWindow(QMainWindow):
             progress_queue = manager.Queue()
 
             ctx = mp.get_context('spawn')
-            self._executor = ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx)
+            workers = batch_worker_count(unprocessed_groups)
+            self._executor = ProcessPoolExecutor(
+                max_workers=workers, mp_context=ctx, initializer=initialize_batch_worker,
+                initargs=(batch_thread_count(workers),))
             executor = self._executor
             
             try:
@@ -2558,7 +2562,7 @@ class MainWindow(QMainWindow):
             self._cancel_prediction_action.setEnabled(False)
     
     def _track_all_groups(self) -> bool:
-        """Track all untracked groups in parallel using all CPU cores.
+        """Track groups with memory-bounded parallel workers.
 
         Saves caches and frees arrays before submitting, so workers
         reload from disk. Progress bar tracks completed groups.
@@ -2612,7 +2616,10 @@ class MainWindow(QMainWindow):
             progress_queue = manager.Queue()
 
             ctx = mp.get_context('spawn')
-            self._executor = ProcessPoolExecutor(max_workers=os.cpu_count(), mp_context=ctx)
+            workers = batch_worker_count(untracked)
+            self._executor = ProcessPoolExecutor(
+                max_workers=workers, mp_context=ctx, initializer=initialize_batch_worker,
+                initargs=(batch_thread_count(workers),))
             executor = self._executor
             
             try:

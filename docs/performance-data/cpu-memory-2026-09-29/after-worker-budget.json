@@ -1,0 +1,2812 @@
+[
+  {
+    "group": "RT_25_10-1",
+    "repeat": 0,
+    "before": {
+      "rss": 168980480,
+      "private": 1138999296,
+      "peak_rss": 168980480,
+      "peak_commit": 1138999296,
+      "page_faults": 82060,
+      "system_total": 33963343872,
+      "system_available": 2720657408
+    },
+    "stages": {
+      "preprocess": {
+        "seconds": 2.660954099963419,
+        "cpu_seconds": 5.5,
+        "memory": {
+          "rss": 306257920,
+          "private": 1341464576,
+          "peak_rss": 516292608,
+          "peak_commit": 1551912960,
+          "page_faults": 679381,
+          "system_total": 33963343872,
+          "system_available": 2301657088
+        },
+        "retained_array_bytes": 131778460
+      },
+      "registration": {
+        "seconds": 0.5467354999855161,
+        "cpu_seconds": 0.625,
+        "memory": {
+          "rss": 328155136,
+          "private": 1362468864,
+          "peak_rss": 516292608,
+          "peak_commit": 1551912960,
+          "page_faults": 849318,
+          "system_total": 33963343872,
+          "system_available": 2167468032
+        },
+        "retained_array_bytes": 150591948
+      },
+      "tracking": {
+        "seconds": 5.7561456999974325,
+        "cpu_seconds": 6.4375,
+        "memory": {
+          "rss": 488591360,
+          "private": 1519321088,
+          "peak_rss": 647503872,
+          "peak_commit": 1686503424,
+          "page_faults": 1534373,
+          "system_total": 33963343872,
+          "system_available": 1199931392
+        },
+        "retained_array_bytes": 235663236
+      }
+    },
+    "peak_memory": {
+      "rss": 621314048,
+      "private": 1660227584,
+      "min_system_available": 1217204224
+    },
+    "timers": {
+      "_median_background": {
+        "calls": 4,
+        "seconds": 1.3139511999906972
+      },
+      "remove_gradient": {
+        "calls": 4,
+        "seconds": 1.4561640000902116
+      },
+      "_coarse_match_location": {
+        "calls": 3,
+        "seconds": 0.49841619993094355
+      },
+      "_match_location": {
+        "calls": 3,
+        "seconds": 0.49844080000184476
+      },
+      "filter_static_islands": {
+        "calls": 1,
+        "seconds": 0.1853814999340102
+      },
+      "skeletonize_mask": {
+        "calls": 4,
+        "seconds": 0.29928670008666813
+      },
+      "link_corners": {
+        "calls": 4,
+        "seconds": 1.459728900110349
+      },
+      "select_main_geometry": {
+        "calls": 24,
+        "seconds": 1.1127054002135992
+      }
+    },
+    "outputs": {
+      "images": [
+        {
+          "date": "2022-09-25T00:00:00",
+          "path": "data_in_vitro\\RT_25_10-1.22-09-25.JPG",
+          "barcode": "RT_25_10-1",
+          "barcode_read": "",
+          "barcode_rect": null,
+          "barcode_mismatch": false,
+          "barcode_not_found": false,
+          "barcode_detected": false,
+          "image": {
+            "shape": [
+              2444,
+              2679,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "d0630b85396c150e7a6a31000aef03a7a797519e3a62fd784e3e7efa7af8fe41"
+          },
+          "process": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "c3210c6e23fc3cd366e5c174f9b33af8839b443f9492574fcb37f0bee3d3ca1a"
+          },
+          "canny": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "f2ea806f2ca63bd0ce1f2256f01cbfce640394cff3f9824a70e7b2a3623cd7ea"
+          },
+          "diff": null,
+          "image_annotated": {
+            "shape": [
+              2444,
+              2679,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "c7e694c188b392212317a1fa715a15fbc63c5a9ac0aa301de1c63a49c8e32743"
+          },
+          "root_depth_background": {
+            "shape": [
+              37859,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "163adc09118573792fe557f718826194b382c558df9261d2597d91cd347bbac1"
+          },
+          "root_link_background": {
+            "shape": [
+              637,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "37c384040880d47e4d23fb75b95bac5365f6c430809b80763e42c76778967bd0"
+          },
+          "main_root_samples": {
+            "shape": [
+              6905,
+              3
+            ],
+            "dtype": "int32",
+            "sha256": "52c22b7cdbaa02bdda2982d4f7f0785f14e340f1c4b8e8cf1de9dc4a4b4247d3"
+          },
+          "tracking_overlay": {
+            "shape": [
+              4503,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "445dfd7f503f2eb6175143972cc262dc38190eecf419ec03c4d134ea1e1fe485"
+          },
+          "plate_transform": [
+            1.0,
+            0.0,
+            -86.0,
+            -0.0,
+            1.0,
+            -287.9999999999998
+          ],
+          "green_areas": [
+            13006,
+            10983,
+            13297,
+            7924,
+            9339,
+            7641
+          ],
+          "positions_x": [
+            549,
+            952,
+            1346,
+            1748,
+            2094,
+            2530
+          ],
+          "positions_y": [
+            293,
+            225,
+            242,
+            264,
+            254,
+            348
+          ],
+          "total_length": 10613,
+          "total_area": 88095,
+          "new_area": null,
+          "new_parts": null,
+          "plant_length": [
+            2154,
+            1651,
+            1639,
+            1625,
+            1270,
+            1645
+          ],
+          "longest": [
+            1207,
+            1186,
+            1184,
+            1113,
+            1110,
+            1105
+          ],
+          "colored_samples": {
+            "0": "afaacede1dd493c517a3d3347b10b6623d74972746e07443b02f7e2b0eee6441",
+            "1": "dfe76df5495b8948669f334a3aa289706a3f3b8c2b12e36d3db81841ae3e2599",
+            "2": "8fba13c106fd22f70308595f00bda53ac5333a3eb30f93be97950ff7a7e5ea99",
+            "3": "36fd5224b6107043a5cc4b988224490e3f5ad092107cf69d0dc2bcb0f19e6707",
+            "4": "e00fdafc94d49faab8d6608a0c70ad9371d7bc43aa864ff881e44787612e580a",
+            "5": "4a308e54680584c397d59210e3ae17656de7d98f7acdf31f1ebd1f67e716fe57"
+          },
+          "rsml_samples": {
+            "0": {
+              "shape": [
+                2154,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "cda67b998feaf24666005ea2cfd32d5f4dcf3d71823f19d6a2d8e1c28600067c"
+            },
+            "1": {
+              "shape": [
+                1651,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "36b5bda34945af7f69f59718f49756cd535eedd734ad0f4503881164f5183c51"
+            },
+            "2": {
+              "shape": [
+                1639,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "aeb458234b8d82ea1a28706ffff1fdd23717e3ec781effeea559eaceac11321b"
+            },
+            "3": {
+              "shape": [
+                1625,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "67f77c8d7e72e8cc55ada0c986be12139677e84c71dbc3cb7ad52a9c86b61a07"
+            },
+            "4": {
+              "shape": [
+                1270,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "5f1f53369dad6f3d31fa00084b6c9fa484d0eeb7c65e6e407624f19254179bc1"
+            },
+            "5": {
+              "shape": [
+                1645,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "fc7296cda63c46e88cdb08d9dce1b24e71ea28294590b693cf6aab1e214e9dc8"
+            }
+          },
+          "rsml_unmasked_samples": {
+            "0": {
+              "shape": [
+                2154,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "cda67b998feaf24666005ea2cfd32d5f4dcf3d71823f19d6a2d8e1c28600067c"
+            },
+            "1": {
+              "shape": [
+                1651,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "36b5bda34945af7f69f59718f49756cd535eedd734ad0f4503881164f5183c51"
+            },
+            "2": {
+              "shape": [
+                1639,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "aeb458234b8d82ea1a28706ffff1fdd23717e3ec781effeea559eaceac11321b"
+            },
+            "3": {
+              "shape": [
+                1625,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "67f77c8d7e72e8cc55ada0c986be12139677e84c71dbc3cb7ad52a9c86b61a07"
+            },
+            "4": {
+              "shape": [
+                1270,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "5f1f53369dad6f3d31fa00084b6c9fa484d0eeb7c65e6e407624f19254179bc1"
+            },
+            "5": {
+              "shape": [
+                1645,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "fc7296cda63c46e88cdb08d9dce1b24e71ea28294590b693cf6aab1e214e9dc8"
+            }
+          },
+          "rsml_background": null,
+          "rsml_root_sources": [],
+          "camera_metadata": null,
+          "camera_metadata_error": ""
+        },
+        {
+          "date": "2024-09-25T00:00:00",
+          "path": "data_in_vitro\\RT_25_10-1.24-09-25.JPG",
+          "barcode": "RT_25_10-1",
+          "barcode_read": "",
+          "barcode_rect": null,
+          "barcode_mismatch": false,
+          "barcode_not_found": false,
+          "barcode_detected": false,
+          "image": {
+            "shape": [
+              2444,
+              2679,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "cc2ac22451717e22b5d53f87e08a05f92cb43795621330911bbfbc47472166bf"
+          },
+          "process": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "6aab65a544e847fcf6e810dab9748c00a3426dd00bdaa6efccd0a12d5474a8cc"
+          },
+          "canny": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "f5907b60a3258beffa0a6a0ad4af6aff75fc41337a7c8dbc2df104742d0b929b"
+          },
+          "diff": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "fa0eae35d00783e8d53235f158ca2756368cd688377aea89e7d1a3b556db282e"
+          },
+          "image_annotated": {
+            "shape": [
+              2444,
+              2679,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "29e7543f9cbe3e3a29402d234986c5bbbb326c84bb8075faf99b2480b59d8b56"
+          },
+          "root_depth_background": {
+            "shape": [
+              57015,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "68a2c3ecb6f03e7e11ecb83daf942f032431498515ec2322a4fbf8034280b174"
+          },
+          "root_link_background": {
+            "shape": [
+              1954,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "eb505737119ca409da0ad4f42e0809cc4aafa22aa843878e2c756bb323faef8e"
+          },
+          "main_root_samples": {
+            "shape": [
+              10345,
+              3
+            ],
+            "dtype": "int32",
+            "sha256": "0e6e99e24032006057d3cbffa2095ba26233c8908437b684e86da3e69e741558"
+          },
+          "tracking_overlay": {
+            "shape": [
+              5796,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "e0412e34856905dfd8c24bd288df1c5d397c1cb1da285c51eb07cd8d350c68c5"
+          },
+          "plate_transform": [
+            1.0,
+            0.0,
+            -98.0,
+            -0.0,
+            1.0,
+            -300.0
+          ],
+          "green_areas": [
+            17772,
+            15172,
+            17952,
+            14544,
+            17894,
+            17826
+          ],
+          "positions_x": [
+            546,
+            985,
+            1329,
+            1762,
+            2096,
+            2568
+          ],
+          "positions_y": [
+            372,
+            262,
+            297,
+            252,
+            308,
+            410
+          ],
+          "total_length": 18437,
+          "total_area": 133699,
+          "new_area": 70889,
+          "new_parts": 51,
+          "plant_length": [
+            3757,
+            3077,
+            2897,
+            2412,
+            2392,
+            3205
+          ],
+          "longest": [
+            1744,
+            1802,
+            1821,
+            1623,
+            1740,
+            1615
+          ],
+          "colored_samples": {
+            "0": "5c65129e566697a0febe5c28b602a526b0e2f7c51c3c92dde0bded314ef28c89",
+            "1": "20fce5526669a6021f7e965e6ad2ec131bdae88a2f44a62a326dc4d1f1023637",
+            "2": "07a6b3a9e69098b1479513bf355f5c7132d43336505e9d47c4b42d8737344ca5",
+            "3": "16a37f3495d13738ab8d9a421717b23bed0d322c3ee20fed65eb34befb7f7502",
+            "4": "9649229aef2c59aaf4ff0025518fd97b81c768325d86a6d2f89e169a5368c840",
+            "5": "cf31dd26fee1e60f13b56150de538dab001fc21df9823ef37a8a80f111840b41"
+          },
+          "rsml_samples": {
+            "0": {
+              "shape": [
+                3757,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "d5ee3c4b085114964116cce0341a81f8e1d5f8f86a72b8f4cb6d00019bb6ea8e"
+            },
+            "1": {
+              "shape": [
+                3077,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "bd21b5865830e56cefe51de1d5ceb35d8d5f814ae0ae3b82e7bac10f62cfd1a8"
+            },
+            "2": {
+              "shape": [
+                2897,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "161b1f40ba569357a4b28938c102076c17edd1db61b10bf2d2427fab62e387b5"
+            },
+            "3": {
+              "shape": [
+                2412,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "38d079800747a18d75aba197242765d81a0c22224ef2561e01052c5d37bb2db8"
+            },
+            "4": {
+              "shape": [
+                2392,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "1111d423a7f5d0eab01d67228b9790747b40144255493d02bc110493707a4283"
+            },
+            "5": {
+              "shape": [
+                3205,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "f00a8cc23be17793f33ded3ff4c0ee6b451f14711625df36bc38c54a81d7b62e"
+            }
+          },
+          "rsml_unmasked_samples": {
+            "0": {
+              "shape": [
+                3757,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "d5ee3c4b085114964116cce0341a81f8e1d5f8f86a72b8f4cb6d00019bb6ea8e"
+            },
+            "1": {
+              "shape": [
+                3077,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "bd21b5865830e56cefe51de1d5ceb35d8d5f814ae0ae3b82e7bac10f62cfd1a8"
+            },
+            "2": {
+              "shape": [
+                2897,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "161b1f40ba569357a4b28938c102076c17edd1db61b10bf2d2427fab62e387b5"
+            },
+            "3": {
+              "shape": [
+                2412,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "38d079800747a18d75aba197242765d81a0c22224ef2561e01052c5d37bb2db8"
+            },
+            "4": {
+              "shape": [
+                2392,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "1111d423a7f5d0eab01d67228b9790747b40144255493d02bc110493707a4283"
+            },
+            "5": {
+              "shape": [
+                3205,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "f00a8cc23be17793f33ded3ff4c0ee6b451f14711625df36bc38c54a81d7b62e"
+            }
+          },
+          "rsml_background": null,
+          "rsml_root_sources": [],
+          "camera_metadata": null,
+          "camera_metadata_error": ""
+        },
+        {
+          "date": "2025-09-25T00:00:00",
+          "path": "data_in_vitro\\RT_25_10-1.25-09-25.JPG",
+          "barcode": "RT_25_10-1",
+          "barcode_read": "",
+          "barcode_rect": null,
+          "barcode_mismatch": false,
+          "barcode_not_found": false,
+          "barcode_detected": false,
+          "image": {
+            "shape": [
+              2444,
+              2679,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "5353aabbf4188ea8e400856bd8667046164d9999093a65897dc01b53e795c38f"
+          },
+          "process": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "67af49d2030f3405336309ef1c3a0b737d54dd19d5de486ec2e9613d7e0f856d"
+          },
+          "canny": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "d20afbd6fbcc1874c02a60bed51fca7f9228c820580c288c89e385c17c15c325"
+          },
+          "diff": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "4b95dd9ec26281d2eb44caacbfdd4f5a8ceb1cdd397d79b2c6b1e6be38809011"
+          },
+          "image_annotated": {
+            "shape": [
+              2444,
+              2679,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "76717ed545bd2b0eb9a97194a185c616623c1aab1b2d6acba7005e32d047fab1"
+          },
+          "root_depth_background": {
+            "shape": [
+              65252,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "9edcdc05ebbbdd9854b2176d3b126fb7ee41cd285c79a668caff949361071e12"
+          },
+          "root_link_background": {
+            "shape": [
+              4358,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "e064b3af26c2ec76e451fefda850fb189c3ae7c6fca4ed236dd1ad8a72167718"
+          },
+          "main_root_samples": {
+            "shape": [
+              11560,
+              3
+            ],
+            "dtype": "int32",
+            "sha256": "0b711a9021d938bc0db8ce48f1ee9eda5628dd4d1f4f37611ca273689d418fbc"
+          },
+          "tracking_overlay": {
+            "shape": [
+              8202,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "0c1a3bb5f3ae5453eaa7813043a3e1ca50e90b12d2b5312dc569c5fb33a5ac11"
+          },
+          "plate_transform": [
+            1.0,
+            0.0,
+            -89.0,
+            -0.0,
+            1.0,
+            -299.0
+          ],
+          "green_areas": [
+            21884,
+            23260,
+            25750,
+            16731,
+            22062,
+            23529
+          ],
+          "positions_x": [
+            523,
+            995,
+            1323,
+            1757,
+            2099,
+            2565
+          ],
+          "positions_y": [
+            399,
+            456,
+            367,
+            325,
+            321,
+            429
+          ],
+          "total_length": 26065,
+          "total_area": 179362,
+          "new_area": 106870,
+          "new_parts": 84,
+          "plant_length": [
+            5410,
+            4009,
+            4116,
+            3143,
+            3345,
+            4752
+          ],
+          "longest": [
+            1933,
+            1867,
+            1971,
+            2011,
+            1949,
+            1829
+          ],
+          "colored_samples": {
+            "0": "8ffd7fe78672481df620a862c26bbd9bbe04eb8fc02afa1d04fa6c72fc0d98d5",
+            "1": "8be33764e4dc1064eb42d427242af4f3e1a9e8a4009ea9cd33734a500895d9f9",
+            "2": "213ecd8adcab37dd413f3223bc0ee834123c055db6c9736f4d38eae4cf0f4405",
+            "3": "031dc0cb181fe913aff911566ef0146a140434f674d1c9a2fd1df6553e9ee008",
+            "4": "25af81f2fa8d9560a490288e90bfe288a5975d8baa60cfa36b8030bdfd26e280",
+            "5": "bf2abf0112bc340b38476ec52c53a78ca4e71c2c7f62469eed927c019a5d4bc5"
+          },
+          "rsml_samples": {
+            "0": {
+              "shape": [
+                5410,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "ceecfa8c093ef2b6d82ed6c7948947abbe754bc7010c82e2fb197d7c03815793"
+            },
+            "1": {
+              "shape": [
+                4009,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "dafa97ee7ffb35e0401a59758137773aac29b2fd4b54c0f1ec7a610aec657354"
+            },
+            "2": {
+              "shape": [
+                4116,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "00a061dcb97fb6acddd7531f1ed64cabda31a44add1bfcfa47ed3a536cb4005e"
+            },
+            "3": {
+              "shape": [
+                3143,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "631f6dd5fcc3272e1ec57cc29d456bd4fb0d6ba5a8ac7b0adb73579046a2a212"
+            },
+            "4": {
+              "shape": [
+                3345,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "bb7de4b471b585a96d2b29a1af1f7d7a00ca2422872716c64f99cd4220b50680"
+            },
+            "5": {
+              "shape": [
+                4752,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "03788de532bf4dc78e6d6d71ebba54d8142c4f7da403a72e119dcc6d613435f0"
+            }
+          },
+          "rsml_unmasked_samples": {
+            "0": {
+              "shape": [
+                5410,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "ceecfa8c093ef2b6d82ed6c7948947abbe754bc7010c82e2fb197d7c03815793"
+            },
+            "1": {
+              "shape": [
+                4009,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "dafa97ee7ffb35e0401a59758137773aac29b2fd4b54c0f1ec7a610aec657354"
+            },
+            "2": {
+              "shape": [
+                4116,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "00a061dcb97fb6acddd7531f1ed64cabda31a44add1bfcfa47ed3a536cb4005e"
+            },
+            "3": {
+              "shape": [
+                3143,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "631f6dd5fcc3272e1ec57cc29d456bd4fb0d6ba5a8ac7b0adb73579046a2a212"
+            },
+            "4": {
+              "shape": [
+                3345,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "bb7de4b471b585a96d2b29a1af1f7d7a00ca2422872716c64f99cd4220b50680"
+            },
+            "5": {
+              "shape": [
+                4752,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "03788de532bf4dc78e6d6d71ebba54d8142c4f7da403a72e119dcc6d613435f0"
+            }
+          },
+          "rsml_background": null,
+          "rsml_root_sources": [],
+          "camera_metadata": null,
+          "camera_metadata_error": ""
+        },
+        {
+          "date": "2026-09-25T00:00:00",
+          "path": "data_in_vitro\\RT_25_10-1.26-09-25.JPG",
+          "barcode": "RT_25_10-1",
+          "barcode_read": "",
+          "barcode_rect": null,
+          "barcode_mismatch": false,
+          "barcode_not_found": false,
+          "barcode_detected": false,
+          "image": {
+            "shape": [
+              2444,
+              2679,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "4df799b4c74894ab48f42f2d4dcbc5ce0226c1866e2da3b85fc24289e35c8ba0"
+          },
+          "process": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "4d8b32b03e5ddc33667d9d1aaf708182dc42664db0252291965e2bfb761545ca"
+          },
+          "canny": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "c005360bd5270b5a479d3d14faa3187dee1219b4e1fd0a0757f931774d00f175"
+          },
+          "diff": {
+            "shape": [
+              2444,
+              2679
+            ],
+            "dtype": "uint8",
+            "sha256": "0a3b1fb8d8cf4094adf069e234321d31a4d7eda26d6fbad4471f504818f3ea71"
+          },
+          "image_annotated": {
+            "shape": [
+              2444,
+              2679,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "c897469d3883b5c0799bbcc96f5163a3481f807191f931d1092f6a51b61503f6"
+          },
+          "root_depth_background": {
+            "shape": [
+              65310,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "e30a5d534345876a224fb125a0fd86e634747bcde4fce21589dcceef130e4a50"
+          },
+          "root_link_background": {
+            "shape": [
+              5674,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "4165ef238f092b2f623f861e7c233636a9deff0351b63b18939cd97e4044691e"
+          },
+          "main_root_samples": {
+            "shape": [
+              11456,
+              3
+            ],
+            "dtype": "int32",
+            "sha256": "2b20b7d382347ab64d8943b618eb6cdc5a3ecb2a2cd77d645826a8527a754901"
+          },
+          "tracking_overlay": {
+            "shape": [
+              9524,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "6143272b8ecda252257f7b37fff707a5ef46d76bbadead17162cebada70ae3ec"
+          },
+          "plate_transform": [
+            1.0,
+            0.0,
+            -91.0,
+            -0.0,
+            1.0,
+            -303.0
+          ],
+          "green_areas": [
+            33945,
+            32884,
+            41057,
+            24294,
+            35309,
+            29062
+          ],
+          "positions_x": [
+            505,
+            997,
+            1315,
+            1739,
+            2103,
+            2558
+          ],
+          "positions_y": [
+            399,
+            483,
+            397,
+            277,
+            327,
+            440
+          ],
+          "total_length": 36742,
+          "total_area": 260349,
+          "new_area": 108664,
+          "new_parts": 113,
+          "plant_length": [
+            7270,
+            5766,
+            5894,
+            4000,
+            4781,
+            6878
+          ],
+          "longest": [
+            1838,
+            1813,
+            1914,
+            2068,
+            1957,
+            1866
+          ],
+          "colored_samples": {
+            "0": "d39f17a97589888d8271993176f6f6577f242b6ca2023a594e20c96b0d38b93d",
+            "1": "872dca1236c7dc060c65413fff3e1a45ccb320006ed66cc5adf316c484309727",
+            "2": "25e2ed939dcae5283426ce460b308c4c1eca2c46213fd205ae5a02b24df2b9e4",
+            "3": "2008e93d9c8e9e91e8ba5fbb6e90dc0c4fb9c4c7399c0ae1ad7ccd95cb1cdee7",
+            "4": "37130a5f63d33ee9bba6fa945d5e5fed5a5590092a304ed8692f9c3eca653c36",
+            "5": "375165ee0599f807b066fd19e7075c69df91f85f53ef080efbd6040323efd201"
+          },
+          "rsml_samples": {
+            "0": {
+              "shape": [
+                7270,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "52eda08e5f7ae94fa459b2cb91d20aab2179361db2ea5f167a5011fa6c757400"
+            },
+            "1": {
+              "shape": [
+                5766,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "18b6b6abb4d03ab112db9c4cbe4cda0d77d4025ff63ff0b96ac29370edd62dbf"
+            },
+            "2": {
+              "shape": [
+                5894,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "29e429f8419359d7d93b0302a7a71a9299827ca69707447e07ae8217e6a1af3b"
+            },
+            "3": {
+              "shape": [
+                4000,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "f15a7275d7d46b4f906a7b0707c4b55d5c29ad4d7ed49151d6929ae584e38613"
+            },
+            "4": {
+              "shape": [
+                4781,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "03ac67b80587cac2bedf3d820dd8424a5ae563105912b08adbabeccbb28d0051"
+            },
+            "5": {
+              "shape": [
+                6878,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "7d0a542e8f14b50d600e406fd9a7d543fa28a2af49586ad88d266debcfb46af1"
+            }
+          },
+          "rsml_unmasked_samples": {
+            "0": {
+              "shape": [
+                7270,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "52eda08e5f7ae94fa459b2cb91d20aab2179361db2ea5f167a5011fa6c757400"
+            },
+            "1": {
+              "shape": [
+                5766,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "18b6b6abb4d03ab112db9c4cbe4cda0d77d4025ff63ff0b96ac29370edd62dbf"
+            },
+            "2": {
+              "shape": [
+                5894,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "29e429f8419359d7d93b0302a7a71a9299827ca69707447e07ae8217e6a1af3b"
+            },
+            "3": {
+              "shape": [
+                4000,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "f15a7275d7d46b4f906a7b0707c4b55d5c29ad4d7ed49151d6929ae584e38613"
+            },
+            "4": {
+              "shape": [
+                4781,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "03ac67b80587cac2bedf3d820dd8424a5ae563105912b08adbabeccbb28d0051"
+            },
+            "5": {
+              "shape": [
+                6878,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "7d0a542e8f14b50d600e406fd9a7d543fa28a2af49586ad88d266debcfb46af1"
+            }
+          },
+          "rsml_background": null,
+          "rsml_root_sources": [],
+          "camera_metadata": null,
+          "camera_metadata_error": ""
+        }
+      ],
+      "statistics": [
+        {
+          "image_date": "2022-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.22-09-25.JPG",
+          "image_total_area": 88095,
+          "image_total_length": 10613,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 1,
+          "plant_center_x": 534,
+          "plant_center_y": 386,
+          "plant_green_area": 13006,
+          "plant_root_count": 18,
+          "plant_total_length": 2154,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1237,
+          "plant_main_root_length": 1207,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2022-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.22-09-25.JPG",
+          "image_total_area": 88095,
+          "image_total_length": 10613,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 2,
+          "plant_center_x": 990,
+          "plant_center_y": 359,
+          "plant_green_area": 10983,
+          "plant_root_count": 14,
+          "plant_total_length": 1651,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1217,
+          "plant_main_root_length": 1186,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2022-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.22-09-25.JPG",
+          "image_total_area": 88095,
+          "image_total_length": 10613,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 3,
+          "plant_center_x": 1326,
+          "plant_center_y": 332,
+          "plant_green_area": 13297,
+          "plant_root_count": 14,
+          "plant_total_length": 1639,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1214,
+          "plant_main_root_length": 1184,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2022-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.22-09-25.JPG",
+          "image_total_area": 88095,
+          "image_total_length": 10613,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 4,
+          "plant_center_x": 1752,
+          "plant_center_y": 270,
+          "plant_green_area": 7924,
+          "plant_root_count": 12,
+          "plant_total_length": 1625,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1151,
+          "plant_main_root_length": 1113,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2022-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.22-09-25.JPG",
+          "image_total_area": 88095,
+          "image_total_length": 10613,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 5,
+          "plant_center_x": 2098,
+          "plant_center_y": 314,
+          "plant_green_area": 9339,
+          "plant_root_count": 9,
+          "plant_total_length": 1270,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1138,
+          "plant_main_root_length": 1110,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2022-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.22-09-25.JPG",
+          "image_total_area": 88095,
+          "image_total_length": 10613,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 6,
+          "plant_center_x": 2562,
+          "plant_center_y": 420,
+          "plant_green_area": 7641,
+          "plant_root_count": 12,
+          "plant_total_length": 1645,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1132,
+          "plant_main_root_length": 1105,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.24-09-25.JPG",
+          "image_total_area": 133699,
+          "image_total_length": 18437,
+          "image_new_area": 70889,
+          "image_new_parts": 51,
+          "image_area_change": 28.70196946478234,
+          "plant_id": 1,
+          "plant_center_x": 534,
+          "plant_center_y": 386,
+          "plant_green_area": 17772,
+          "plant_root_count": 29,
+          "plant_total_length": 3757,
+          "plant_total_length_RGR": 0.0007610043609543565,
+          "plant_main_root_depth": 1816,
+          "plant_main_root_length": 1744,
+          "plant_main_root_length_RGR": 0.0005034793206175012
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.24-09-25.JPG",
+          "image_total_area": 133699,
+          "image_total_length": 18437,
+          "image_new_area": 70889,
+          "image_new_parts": 51,
+          "image_area_change": 28.70196946478234,
+          "plant_id": 2,
+          "plant_center_x": 990,
+          "plant_center_y": 359,
+          "plant_green_area": 15172,
+          "plant_root_count": 23,
+          "plant_total_length": 3077,
+          "plant_total_length_RGR": 0.0008516743247632201,
+          "plant_main_root_depth": 1870,
+          "plant_main_root_length": 1802,
+          "plant_main_root_length_RGR": 0.0005722446766219041
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.24-09-25.JPG",
+          "image_total_area": 133699,
+          "image_total_length": 18437,
+          "image_new_area": 70889,
+          "image_new_parts": 51,
+          "image_area_change": 28.70196946478234,
+          "plant_id": 3,
+          "plant_center_x": 1326,
+          "plant_center_y": 332,
+          "plant_green_area": 17952,
+          "plant_root_count": 19,
+          "plant_total_length": 2897,
+          "plant_total_length_RGR": 0.0007791920916901787,
+          "plant_main_root_depth": 1876,
+          "plant_main_root_length": 1821,
+          "plant_main_root_length_RGR": 0.0005889018663251128
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.24-09-25.JPG",
+          "image_total_area": 133699,
+          "image_total_length": 18437,
+          "image_new_area": 70889,
+          "image_new_parts": 51,
+          "image_area_change": 28.70196946478234,
+          "plant_id": 4,
+          "plant_center_x": 1752,
+          "plant_center_y": 270,
+          "plant_green_area": 14544,
+          "plant_root_count": 18,
+          "plant_total_length": 2412,
+          "plant_total_length_RGR": 0.0005402851752164676,
+          "plant_main_root_depth": 1746,
+          "plant_main_root_length": 1623,
+          "plant_main_root_length_RGR": 0.0005160290235828264
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.24-09-25.JPG",
+          "image_total_area": 133699,
+          "image_total_length": 18437,
+          "image_new_area": 70889,
+          "image_new_parts": 51,
+          "image_area_change": 28.70196946478234,
+          "plant_id": 5,
+          "plant_center_x": 2098,
+          "plant_center_y": 314,
+          "plant_green_area": 17894,
+          "plant_root_count": 19,
+          "plant_total_length": 2392,
+          "plant_total_length_RGR": 0.0008660915671927292,
+          "plant_main_root_depth": 1783,
+          "plant_main_root_length": 1740,
+          "plant_main_root_length_RGR": 0.0006149454143668881
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.24-09-25.JPG",
+          "image_total_area": 133699,
+          "image_total_length": 18437,
+          "image_new_area": 70889,
+          "image_new_parts": 51,
+          "image_area_change": 28.70196946478234,
+          "plant_id": 6,
+          "plant_center_x": 2562,
+          "plant_center_y": 420,
+          "plant_green_area": 17826,
+          "plant_root_count": 34,
+          "plant_total_length": 3205,
+          "plant_total_length_RGR": 0.0009124099947404897,
+          "plant_main_root_depth": 1773,
+          "plant_main_root_length": 1615,
+          "plant_main_root_length_RGR": 0.0005191376493911135
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.25-09-25.JPG",
+          "image_total_area": 179362,
+          "image_total_length": 26065,
+          "image_new_area": 106870,
+          "image_new_parts": 84,
+          "image_area_change": 45.77969917501253,
+          "plant_id": 1,
+          "plant_center_x": 534,
+          "plant_center_y": 386,
+          "plant_green_area": 21884,
+          "plant_root_count": 46,
+          "plant_total_length": 5410,
+          "plant_total_length_RGR": 0.0009989817157987902,
+          "plant_main_root_depth": 2053,
+          "plant_main_root_length": 1933,
+          "plant_main_root_length_RGR": 0.0002818955472312489
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.25-09-25.JPG",
+          "image_total_area": 179362,
+          "image_total_length": 26065,
+          "image_new_area": 106870,
+          "image_new_parts": 84,
+          "image_area_change": 45.77969917501253,
+          "plant_id": 2,
+          "plant_center_x": 990,
+          "plant_center_y": 359,
+          "plant_green_area": 23260,
+          "plant_root_count": 34,
+          "plant_total_length": 4009,
+          "plant_total_length_RGR": 0.0007248951707410016,
+          "plant_main_root_depth": 2078,
+          "plant_main_root_length": 1867,
+          "plant_main_root_length_RGR": 9.708412431079265e-05
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.25-09-25.JPG",
+          "image_total_area": 179362,
+          "image_total_length": 26065,
+          "image_new_area": 106870,
+          "image_new_parts": 84,
+          "image_area_change": 45.77969917501253,
+          "plant_id": 3,
+          "plant_center_x": 1326,
+          "plant_center_y": 332,
+          "plant_green_area": 25750,
+          "plant_root_count": 34,
+          "plant_total_length": 4116,
+          "plant_total_length_RGR": 0.0009622084909166844,
+          "plant_main_root_depth": 2103,
+          "plant_main_root_length": 1971,
+          "plant_main_root_length_RGR": 0.000216863636781128
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.25-09-25.JPG",
+          "image_total_area": 179362,
+          "image_total_length": 26065,
+          "image_new_area": 106870,
+          "image_new_parts": 84,
+          "image_area_change": 45.77969917501253,
+          "plant_id": 4,
+          "plant_center_x": 1752,
+          "plant_center_y": 270,
+          "plant_green_area": 16731,
+          "plant_root_count": 33,
+          "plant_total_length": 3143,
+          "plant_total_length_RGR": 0.0007252643258917575,
+          "plant_main_root_depth": 2147,
+          "plant_main_root_length": 2011,
+          "plant_main_root_length_RGR": 0.0005872762253645508
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.25-09-25.JPG",
+          "image_total_area": 179362,
+          "image_total_length": 26065,
+          "image_new_area": 106870,
+          "image_new_parts": 84,
+          "image_area_change": 45.77969917501253,
+          "plant_id": 5,
+          "plant_center_x": 2098,
+          "plant_center_y": 314,
+          "plant_green_area": 22062,
+          "plant_root_count": 38,
+          "plant_total_length": 3345,
+          "plant_total_length_RGR": 0.0009187311164159101,
+          "plant_main_root_depth": 2097,
+          "plant_main_root_length": 1949,
+          "plant_main_root_length_RGR": 0.0003107707049287278
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.25-09-25.JPG",
+          "image_total_area": 179362,
+          "image_total_length": 26065,
+          "image_new_area": 106870,
+          "image_new_parts": 84,
+          "image_area_change": 45.77969917501253,
+          "plant_id": 6,
+          "plant_center_x": 2562,
+          "plant_center_y": 420,
+          "plant_green_area": 23529,
+          "plant_root_count": 54,
+          "plant_total_length": 4752,
+          "plant_total_length_RGR": 0.0010790506621581124,
+          "plant_main_root_depth": 2017,
+          "plant_main_root_length": 1829,
+          "plant_main_root_length_RGR": 0.00034091619927153165
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.26-09-25.JPG",
+          "image_total_area": 260349,
+          "image_total_length": 36742,
+          "image_new_area": 108664,
+          "image_new_parts": 113,
+          "image_area_change": 15.43080474124954,
+          "plant_id": 1,
+          "plant_center_x": 534,
+          "plant_center_y": 386,
+          "plant_green_area": 33945,
+          "plant_root_count": 76,
+          "plant_total_length": 7270,
+          "plant_total_length_RGR": 0.0008096087635261294,
+          "plant_main_root_depth": 2051,
+          "plant_main_root_length": 1838,
+          "plant_main_root_length_RGR": -0.0001380689761443798
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.26-09-25.JPG",
+          "image_total_area": 260349,
+          "image_total_length": 36742,
+          "image_new_area": 108664,
+          "image_new_parts": 113,
+          "image_area_change": 15.43080474124954,
+          "plant_id": 2,
+          "plant_center_x": 990,
+          "plant_center_y": 359,
+          "plant_green_area": 32884,
+          "plant_root_count": 77,
+          "plant_total_length": 5766,
+          "plant_total_length_RGR": 0.000995717165906409,
+          "plant_main_root_depth": 2078,
+          "plant_main_root_length": 1813,
+          "plant_main_root_length_RGR": -8.04107747585523e-05
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.26-09-25.JPG",
+          "image_total_area": 260349,
+          "image_total_length": 36742,
+          "image_new_area": 108664,
+          "image_new_parts": 113,
+          "image_area_change": 15.43080474124954,
+          "plant_id": 3,
+          "plant_center_x": 1326,
+          "plant_center_y": 332,
+          "plant_green_area": 41057,
+          "plant_root_count": 69,
+          "plant_total_length": 5894,
+          "plant_total_length_RGR": 0.0009837070310786294,
+          "plant_main_root_depth": 2106,
+          "plant_main_root_length": 1914,
+          "plant_main_root_length_RGR": -8.039927435567207e-05
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.26-09-25.JPG",
+          "image_total_area": 260349,
+          "image_total_length": 36742,
+          "image_new_area": 108664,
+          "image_new_parts": 113,
+          "image_area_change": 15.43080474124954,
+          "plant_id": 4,
+          "plant_center_x": 1752,
+          "plant_center_y": 270,
+          "plant_green_area": 24294,
+          "plant_root_count": 40,
+          "plant_total_length": 4000,
+          "plant_total_length_RGR": 0.0006605934337108507,
+          "plant_main_root_depth": 2166,
+          "plant_main_root_length": 2068,
+          "plant_main_root_length_RGR": 7.657492015251434e-05
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.26-09-25.JPG",
+          "image_total_area": 260349,
+          "image_total_length": 36742,
+          "image_new_area": 108664,
+          "image_new_parts": 113,
+          "image_area_change": 15.43080474124954,
+          "plant_id": 5,
+          "plant_center_x": 2098,
+          "plant_center_y": 314,
+          "plant_green_area": 35309,
+          "plant_root_count": 70,
+          "plant_total_length": 4781,
+          "plant_total_length_RGR": 0.000978583660448694,
+          "plant_main_root_depth": 2122,
+          "plant_main_root_length": 1957,
+          "plant_main_root_length_RGR": 1.1222651749357452e-05
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-1",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-1.26-09-25.JPG",
+          "image_total_area": 260349,
+          "image_total_length": 36742,
+          "image_new_area": 108664,
+          "image_new_parts": 113,
+          "image_area_change": 15.43080474124954,
+          "plant_id": 6,
+          "plant_center_x": 2562,
+          "plant_center_y": 420,
+          "plant_green_area": 29062,
+          "plant_root_count": 92,
+          "plant_total_length": 6878,
+          "plant_total_length_RGR": 0.0010130474793143274,
+          "plant_main_root_depth": 2016,
+          "plant_main_root_length": 1866,
+          "plant_main_root_length_RGR": 5.487050141485851e-05
+        }
+      ]
+    },
+    "line_times": {}
+  },
+  {
+    "group": "RT_25_10-10",
+    "repeat": 0,
+    "before": {
+      "rss": 212283392,
+      "private": 1246466048,
+      "peak_rss": 647503872,
+      "peak_commit": 1686503424,
+      "page_faults": 1591671,
+      "system_total": 33963343872,
+      "system_available": 2052136960
+    },
+    "stages": {
+      "preprocess": {
+        "seconds": 1.8037486999528483,
+        "cpu_seconds": 3.84375,
+        "memory": {
+          "rss": 313294848,
+          "private": 1347440640,
+          "peak_rss": 647503872,
+          "peak_commit": 1686503424,
+          "page_faults": 2038858,
+          "system_total": 33963343872,
+          "system_available": 1762963456
+        },
+        "retained_array_bytes": 98967980
+      },
+      "registration": {
+        "seconds": 0.28330220002681017,
+        "cpu_seconds": 0.328125,
+        "memory": {
+          "rss": 328773632,
+          "private": 1362796544,
+          "peak_rss": 647503872,
+          "peak_commit": 1686503424,
+          "page_faults": 2152347,
+          "system_total": 33963343872,
+          "system_available": 1731096576
+        },
+        "retained_array_bytes": 112199252
+      },
+      "tracking": {
+        "seconds": 2.5829055999638513,
+        "cpu_seconds": 3.109375,
+        "memory": {
+          "rss": 413270016,
+          "private": 1443643392,
+          "peak_rss": 647503872,
+          "peak_commit": 1686503424,
+          "page_faults": 2655591,
+          "system_total": 33963343872,
+          "system_available": 1523490816
+        },
+        "retained_array_bytes": 176530320
+      }
+    },
+    "peak_memory": {
+      "rss": 558333952,
+      "private": 1596297216,
+      "min_system_available": 1342595072
+    },
+    "timers": {
+      "_median_background": {
+        "calls": 3,
+        "seconds": 0.9513094999128953
+      },
+      "remove_gradient": {
+        "calls": 3,
+        "seconds": 1.0482077999040484
+      },
+      "_coarse_match_location": {
+        "calls": 2,
+        "seconds": 0.2571310999337584
+      },
+      "_match_location": {
+        "calls": 2,
+        "seconds": 0.25714620004873723
+      },
+      "filter_static_islands": {
+        "calls": 1,
+        "seconds": 0.17016650002915412
+      },
+      "skeletonize_mask": {
+        "calls": 3,
+        "seconds": 0.14196220017038286
+      },
+      "link_corners": {
+        "calls": 3,
+        "seconds": 0.3999701999127865
+      },
+      "select_main_geometry": {
+        "calls": 18,
+        "seconds": 0.2728287000209093
+      }
+    },
+    "outputs": {
+      "images": [
+        {
+          "date": "2024-09-25T00:00:00",
+          "path": "data_in_vitro\\RT_25_10-10.24-09-25.JPG",
+          "barcode": "RT_25_10-10",
+          "barcode_read": "",
+          "barcode_rect": null,
+          "barcode_mismatch": false,
+          "barcode_not_found": false,
+          "barcode_detected": false,
+          "image": {
+            "shape": [
+              2459,
+              2684,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "5f7ccc8bafe6488f9b2089029233761f00a429d3705ae4bbdd1d67deedcae787"
+          },
+          "process": {
+            "shape": [
+              2459,
+              2684
+            ],
+            "dtype": "uint8",
+            "sha256": "399c26b7696bb4413fcf4b69374254564650fa269faad1b3d1032d857ba56cb6"
+          },
+          "canny": {
+            "shape": [
+              2459,
+              2684
+            ],
+            "dtype": "uint8",
+            "sha256": "60ddb3fceeeecb8d578d7beca50f8677637e7485671a61262b9618bd6b066b4e"
+          },
+          "diff": null,
+          "image_annotated": {
+            "shape": [
+              2459,
+              2684,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "d75d30789d09988aa3e5cdb0c8fcc26f3b3080175b2fd062451fdd6fa3dfc24f"
+          },
+          "root_depth_background": {
+            "shape": [
+              52061,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "3ff69345c170e2fd1b308af895452ffd26799097e57f48f9f4b75a21a0833321"
+          },
+          "root_link_background": {
+            "shape": [
+              2140,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "1f5d3e79ba31a237ac95ad7b5d44697b0c1eef9ce8b5b3aba3f38a54349b017d"
+          },
+          "main_root_samples": {
+            "shape": [
+              9383,
+              3
+            ],
+            "dtype": "int32",
+            "sha256": "93afdc4aae2d030db00a7c2d097873c3b008e96f6807ffacf41717c1880e1926"
+          },
+          "tracking_overlay": {
+            "shape": [
+              5980,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "be8f9efb85c4265795829c3d16069fad530ea0f354595b72ef436934c87771de"
+          },
+          "plate_transform": [
+            1.0,
+            0.0,
+            -86.0,
+            -0.0,
+            1.0,
+            -289.0
+          ],
+          "green_areas": [
+            10160,
+            8922,
+            10416,
+            10094,
+            11247,
+            13529
+          ],
+          "positions_x": [
+            484,
+            920,
+            1328,
+            1765,
+            2144,
+            2518
+          ],
+          "positions_y": [
+            243,
+            201,
+            250,
+            327,
+            233,
+            308
+          ],
+          "total_length": 11898,
+          "total_area": 82546,
+          "new_area": null,
+          "new_parts": null,
+          "plant_length": [
+            1979,
+            1803,
+            1776,
+            1813,
+            2024,
+            1953
+          ],
+          "longest": [
+            1591,
+            1550,
+            1625,
+            1512,
+            1598,
+            1507
+          ],
+          "colored_samples": {
+            "0": "21dde630753e1d7717e767520879e4ae4740a35904fa9f0e763549fe1c42d77f",
+            "1": "1e6c1c6ce98037cba44cdff8e891f69a48267b5514ee6eca86ed77341fe6c923",
+            "2": "5ef8f77fb66f8a1e9f3842a2e2019606adc9248267baf70b48b57ec487b3490e",
+            "3": "6bc924e72cca777a9f40a764140fc88ba4061abbf34b89df6708e7ef3a502190",
+            "4": "ff5000d4de75d6d6ca9c13ea4ef1366a421c47471bcd15b840756da19f4389f6",
+            "5": "9a93d3311e0a64f1ee22f95238f9c36dfd658c18e41887f01106d4cce17be5fe"
+          },
+          "rsml_samples": {
+            "0": {
+              "shape": [
+                1979,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "8dfe5a05057091f06adca8ebcd02545fee75c915c2e3257383ad8f35ca8c39f0"
+            },
+            "1": {
+              "shape": [
+                1803,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "5c011e6e5c83a0a82e537125610034261914907a15496b23c3f5ddd7ead353bb"
+            },
+            "2": {
+              "shape": [
+                1776,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "3133715e25093979b4147704162b2b4fa2ef19da2e2691fa49e34e9bb552f465"
+            },
+            "3": {
+              "shape": [
+                1813,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "7e9cec17e247cb633bc0434b5521037ddd6ab35cb8a3516c11e836777bf07db1"
+            },
+            "4": {
+              "shape": [
+                2024,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "d764c399b1f3b1a329a6040102aa9c71370f229720c2af0879e352ee8fa341cc"
+            },
+            "5": {
+              "shape": [
+                1953,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "784b28e558a7bd53836cd525fc05306f40b39e8c1bde12dd8f9f6069d750bb00"
+            }
+          },
+          "rsml_unmasked_samples": {
+            "0": {
+              "shape": [
+                1979,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "8dfe5a05057091f06adca8ebcd02545fee75c915c2e3257383ad8f35ca8c39f0"
+            },
+            "1": {
+              "shape": [
+                1803,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "5c011e6e5c83a0a82e537125610034261914907a15496b23c3f5ddd7ead353bb"
+            },
+            "2": {
+              "shape": [
+                1776,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "3133715e25093979b4147704162b2b4fa2ef19da2e2691fa49e34e9bb552f465"
+            },
+            "3": {
+              "shape": [
+                1813,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "7e9cec17e247cb633bc0434b5521037ddd6ab35cb8a3516c11e836777bf07db1"
+            },
+            "4": {
+              "shape": [
+                2024,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "d764c399b1f3b1a329a6040102aa9c71370f229720c2af0879e352ee8fa341cc"
+            },
+            "5": {
+              "shape": [
+                1953,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "784b28e558a7bd53836cd525fc05306f40b39e8c1bde12dd8f9f6069d750bb00"
+            }
+          },
+          "rsml_background": null,
+          "rsml_root_sources": [],
+          "camera_metadata": null,
+          "camera_metadata_error": ""
+        },
+        {
+          "date": "2025-09-25T00:00:00",
+          "path": "data_in_vitro\\RT_25_10-10.25-09-25.JPG",
+          "barcode": "RT_25_10-10",
+          "barcode_read": "",
+          "barcode_rect": null,
+          "barcode_mismatch": false,
+          "barcode_not_found": false,
+          "barcode_detected": false,
+          "image": {
+            "shape": [
+              2459,
+              2684,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "23e0bb8ba9aaa8d547b96fc458da88085a3733bac08bd8bce54a9c038ff52510"
+          },
+          "process": {
+            "shape": [
+              2459,
+              2684
+            ],
+            "dtype": "uint8",
+            "sha256": "9d6bafd28911b5d6990dceb7709a22425d17f1ad9d7841fbcb04cd0827668387"
+          },
+          "canny": {
+            "shape": [
+              2459,
+              2684
+            ],
+            "dtype": "uint8",
+            "sha256": "81a83439b150b32f62dd3ab6fa37240363008e352cd274372e0ead7501a98a5d"
+          },
+          "diff": {
+            "shape": [
+              2459,
+              2684
+            ],
+            "dtype": "uint8",
+            "sha256": "9ac958eb5f39952d30c195aaa17e03041b7f981259c003e6a20c41e03c2099f2"
+          },
+          "image_annotated": {
+            "shape": [
+              2459,
+              2684,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "067172db29f72cfc31935c87088a3e1cdeb62517b3e51ae401bae8f01dd70212"
+          },
+          "root_depth_background": {
+            "shape": [
+              62557,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "c71145695df511d7276bbcce01750ae6f06709b009a7ad9bc44e9a8c66147680"
+          },
+          "root_link_background": {
+            "shape": [
+              3133,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "9181a5f96aaa721eced9926c206ac3839397656b2735bcb3d78d5929a02b27ff"
+          },
+          "main_root_samples": {
+            "shape": [
+              10880,
+              3
+            ],
+            "dtype": "int32",
+            "sha256": "70742b36c3b79865baa29821f593b549eaac6e05e0caaa98321aa97be4f9b129"
+          },
+          "tracking_overlay": {
+            "shape": [
+              6975,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "b92701839453f5bcae36a73b923ceddebafa66bd6e58a4ad134fa15628ca5bf8"
+          },
+          "plate_transform": [
+            1.0,
+            0.0,
+            -77.0,
+            -0.0,
+            1.0,
+            -288.0000000000002
+          ],
+          "green_areas": [
+            16963,
+            14102,
+            14573,
+            11904,
+            11994,
+            15035
+          ],
+          "positions_x": [
+            493,
+            925,
+            1320,
+            1787,
+            2145,
+            2535
+          ],
+          "positions_y": [
+            253,
+            202,
+            316,
+            320,
+            312,
+            306
+          ],
+          "total_length": 14749,
+          "total_area": 96903,
+          "new_area": 59830,
+          "new_parts": 78,
+          "plant_length": [
+            2248,
+            2311,
+            2303,
+            2192,
+            2513,
+            2586
+          ],
+          "longest": [
+            1809,
+            1844,
+            1850,
+            1747,
+            1901,
+            1729
+          ],
+          "colored_samples": {
+            "0": "16c3395eebb3df2d725217c3ee6f6869ad9ce97256f8785d1237b6366d7f1671",
+            "1": "a457f745a607d93c91e2534092efaf62e8d89621fba0f00816c0d51ae2b29473",
+            "2": "e0b72f518b8b6869b49823255c14f43481e53738b97ea0fc1e8fe1a2eb88c8f3",
+            "3": "5fe32d68475d0a01a6dda5517888c08a45f884cbcbaa6edb743c89ebb15bd775",
+            "4": "aa29edcf915efb69d04eab2e9540d424a7f8615843c77cac3b1615b2a7322a9d",
+            "5": "db6b55c8b1478c4cbceaa018b30d461df4a559894f350f7ab1648ca228fbe2d0"
+          },
+          "rsml_samples": {
+            "0": {
+              "shape": [
+                2248,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "07716f5323ddd733c049f59cf29740b96be066e33665a36df07cd435899cbe56"
+            },
+            "1": {
+              "shape": [
+                2311,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "0d46ecccb30669dff82790e141196ac30870fd2503cad2810f4a65b7083a8962"
+            },
+            "2": {
+              "shape": [
+                2303,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "24228c8e2fb26dcdb76410d4a6148d5fb34e812f82bc28fb7f6c81bd97f074e7"
+            },
+            "3": {
+              "shape": [
+                2192,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "ebe34e1a700d60a81af60f5445f8029a277aa8318abfe751b4f3e6e4bfb2cd83"
+            },
+            "4": {
+              "shape": [
+                2513,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "c7766c17dcade2e75ead6bd58f3ac7d773c4965540d79419bf89856a9f0c2986"
+            },
+            "5": {
+              "shape": [
+                2586,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "1fbeba494327001785bb143aad069b59fb841c37c7c4e28da6ed976cb6b9afd5"
+            }
+          },
+          "rsml_unmasked_samples": {
+            "0": {
+              "shape": [
+                2248,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "07716f5323ddd733c049f59cf29740b96be066e33665a36df07cd435899cbe56"
+            },
+            "1": {
+              "shape": [
+                2311,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "0d46ecccb30669dff82790e141196ac30870fd2503cad2810f4a65b7083a8962"
+            },
+            "2": {
+              "shape": [
+                2303,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "24228c8e2fb26dcdb76410d4a6148d5fb34e812f82bc28fb7f6c81bd97f074e7"
+            },
+            "3": {
+              "shape": [
+                2192,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "ebe34e1a700d60a81af60f5445f8029a277aa8318abfe751b4f3e6e4bfb2cd83"
+            },
+            "4": {
+              "shape": [
+                2513,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "c7766c17dcade2e75ead6bd58f3ac7d773c4965540d79419bf89856a9f0c2986"
+            },
+            "5": {
+              "shape": [
+                2586,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "1fbeba494327001785bb143aad069b59fb841c37c7c4e28da6ed976cb6b9afd5"
+            }
+          },
+          "rsml_background": null,
+          "rsml_root_sources": [],
+          "camera_metadata": null,
+          "camera_metadata_error": ""
+        },
+        {
+          "date": "2026-09-25T00:00:00",
+          "path": "data_in_vitro\\RT_25_10-10.26-09-25.JPG",
+          "barcode": "RT_25_10-10",
+          "barcode_read": "",
+          "barcode_rect": null,
+          "barcode_mismatch": false,
+          "barcode_not_found": false,
+          "barcode_detected": false,
+          "image": {
+            "shape": [
+              2459,
+              2684,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "455fb2770f2a03eb6b294e2167f158d9bf5011ddd7fd197cd5cd0477b486aeab"
+          },
+          "process": {
+            "shape": [
+              2459,
+              2684
+            ],
+            "dtype": "uint8",
+            "sha256": "3efb1b57a61e78b2d85798c1f5e82ec7d451817ed4ad2d2cbbdabda5d52548a7"
+          },
+          "canny": {
+            "shape": [
+              2459,
+              2684
+            ],
+            "dtype": "uint8",
+            "sha256": "b58671ecbf0ace403415bf4b1995a8ccf6cf05a49078ebbd5c0afd05b4cac07c"
+          },
+          "diff": {
+            "shape": [
+              2459,
+              2684
+            ],
+            "dtype": "uint8",
+            "sha256": "4ded829b5a0597757d34b9ed9da8f85a49c2f6258f02bcbef278047e9bd91ed4"
+          },
+          "image_annotated": {
+            "shape": [
+              2459,
+              2684,
+              3
+            ],
+            "dtype": "uint8",
+            "sha256": "a552cda5df089b27feff9043745a6bdbf26c83f38370f8ab6cd3fe730cf53714"
+          },
+          "root_depth_background": {
+            "shape": [
+              66769,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "b7d339fef83eae56a8c085620c75b3bbec6f25b1fbf552e8ab06ff44fd75538b"
+          },
+          "root_link_background": {
+            "shape": [
+              3394,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "291036d2824aa61b7f304e54434efd5c12dc0e4f2a36f986d7d825f0cf4e3b01"
+          },
+          "main_root_samples": {
+            "shape": [
+              11477,
+              3
+            ],
+            "dtype": "int32",
+            "sha256": "84fca9cc2ee17073a3b403615661c476498889db0ec8cb4e446b1beda7c15783"
+          },
+          "tracking_overlay": {
+            "shape": [
+              7251,
+              5
+            ],
+            "dtype": "int32",
+            "sha256": "2601fcbabe720ff3383ee5299e1282e79b58c43a78e2178d3ca5f6b24c0aa23c"
+          },
+          "plate_transform": [
+            1.0,
+            0.0,
+            -74.0,
+            -0.0,
+            1.0,
+            -292.0
+          ],
+          "green_areas": [
+            25064,
+            19772,
+            24862,
+            21564,
+            23813,
+            19698
+          ],
+          "positions_x": [
+            458,
+            932,
+            1326,
+            1754,
+            2136,
+            2507
+          ],
+          "positions_y": [
+            301,
+            274,
+            267,
+            290,
+            339,
+            348
+          ],
+          "total_length": 18673,
+          "total_area": 126365,
+          "new_area": 49986,
+          "new_parts": 69,
+          "plant_length": [
+            2895,
+            2847,
+            3028,
+            2905,
+            2877,
+            3120
+          ],
+          "longest": [
+            1964,
+            1936,
+            1858,
+            1883,
+            1911,
+            1925
+          ],
+          "colored_samples": {
+            "0": "5367330922be3daf8d5430040e9e48e52c84c115f1395f06fb4a97cce7d36706",
+            "1": "2c099c6796dceb1275f1d2d9884a6d0309b11a01f760ec0109053ace356ddf82",
+            "2": "4371784408108aeae85ec623db87d8856e9b1b722f552ab5a49800436d415e56",
+            "3": "1c14bdacdb878ec80f3e7433bb2ea367344a4536b910c1851f5256faf4e653b6",
+            "4": "b89e1a47989067a75fab717ffbc325a7797f6b846d9f28244edf6c39ec97ad57",
+            "5": "31e948c49ec780e3a826770a1521f685d606b73a58105e1523a7b0401a563b06"
+          },
+          "rsml_samples": {
+            "0": {
+              "shape": [
+                2895,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "3a90e383cf53e85ee78db460ab38c8355ee5e71221ffe4f5c5fe42215a406389"
+            },
+            "1": {
+              "shape": [
+                2847,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "b192921933ba3dede2927cc53c854f0ce6f8704d0e3d96eacdb0b01d7d8bd078"
+            },
+            "2": {
+              "shape": [
+                3028,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "ebb5f598a5b47772232ed3cfd6b78ff66a9955b8620ccb7c7509cebd726cfe9b"
+            },
+            "3": {
+              "shape": [
+                2905,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "38b1819fa88b2c04bd3d8887d55b567c942ef27fdfe99f2605155b64e266a93a"
+            },
+            "4": {
+              "shape": [
+                2877,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "4ac15dfeafa0013ed757e72541606ce5654308410c2829d30631336244c01f81"
+            },
+            "5": {
+              "shape": [
+                3120,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "eb2b2d203a62519ffe664168e46bdef132a45c7653c1b583109e3bed71f4904d"
+            }
+          },
+          "rsml_unmasked_samples": {
+            "0": {
+              "shape": [
+                2895,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "3a90e383cf53e85ee78db460ab38c8355ee5e71221ffe4f5c5fe42215a406389"
+            },
+            "1": {
+              "shape": [
+                2847,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "b192921933ba3dede2927cc53c854f0ce6f8704d0e3d96eacdb0b01d7d8bd078"
+            },
+            "2": {
+              "shape": [
+                3028,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "ebb5f598a5b47772232ed3cfd6b78ff66a9955b8620ccb7c7509cebd726cfe9b"
+            },
+            "3": {
+              "shape": [
+                2905,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "38b1819fa88b2c04bd3d8887d55b567c942ef27fdfe99f2605155b64e266a93a"
+            },
+            "4": {
+              "shape": [
+                2877,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "4ac15dfeafa0013ed757e72541606ce5654308410c2829d30631336244c01f81"
+            },
+            "5": {
+              "shape": [
+                3120,
+                2
+              ],
+              "dtype": "int32",
+              "sha256": "eb2b2d203a62519ffe664168e46bdef132a45c7653c1b583109e3bed71f4904d"
+            }
+          },
+          "rsml_background": null,
+          "rsml_root_sources": [],
+          "camera_metadata": null,
+          "camera_metadata_error": ""
+        }
+      ],
+      "statistics": [
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.24-09-25.JPG",
+          "image_total_area": 82546,
+          "image_total_length": 11898,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 1,
+          "plant_center_x": 484,
+          "plant_center_y": 253,
+          "plant_green_area": 10160,
+          "plant_root_count": 21,
+          "plant_total_length": 1979,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1693,
+          "plant_main_root_length": 1591,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.24-09-25.JPG",
+          "image_total_area": 82546,
+          "image_total_length": 11898,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 2,
+          "plant_center_x": 925,
+          "plant_center_y": 202,
+          "plant_green_area": 8922,
+          "plant_root_count": 16,
+          "plant_total_length": 1803,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1753,
+          "plant_main_root_length": 1550,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.24-09-25.JPG",
+          "image_total_area": 82546,
+          "image_total_length": 11898,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 3,
+          "plant_center_x": 1326,
+          "plant_center_y": 267,
+          "plant_green_area": 10416,
+          "plant_root_count": 12,
+          "plant_total_length": 1776,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1711,
+          "plant_main_root_length": 1625,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.24-09-25.JPG",
+          "image_total_area": 82546,
+          "image_total_length": 11898,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 4,
+          "plant_center_x": 1765,
+          "plant_center_y": 320,
+          "plant_green_area": 10094,
+          "plant_root_count": 9,
+          "plant_total_length": 1813,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1599,
+          "plant_main_root_length": 1512,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.24-09-25.JPG",
+          "image_total_area": 82546,
+          "image_total_length": 11898,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 5,
+          "plant_center_x": 2144,
+          "plant_center_y": 312,
+          "plant_green_area": 11247,
+          "plant_root_count": 13,
+          "plant_total_length": 2024,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1684,
+          "plant_main_root_length": 1598,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2024-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.24-09-25.JPG",
+          "image_total_area": 82546,
+          "image_total_length": 11898,
+          "image_new_area": null,
+          "image_new_parts": null,
+          "image_area_change": null,
+          "plant_id": 6,
+          "plant_center_x": 2518,
+          "plant_center_y": 308,
+          "plant_green_area": 13529,
+          "plant_root_count": 19,
+          "plant_total_length": 1953,
+          "plant_total_length_RGR": null,
+          "plant_main_root_depth": 1644,
+          "plant_main_root_length": 1507,
+          "plant_main_root_length_RGR": null
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.25-09-25.JPG",
+          "image_total_area": 96903,
+          "image_total_length": 14749,
+          "image_new_area": 59830,
+          "image_new_parts": 78,
+          "image_area_change": 55.088072105250404,
+          "plant_id": 1,
+          "plant_center_x": 484,
+          "plant_center_y": 253,
+          "plant_green_area": 16963,
+          "plant_root_count": 22,
+          "plant_total_length": 2248,
+          "plant_total_length_RGR": 0.0003491760696192225,
+          "plant_main_root_depth": 2013,
+          "plant_main_root_length": 1809,
+          "plant_main_root_length_RGR": 0.0003518122111164606
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.25-09-25.JPG",
+          "image_total_area": 96903,
+          "image_total_length": 14749,
+          "image_new_area": 59830,
+          "image_new_parts": 78,
+          "image_area_change": 55.088072105250404,
+          "plant_id": 2,
+          "plant_center_x": 925,
+          "plant_center_y": 202,
+          "plant_green_area": 14102,
+          "plant_root_count": 20,
+          "plant_total_length": 2311,
+          "plant_total_length_RGR": 0.0006800777727974338,
+          "plant_main_root_depth": 2109,
+          "plant_main_root_length": 1844,
+          "plant_main_root_length_RGR": 0.00047584162795410057
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.25-09-25.JPG",
+          "image_total_area": 96903,
+          "image_total_length": 14749,
+          "image_new_area": 59830,
+          "image_new_parts": 78,
+          "image_area_change": 55.088072105250404,
+          "plant_id": 3,
+          "plant_center_x": 1326,
+          "plant_center_y": 267,
+          "plant_green_area": 14573,
+          "plant_root_count": 22,
+          "plant_total_length": 2303,
+          "plant_total_length_RGR": 0.0007119150034755338,
+          "plant_main_root_depth": 2055,
+          "plant_main_root_length": 1850,
+          "plant_main_root_length_RGR": 0.0003552817076946096
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.25-09-25.JPG",
+          "image_total_area": 96903,
+          "image_total_length": 14749,
+          "image_new_area": 59830,
+          "image_new_parts": 78,
+          "image_area_change": 55.088072105250404,
+          "plant_id": 4,
+          "plant_center_x": 1765,
+          "plant_center_y": 320,
+          "plant_green_area": 11904,
+          "plant_root_count": 16,
+          "plant_total_length": 2192,
+          "plant_total_length_RGR": 0.0005200861296248081,
+          "plant_main_root_depth": 1900,
+          "plant_main_root_length": 1747,
+          "plant_main_root_length_RGR": 0.0003957993243687076
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.25-09-25.JPG",
+          "image_total_area": 96903,
+          "image_total_length": 14749,
+          "image_new_area": 59830,
+          "image_new_parts": 78,
+          "image_area_change": 55.088072105250404,
+          "plant_id": 5,
+          "plant_center_x": 2144,
+          "plant_center_y": 312,
+          "plant_green_area": 11994,
+          "plant_root_count": 20,
+          "plant_total_length": 2513,
+          "plant_total_length_RGR": 0.0005928808414691383,
+          "plant_main_root_depth": 2051,
+          "plant_main_root_length": 1901,
+          "plant_main_root_length_RGR": 0.0004756910031841336
+        },
+        {
+          "image_date": "2025-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.25-09-25.JPG",
+          "image_total_area": 96903,
+          "image_total_length": 14749,
+          "image_new_area": 59830,
+          "image_new_parts": 78,
+          "image_area_change": 55.088072105250404,
+          "plant_id": 6,
+          "plant_center_x": 2518,
+          "plant_center_y": 308,
+          "plant_green_area": 15035,
+          "plant_root_count": 25,
+          "plant_total_length": 2586,
+          "plant_total_length_RGR": 0.000769166105356504,
+          "plant_main_root_depth": 1997,
+          "plant_main_root_length": 1729,
+          "plant_main_root_length_RGR": 0.00037649941659395934
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.26-09-25.JPG",
+          "image_total_area": 126365,
+          "image_total_length": 18673,
+          "image_new_area": 49986,
+          "image_new_parts": 69,
+          "image_area_change": 21.179942829427365,
+          "plant_id": 1,
+          "plant_center_x": 484,
+          "plant_center_y": 253,
+          "plant_green_area": 25064,
+          "plant_root_count": 39,
+          "plant_total_length": 2895,
+          "plant_total_length_RGR": 0.0006929977506671606,
+          "plant_main_root_depth": 2201,
+          "plant_main_root_length": 1964,
+          "plant_main_root_length_RGR": 0.00022523014662771592
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.26-09-25.JPG",
+          "image_total_area": 126365,
+          "image_total_length": 18673,
+          "image_new_area": 49986,
+          "image_new_parts": 69,
+          "image_area_change": 21.179942829427365,
+          "plant_id": 2,
+          "plant_center_x": 925,
+          "plant_center_y": 202,
+          "plant_green_area": 19772,
+          "plant_root_count": 35,
+          "plant_total_length": 2847,
+          "plant_total_length_RGR": 0.00057146706028399,
+          "plant_main_root_depth": 2255,
+          "plant_main_root_length": 1936,
+          "plant_main_root_length_RGR": 0.00013338866772597989
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.26-09-25.JPG",
+          "image_total_area": 126365,
+          "image_total_length": 18673,
+          "image_new_area": 49986,
+          "image_new_parts": 69,
+          "image_area_change": 21.179942829427365,
+          "plant_id": 3,
+          "plant_center_x": 1326,
+          "plant_center_y": 267,
+          "plant_green_area": 24862,
+          "plant_root_count": 35,
+          "plant_total_length": 3028,
+          "plant_total_length_RGR": 0.0007498348348949422,
+          "plant_main_root_depth": 2057,
+          "plant_main_root_length": 1858,
+          "plant_main_root_length_RGR": 1.1821921373734982e-05
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.26-09-25.JPG",
+          "image_total_area": 126365,
+          "image_total_length": 18673,
+          "image_new_area": 49986,
+          "image_new_parts": 69,
+          "image_area_change": 21.179942829427365,
+          "plant_id": 4,
+          "plant_center_x": 1765,
+          "plant_center_y": 320,
+          "plant_green_area": 21564,
+          "plant_root_count": 35,
+          "plant_total_length": 2905,
+          "plant_total_length_RGR": 0.0007715589622413851,
+          "plant_main_root_depth": 2136,
+          "plant_main_root_length": 1883,
+          "plant_main_root_length_RGR": 0.00020538690006327774
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.26-09-25.JPG",
+          "image_total_area": 126365,
+          "image_total_length": 18673,
+          "image_new_area": 49986,
+          "image_new_parts": 69,
+          "image_area_change": 21.179942829427365,
+          "plant_id": 5,
+          "plant_center_x": 2144,
+          "plant_center_y": 312,
+          "plant_green_area": 23813,
+          "plant_root_count": 30,
+          "plant_total_length": 2877,
+          "plant_total_length_RGR": 0.00037060500276152216,
+          "plant_main_root_depth": 2145,
+          "plant_main_root_length": 1911,
+          "plant_main_root_length_RGR": 1.4374251374916267e-05
+        },
+        {
+          "image_date": "2026-09-25T00:00:00",
+          "image_barcode": "RT_25_10-10",
+          "image_barcode_read": "",
+          "image_path": "data_in_vitro\\RT_25_10-10.26-09-25.JPG",
+          "image_total_area": 126365,
+          "image_total_length": 18673,
+          "image_new_area": 49986,
+          "image_new_parts": 69,
+          "image_area_change": 21.179942829427365,
+          "plant_id": 6,
+          "plant_center_x": 2518,
+          "plant_center_y": 308,
+          "plant_green_area": 19698,
+          "plant_root_count": 34,
+          "plant_total_length": 3120,
+          "plant_total_length_RGR": 0.0005143033464978783,
+          "plant_main_root_depth": 2148,
+          "plant_main_root_length": 1925,
+          "plant_main_root_length_RGR": 0.00029419934531121466
+        }
+      ]
+    },
+    "line_times": {}
+  }
+]

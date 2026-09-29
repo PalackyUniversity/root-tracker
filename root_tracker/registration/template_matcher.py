@@ -227,7 +227,8 @@ class ImageRegistrator:
             return result
 
         aligned_image = crop_with_border(target_image)
-        aligned_canny = target_canny_padded[top:top + h, left:left + w]
+        # A view would retain the entire padded search image for every frame.
+        aligned_canny = target_canny_padded[top:top + h, left:left + w].copy()
         aligned_process = crop_with_border(target_process)
         
         # Calculate position offsets for updating coordinates

@@ -168,11 +168,16 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
             width = np.asarray(u.get('width_profile', np.full(len(xy), 2.))).reshape(-1)
             if len(width) != len(xy):
                 width = np.full(len(xy), np.median(width) if len(width) else 2.)
-            points.extend(xy)
-            indices.extend([u['contour_index']] * len(xy))
+            points.append(xy)
+            indices.append(np.full(len(xy), u['contour_index']))
             # One diagonal raster step also accommodates skeleton tie-breaking.
-            radii.extend(np.maximum(np.sqrt(2), width / 2))
+            radii.append(np.maximum(np.sqrt(2), width / 2))
         if points:
+            # Keep the same coordinate order (including KD-tree tie order),
+            # without rebuilding a Python list of pixel rows on every query.
+            points = np.concatenate(points)
+            indices = np.concatenate(indices)
+            radii = np.concatenate(radii)
             tree = cKDTree(points)
             history = np.asarray(list(previous), dtype=float)
             shift = np.zeros(2)
@@ -185,14 +190,14 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
                 while tuple(shift) not in seen:
                     seen.add(tuple(shift))
                     _, nearest = tree.query(anchors + shift)
-                    update = np.rint(np.median(np.asarray(points)[nearest] - anchors, axis=0))
+                    update = np.rint(np.median(points[nearest] - anchors, axis=0))
                     if np.array_equal(update, shift):
                         break
                     shift = update
             distance, nearest = tree.query(history)
             if np.any(shift):
                 shifted_distance, shifted_nearest = tree.query(history + shift)
-                radius = np.asarray(radii)
+                radius = radii
                 direct_support = np.count_nonzero(distance <= radius[nearest])
                 shifted_support = np.count_nonzero(shifted_distance <= radius[shifted_nearest])
                 # Missing lateral anchors must not drag an observed main away.
@@ -200,7 +205,7 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
                 if shifted_support > direct_support:
                     distance, nearest = shifted_distance, shifted_nearest
                     applied_shift = shift
-            matched = np.asarray(indices)[nearest[distance <= np.asarray(radii)[nearest]]]
+            matched = indices[nearest[distance <= radii[nearest]]]
             ids, counts = np.unique(matched, return_counts=True)
             support = dict(zip(ids, counts))
 
@@ -297,20 +302,32 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
     # over a whole main that moved sideways. Compare each supported candidate
     # against the entire historical route, not just its close coincidences.
     route_distances = {}
-    if previous:
-        reference = np.asarray(list(previous), dtype=float)
-        for index, pieces in geometries.items():
-            if not pieces:
-                continue
+    reference = np.asarray(list(previous), dtype=float) if previous else None
+    shifted_reference = reference + applied_shift if previous and np.any(applied_shift) else None
+
+    def distances_for(index):
+        if index not in route_distances:
+            pieces = geometries[index]
             tree = cKDTree(np.concatenate([piece[:, 0] for piece in pieces]))
-            route_distances[index] = np.minimum(tree.query(reference)[0],
-                                                tree.query(reference + applied_shift)[0])
+            distances = tree.query(reference)[0]
+            if shifted_reference is not None:
+                np.minimum(distances, tree.query(shifted_reference)[0], out=distances)
+            route_distances[index] = distances
+        return route_distances[index]
 
     def route_quality(path, supported):
-        if route_distances and supported:
-            distances = [route_distances[index] for index in path if index in route_distances]
-            if distances:
-                return 1, -float(np.minimum.reduce(distances).mean())
+        if previous and supported:
+            minimum = None
+            for index in path:
+                if not geometries.get(index):
+                    continue
+                distances = distances_for(index)
+                if minimum is None:
+                    minimum = distances.copy()
+                else:
+                    np.minimum(minimum, distances, out=minimum)
+            if minimum is not None:
+                return 1, -float(minimum.mean())
         return 0, 0.
 
     memo = {}
@@ -330,11 +347,17 @@ def select_main_geometry(upper, colored, pairs, plant, previous, lowers=(), prev
         candidates.extend(p for p in incoming.get(u.get('junction_id'), [])
                           if p != point and p[1] <= point[1] and p != parent)
         own_support = support.get(u['contour_index'], 0)
-        chosen, (score, path) = max(
-            ((p, trace(p, visiting | {point})) for p in candidates),
-            key=lambda item: (*route_quality([u['contour_index']] + item[1][1],
-                                             own_support + item[1][0]),
-                              physical_parent(u, item[0])))
+        if len(candidates) == 1:
+            # A single parent needs no ranking. Most graph edges are chains;
+            # avoid history-distance arrays that cannot affect their choice.
+            chosen = candidates[0]
+            score, path = trace(chosen, visiting | {point})
+        else:
+            chosen, (score, path) = max(
+                ((p, trace(p, visiting | {point})) for p in candidates),
+                key=lambda item: (*route_quality([u['contour_index']] + item[1][1],
+                                                 own_support + item[1][0]),
+                                  physical_parent(u, item[0])))
         # New distal growth can continue an established main. An unsupported
         # basal gap parent cannot extend it backwards into a newly detected
         # leaf edge or another root; physical connections remain admissible.

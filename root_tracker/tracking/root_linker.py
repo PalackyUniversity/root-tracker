@@ -219,8 +219,7 @@ class RootLinker:
                     
                     # Compute intersection
                     # We can assume small overlap is sufficient
-                    intersection_size = len(current_pixels.intersection(prev_pixels))
-                    if intersection_size > 0:
+                    if not current_pixels.isdisjoint(prev_pixels):
                         forced_plant_id = plant_id
                         break
             

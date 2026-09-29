@@ -1,0 +1,682 @@
+[
+  {
+    "file": "root_tracker\\pipeline.py",
+    "line": 331,
+    "function": "track_and_analyze_series",
+    "calls": 4,
+    "self_seconds": 2.9304895,
+    "inclusive_seconds": 84.3542154
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 150,
+    "function": "select_main_geometry",
+    "calls": 84,
+    "self_seconds": 15.0643445,
+    "inclusive_seconds": 25.6424948
+  },
+  {
+    "file": "root_tracker\\tracking\\root_linker.py",
+    "line": 126,
+    "function": "link_corners",
+    "calls": 14,
+    "self_seconds": 1.4735082000000002,
+    "inclusive_seconds": 22.3569466
+  },
+  {
+    "file": "root_tracker\\tracking\\junction_router.py",
+    "line": 14,
+    "function": "route_junctions",
+    "calls": 14,
+    "self_seconds": 0.1599182,
+    "inclusive_seconds": 16.3056886
+  },
+  {
+    "file": "root_tracker\\pipeline.py",
+    "line": 291,
+    "function": "preprocess_series",
+    "calls": 4,
+    "self_seconds": 0.0001252,
+    "inclusive_seconds": 15.5231279
+  },
+  {
+    "file": "root_tracker\\pipeline.py",
+    "line": 206,
+    "function": "preprocess_image",
+    "calls": 14,
+    "self_seconds": 0.0903559,
+    "inclusive_seconds": 13.921118300000002
+  },
+  {
+    "file": "root_tracker\\tracking\\junction_router.py",
+    "line": 247,
+    "function": "process_task",
+    "calls": 14850,
+    "self_seconds": 0.35543410000000003,
+    "inclusive_seconds": 13.025471300000001
+  },
+  {
+    "file": "root_tracker\\tracking\\junction_router.py",
+    "line": 162,
+    "function": "publish",
+    "calls": 2998,
+    "self_seconds": 1.8621373,
+    "inclusive_seconds": 9.537628100000001
+  },
+  {
+    "file": "root_tracker\\tracking\\junction_router.py",
+    "line": 150,
+    "function": "evidence",
+    "calls": 8606,
+    "self_seconds": 0.060952700000000005,
+    "inclusive_seconds": 9.1935386
+  },
+  {
+    "file": "root_tracker\\tracking\\junction_router.py",
+    "line": 78,
+    "function": "temporal_support",
+    "calls": 2962,
+    "self_seconds": 4.6171482,
+    "inclusive_seconds": 9.1325859
+  },
+  {
+    "file": "root_tracker\\preprocessing\\background.py",
+    "line": 33,
+    "function": "remove_gradient",
+    "calls": 14,
+    "self_seconds": 0.07543090000000001,
+    "inclusive_seconds": 8.8398568
+  },
+  {
+    "file": "root_tracker\\preprocessing\\background.py",
+    "line": 62,
+    "function": "_median_background",
+    "calls": 14,
+    "self_seconds": 0.0007411000000000001,
+    "inclusive_seconds": 6.7503956
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 90,
+    "function": "_main_portions",
+    "calls": 3146,
+    "self_seconds": 3.4553407000000003,
+    "inclusive_seconds": 5.6922682
+  },
+  {
+    "file": "root_tracker\\pipeline.py",
+    "line": 322,
+    "function": "register_series",
+    "calls": 4,
+    "self_seconds": 7.110000000000001e-05,
+    "inclusive_seconds": 4.924598700000001
+  },
+  {
+    "file": "root_tracker\\registration\\template_matcher.py",
+    "line": 239,
+    "function": "register_series",
+    "calls": 4,
+    "self_seconds": 0.047475,
+    "inclusive_seconds": 4.9245165
+  },
+  {
+    "file": "root_tracker\\io\\series_cache.py",
+    "line": 61,
+    "function": "save_series",
+    "calls": 8,
+    "self_seconds": 0.0029762,
+    "inclusive_seconds": 4.9052201
+  },
+  {
+    "file": "root_tracker\\registration\\template_matcher.py",
+    "line": 180,
+    "function": "align_to_template",
+    "calls": 10,
+    "self_seconds": 0.0007993000000000001,
+    "inclusive_seconds": 4.8337724
+  },
+  {
+    "file": "root_tracker\\registration\\template_matcher.py",
+    "line": 127,
+    "function": "_match_location",
+    "calls": 10,
+    "self_seconds": 0.051171100000000004,
+    "inclusive_seconds": 4.6287161
+  },
+  {
+    "file": "root_tracker\\registration\\template_matcher.py",
+    "line": 31,
+    "function": "_coarse_match_location",
+    "calls": 10,
+    "self_seconds": 1.6378561,
+    "inclusive_seconds": 4.577545000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\junction_router.py",
+    "line": 155,
+    "function": "downstream_owner",
+    "calls": 2102,
+    "self_seconds": 0.019055600000000002,
+    "inclusive_seconds": 4.543923400000001
+  },
+  {
+    "file": "root_tracker\\tracking\\junction_router.py",
+    "line": 159,
+    "function": "<genexpr>",
+    "calls": 2900,
+    "self_seconds": 0.0076972,
+    "inclusive_seconds": 4.5066167
+  },
+  {
+    "file": "root_tracker\\tracking\\temporal_fragments.py",
+    "line": 6,
+    "function": "contour_path",
+    "calls": 15418,
+    "self_seconds": 1.4493077,
+    "inclusive_seconds": 4.2025541
+  },
+  {
+    "file": "root_tracker\\tracking\\corner_detector.py",
+    "line": 132,
+    "function": "analyze_contour_corners",
+    "calls": 3230,
+    "self_seconds": 0.1059713,
+    "inclusive_seconds": 4.0234226
+  },
+  {
+    "file": "root_tracker\\preprocessing\\cropper.py",
+    "line": 188,
+    "function": "process",
+    "calls": 14,
+    "self_seconds": 0.00019380000000000002,
+    "inclusive_seconds": 3.5733885
+  },
+  {
+    "file": "root_tracker\\tracking\\skeletonizer.py",
+    "line": 45,
+    "function": "skeletonize_mask",
+    "calls": 14,
+    "self_seconds": 0.6340904,
+    "inclusive_seconds": 2.975822
+  },
+  {
+    "file": "root_tracker\\preprocessing\\cropper.py",
+    "line": 57,
+    "function": "auto_crop_to_blue_background",
+    "calls": 14,
+    "self_seconds": 0.0748319,
+    "inclusive_seconds": 2.6239113
+  },
+  {
+    "file": "root_tracker\\preprocessing\\cropper.py",
+    "line": 77,
+    "function": "blue_bounds",
+    "calls": 14,
+    "self_seconds": 0.039283000000000005,
+    "inclusive_seconds": 2.5214158
+  },
+  {
+    "file": "root_tracker\\tracking\\temporal_debris.py",
+    "line": 8,
+    "function": "filter_static_islands",
+    "calls": 4,
+    "self_seconds": 0.964319,
+    "inclusive_seconds": 2.5035502000000003
+  },
+  {
+    "file": "root_tracker\\tracking\\root_linker.py",
+    "line": 53,
+    "function": "compute_link_cost",
+    "calls": 105576,
+    "self_seconds": 1.8203826,
+    "inclusive_seconds": 2.2078513
+  },
+  {
+    "file": "root_tracker\\tracking\\corner_detector.py",
+    "line": 36,
+    "function": "find_contour_endpoints",
+    "calls": 3230,
+    "self_seconds": 2.1673486,
+    "inclusive_seconds": 2.1806114
+  },
+  {
+    "file": "root_tracker\\tracking\\temporal_fragments.py",
+    "line": 14,
+    "function": "preserve_historical_fragments",
+    "calls": 10,
+    "self_seconds": 1.5331817,
+    "inclusive_seconds": 2.1694909
+  },
+  {
+    "file": "root_tracker\\preprocessing\\colors.py",
+    "line": 6,
+    "function": "color_mask",
+    "calls": 28,
+    "self_seconds": 0.0006196,
+    "inclusive_seconds": 2.1118933
+  },
+  {
+    "file": "root_tracker\\preprocessing\\cropper.py",
+    "line": 72,
+    "function": "blue_mask",
+    "calls": 14,
+    "self_seconds": 0.16696850000000002,
+    "inclusive_seconds": 1.9914659000000001
+  },
+  {
+    "file": "root_tracker\\__init__.py",
+    "line": 1,
+    "function": "<module>",
+    "calls": 1,
+    "self_seconds": 8.8e-06,
+    "inclusive_seconds": 1.9431041000000002
+  },
+  {
+    "file": "root_tracker\\pipeline.py",
+    "line": 1,
+    "function": "<module>",
+    "calls": 1,
+    "self_seconds": 4.7600000000000005e-05,
+    "inclusive_seconds": 1.9214573000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\skeletonizer.py",
+    "line": 75,
+    "function": "_thin_component",
+    "calls": 424,
+    "self_seconds": 0.004833400000000001,
+    "inclusive_seconds": 1.6940222
+  },
+  {
+    "file": "root_tracker\\preprocessing\\green_detector.py",
+    "line": 77,
+    "function": "cluster_plant_positions",
+    "calls": 14,
+    "self_seconds": 0.010340100000000001,
+    "inclusive_seconds": 1.6866709000000002
+  },
+  {
+    "file": "root_tracker\\tracking\\gap_evidence.py",
+    "line": 14,
+    "function": "__init__",
+    "calls": 28,
+    "self_seconds": 0.5112150000000001,
+    "inclusive_seconds": 1.6716154
+  },
+  {
+    "file": ".venv\\Lib\\site-packages\\skimage\\morphology\\_skeletonize.py",
+    "line": 18,
+    "function": "skeletonize",
+    "calls": 424,
+    "self_seconds": 0.0025183000000000002,
+    "inclusive_seconds": 1.6422863
+  },
+  {
+    "file": ".venv\\Lib\\site-packages\\skimage\\morphology\\_skeletonize.py",
+    "line": 99,
+    "function": "_skeletonize_zhang",
+    "calls": 424,
+    "self_seconds": 1.6387432000000002,
+    "inclusive_seconds": 1.6387432000000002
+  },
+  {
+    "file": "root_tracker\\tracking\\thresholder.py",
+    "line": 155,
+    "function": "filter_small_contours",
+    "calls": 14,
+    "self_seconds": 0.2859049,
+    "inclusive_seconds": 1.5593578000000001
+  },
+  {
+    "file": "root_tracker\\preprocessing\\__init__.py",
+    "line": 1,
+    "function": "<module>",
+    "calls": 1,
+    "self_seconds": 1.06e-05,
+    "inclusive_seconds": 1.4327937000000002
+  },
+  {
+    "file": "root_tracker\\preprocessing\\green_detector.py",
+    "line": 1,
+    "function": "<module>",
+    "calls": 1,
+    "self_seconds": 1.27e-05,
+    "inclusive_seconds": 1.4298349000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\skeletonizer.py",
+    "line": 94,
+    "function": "find_endpoints",
+    "calls": 14,
+    "self_seconds": 1.0415068,
+    "inclusive_seconds": 1.2821197
+  },
+  {
+    "file": "root_tracker\\preprocessing\\roi.py",
+    "line": 74,
+    "function": "extract",
+    "calls": 28,
+    "self_seconds": 0.004528900000000001,
+    "inclusive_seconds": 1.1949696
+  },
+  {
+    "file": "root_tracker\\io\\exporter.py",
+    "line": 37,
+    "function": "save_image",
+    "calls": 14,
+    "self_seconds": 0.0001589,
+    "inclusive_seconds": 1.1061168000000001
+  },
+  {
+    "file": "root_tracker\\preprocessing\\green_detector.py",
+    "line": 48,
+    "function": "find_green_contours",
+    "calls": 14,
+    "self_seconds": 0.0029243000000000003,
+    "inclusive_seconds": 1.0597764
+  },
+  {
+    "file": "root_tracker\\preprocessing\\cropper.py",
+    "line": 108,
+    "function": "search_image",
+    "calls": 14,
+    "self_seconds": 0.0001989,
+    "inclusive_seconds": 0.9764723000000001
+  },
+  {
+    "file": "root_tracker\\preprocessing\\cropper.py",
+    "line": 37,
+    "function": "rotate",
+    "calls": 14,
+    "self_seconds": 0.00012140000000000001,
+    "inclusive_seconds": 0.9733759000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\corner_detector.py",
+    "line": 64,
+    "function": "trace_from_endpoint",
+    "calls": 6316,
+    "self_seconds": 0.7479345000000001,
+    "inclusive_seconds": 0.9663238000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 20,
+    "function": "_connect_main_fragments",
+    "calls": 84,
+    "self_seconds": 0.08746820000000001,
+    "inclusive_seconds": 0.8844554
+  },
+  {
+    "file": "root_tracker\\tracking\\skeletonizer.py",
+    "line": 115,
+    "function": "find_intersections",
+    "calls": 14,
+    "self_seconds": 0.46844480000000005,
+    "inclusive_seconds": 0.8433992
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 103,
+    "function": "sustained",
+    "calls": 5616,
+    "self_seconds": 0.2231526,
+    "inclusive_seconds": 0.8086213000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\contact_evidence.py",
+    "line": 303,
+    "function": "remember",
+    "calls": 2560,
+    "self_seconds": 0.06537470000000001,
+    "inclusive_seconds": 0.7898225000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\corner_detector.py",
+    "line": 104,
+    "function": "compute_angle",
+    "calls": 6316,
+    "self_seconds": 0.12218630000000001,
+    "inclusive_seconds": 0.7672927
+  },
+  {
+    "file": "root_tracker\\tracking\\thresholder.py",
+    "line": 175,
+    "function": "established",
+    "calls": 610,
+    "self_seconds": 0.34316240000000003,
+    "inclusive_seconds": 0.7458197000000001
+  },
+  {
+    "file": "root_tracker\\preprocessing\\green_detector.py",
+    "line": 29,
+    "function": "detect_green_mask",
+    "calls": 14,
+    "self_seconds": 0.07193240000000001,
+    "inclusive_seconds": 0.7312275
+  },
+  {
+    "file": "root_tracker\\tracking\\thresholder.py",
+    "line": 28,
+    "function": "threshold",
+    "calls": 14,
+    "self_seconds": 0.045993900000000004,
+    "inclusive_seconds": 0.7273240000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\skeletonizer.py",
+    "line": 140,
+    "function": "split_at_intersections",
+    "calls": 14,
+    "self_seconds": 0.1953109,
+    "inclusive_seconds": 0.6794233000000001
+  },
+  {
+    "file": "root_tracker\\preprocessing\\background.py",
+    "line": 77,
+    "function": "filter_strip",
+    "calls": 56,
+    "self_seconds": 0.1213385,
+    "inclusive_seconds": 0.5609623
+  },
+  {
+    "file": "root_tracker\\io\\loader.py",
+    "line": 90,
+    "function": "create_series",
+    "calls": 4,
+    "self_seconds": 0.0118443,
+    "inclusive_seconds": 0.5067239
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 318,
+    "function": "trace",
+    "calls": 2958,
+    "self_seconds": 0.0344779,
+    "inclusive_seconds": 0.4357207
+  },
+  {
+    "file": "root_tracker\\io\\loader.py",
+    "line": 33,
+    "function": "parse_filename",
+    "calls": 1336,
+    "self_seconds": 0.014290200000000001,
+    "inclusive_seconds": 0.3557986
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 335,
+    "function": "<lambda>",
+    "calls": 2150,
+    "self_seconds": 0.024043400000000003,
+    "inclusive_seconds": 0.3525687
+  },
+  {
+    "file": "root_tracker\\tracking\\root_linker.py",
+    "line": 44,
+    "function": "compute_distance",
+    "calls": 111320,
+    "self_seconds": 0.2540253,
+    "inclusive_seconds": 0.3486592
+  },
+  {
+    "file": "root_tracker\\tracking\\thresholder.py",
+    "line": 202,
+    "function": "compute_new_growth",
+    "calls": 10,
+    "self_seconds": 0.0125433,
+    "inclusive_seconds": 0.3344191
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 309,
+    "function": "route_quality",
+    "calls": 2150,
+    "self_seconds": 0.027857100000000003,
+    "inclusive_seconds": 0.3196899
+  },
+  {
+    "file": "root_tracker\\tracking\\contact_evidence.py",
+    "line": 349,
+    "function": "supported",
+    "calls": 36,
+    "self_seconds": 0.0016914,
+    "inclusive_seconds": 0.296258
+  },
+  {
+    "file": "root_tracker\\preprocessing\\background.py",
+    "line": 87,
+    "function": "compute_canny_edges",
+    "calls": 14,
+    "self_seconds": 0.00017820000000000002,
+    "inclusive_seconds": 0.2939488
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 334,
+    "function": "<genexpr>",
+    "calls": 4204,
+    "self_seconds": 0.017172700000000003,
+    "inclusive_seconds": 0.28664700000000004
+  },
+  {
+    "file": "root_tracker\\tracking\\contact_evidence.py",
+    "line": 116,
+    "function": "independent_exits",
+    "calls": 36,
+    "self_seconds": 0.0035076,
+    "inclusive_seconds": 0.25193350000000003
+  },
+  {
+    "file": "root_tracker\\tracking\\terminal_orientation.py",
+    "line": 6,
+    "function": "orient_terminals",
+    "calls": 14,
+    "self_seconds": 0.1651699,
+    "inclusive_seconds": 0.2502506
+  },
+  {
+    "file": "root_tracker\\tracking\\gap_evidence.py",
+    "line": 51,
+    "function": "allows",
+    "calls": 111138,
+    "self_seconds": 0.165938,
+    "inclusive_seconds": 0.24140570000000003
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 30,
+    "function": "ancestry",
+    "calls": 4006,
+    "self_seconds": 0.0755586,
+    "inclusive_seconds": 0.21522300000000003
+  },
+  {
+    "file": "root_tracker\\registration\\template_matcher.py",
+    "line": 54,
+    "function": "reduce",
+    "calls": 20,
+    "self_seconds": 0.0059258,
+    "inclusive_seconds": 0.2146209
+  },
+  {
+    "file": "root_tracker\\tracking\\skeletonizer.py",
+    "line": 174,
+    "function": "mask_above_plants",
+    "calls": 14,
+    "self_seconds": 0.013798900000000001,
+    "inclusive_seconds": 0.2127097
+  },
+  {
+    "file": "root_tracker\\preprocessing\\green_detector.py",
+    "line": 145,
+    "function": "mask_green_in_image",
+    "calls": 14,
+    "self_seconds": 0.0002486,
+    "inclusive_seconds": 0.2094136
+  },
+  {
+    "file": "root_tracker\\tracking\\junction_router.py",
+    "line": 63,
+    "function": "<lambda>",
+    "calls": 88,
+    "self_seconds": 0.0001632,
+    "inclusive_seconds": 0.1985676
+  },
+  {
+    "file": "root_tracker\\tracking\\main_root.py",
+    "line": 27,
+    "function": "parent",
+    "calls": 51790,
+    "self_seconds": 0.08693640000000001,
+    "inclusive_seconds": 0.163672
+  },
+  {
+    "file": "root_tracker\\tracking\\contact_evidence.py",
+    "line": 179,
+    "function": "width_support",
+    "calls": 74,
+    "self_seconds": 0.0181053,
+    "inclusive_seconds": 0.13237770000000001
+  },
+  {
+    "file": "root_tracker\\registration\\template_matcher.py",
+    "line": 218,
+    "function": "crop_with_border",
+    "calls": 20,
+    "self_seconds": 0.12200390000000001,
+    "inclusive_seconds": 0.122757
+  },
+  {
+    "file": "root_tracker\\tracking\\temporal_fragments.py",
+    "line": 42,
+    "function": "<genexpr>",
+    "calls": 166852,
+    "self_seconds": 0.1212574,
+    "inclusive_seconds": 0.1212574
+  },
+  {
+    "file": "root_tracker\\tracking\\shared_rendering.py",
+    "line": 8,
+    "function": "draw_shared_segments",
+    "calls": 52,
+    "self_seconds": 0.021661100000000003,
+    "inclusive_seconds": 0.11436990000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\shared_rendering.py",
+    "line": 57,
+    "function": "_draw_role_fragments",
+    "calls": 14,
+    "self_seconds": 0.0090992,
+    "inclusive_seconds": 0.11427570000000001
+  },
+  {
+    "file": "root_tracker\\tracking\\skeletonizer.py",
+    "line": 203,
+    "function": "get_total_length",
+    "calls": 14,
+    "self_seconds": 0.0002723,
+    "inclusive_seconds": 0.10348750000000001
+  }
+]

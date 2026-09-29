@@ -21,6 +21,7 @@ from .registration import ImageRegistrator
 from .tracking import RootThresholder, RootSkeletonizer, CornerDetector, RootLinker
 from .analysis import StatisticsCalculator
 from .io import ImageLoader, ResultExporter, BarcodeReader, series_cache
+from .resources import batch_worker_count, batch_thread_count, initialize_batch_worker
 
 
 # Suppress numpy divide warnings (from original code)
@@ -438,6 +439,7 @@ class RootTrackingPipeline:
             # Threshold to get root mask. Margins are already cropped out during
             # preprocessing, so there is no edge border left to clear here.
             thresh = root_masks[idx]
+            root_masks[idx] = None  # Temporal classification is already complete.
             unmasked_thresh = thresh
 
             # Apply user mask if present (series-level mask)
@@ -554,6 +556,12 @@ class RootTrackingPipeline:
                     
                     if lower_info['point'] not in endpoints:
                         lower_corners.append(lower_info)
+
+            # These full-frame workspaces are no longer used. Release them
+            # before graph routing and before allocating the next frame's maps.
+            del (component_labels, component_stats, junction_labels, root_width,
+                 removed_skeleton, short_mask, skeleton, skeleton_split,
+                 intersections, thresh_filtered, thresh, unmasked_thresh, contours)
             
             # Link segments and assign to plants
             pairs, colored, colored_samples = self.linker.link_corners(
@@ -580,6 +588,7 @@ class RootTrackingPipeline:
             for upper, lower in pairs:
                 cv2.line(link_mask, upper, lower, 255, 1)
             ly, lx = np.nonzero(link_mask)
+            del link_mask
             image_data.root_link_background = np.column_stack(
                 (ly, lx, annotated[ly, lx])
             ).astype(np.int32)
@@ -597,6 +606,11 @@ class RootTrackingPipeline:
             current_main_samples = {}
             main_pixels = []
             from .tracking.junction_router import plant_ids
+            # Counting and rasterizing need bytes, not float32 skeleton arrays.
+            # Reuse these masks for each plant instead of allocating twice per
+            # plant, scanning the same large empty background repeatedly.
+            mask_to_count = np.zeros(annotated.shape[:2], dtype=np.uint8)
+            mask_longest = np.zeros_like(mask_to_count)
             
             for k in range(self.config.n_clusters):
                 # Find roots for this plant
@@ -608,7 +622,7 @@ class RootTrackingPipeline:
                 ]
                 
                 # Calculate plant total length
-                mask_to_count = np.zeros_like(skeleton_split)
+                mask_to_count.fill(0)
                 cv2.drawContours(mask_to_count, plant_contours, -1, 255, cv2.FILLED)
                 plant_length = cv2.countNonZero(mask_to_count)
                 image_data.plant_length.append(plant_length)
@@ -628,7 +642,7 @@ class RootTrackingPipeline:
                 cv2.line(depth_mask, (top[0] + 100, top[1]), (top[0] + 100, bottom[1]), 255, 3)
                 cv2.line(depth_mask, (top[0] + 100, bottom[1]), bottom, 255, 1)
 
-                mask_longest = np.zeros_like(skeleton_split)
+                mask_longest.fill(0)
                 conts = [contour for pieces in main_geometry.values() for contour in pieces]
                 for i in main_geometry:
                     main_segments.setdefault(i, set()).add(k)
@@ -709,6 +723,8 @@ class RootTrackingPipeline:
                 )
                 
                 statistics.append(stats)
+
+            del mask_to_count, mask_longest
             
             # Shared segments are painted last so neither plant overwrites
             # the other's half, including on highlighted main-root paths.
@@ -724,6 +740,7 @@ class RootTrackingPipeline:
                 (ys, xs, annotated[ys, xs])
             ).astype(np.int32)
             annotated[ys, xs] = 255
+            del depth_mask
             # Store annotated image (exports retain the depth markers).
             image_data.image_annotated = annotated
 
@@ -869,8 +886,8 @@ class RootTrackingPipeline:
         
         if parallel:
             freeze_support()
-            if max_workers is None:
-                max_workers = os.cpu_count()
+            max_workers = batch_worker_count(series_list, max_workers)
+            self._batch_cv_threads = batch_thread_count(max_workers)
             
             # Process in parallel
             all_stats = process_map(
@@ -892,6 +909,8 @@ class RootTrackingPipeline:
     
     def _process_series_for_parallel(self, series: ImageSeries) -> list[PlantStatistics]:
         """Process series for parallel execution (creates new pipeline instance)."""
+        if current_process().name != 'MainProcess':
+            initialize_batch_worker(getattr(self, '_batch_cv_threads', 1))
         # Create a new pipeline instance for this process
         pipeline = RootTrackingPipeline(self.config)
         pipeline.rsml_output = self.rsml_output

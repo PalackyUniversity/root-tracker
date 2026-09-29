@@ -1,0 +1,250 @@
+[
+  {
+    "group": "RT_25_10-1",
+    "repeat": 0,
+    "timers": {
+      "_median_background": {
+        "calls": 4,
+        "seconds": 1.654130399809219
+      },
+      "remove_gradient": {
+        "calls": 4,
+        "seconds": 2.096037099719979
+      },
+      "compute_canny_edges": {
+        "calls": 4,
+        "seconds": 0.09382619999814779
+      },
+      "preprocess_series": {
+        "calls": 1,
+        "seconds": 3.9000874999910593
+      },
+      "_coarse_match_location": {
+        "calls": 3,
+        "seconds": 1.9140825998038054
+      },
+      "_match_location": {
+        "calls": 3,
+        "seconds": 1.91413609997835
+      },
+      "register_series": {
+        "calls": 1,
+        "seconds": 2.021789800026454
+      },
+      "threshold": {
+        "calls": 4,
+        "seconds": 0.30585360003169626
+      },
+      "filter_static_islands": {
+        "calls": 1,
+        "seconds": 0.6244382000295445
+      },
+      "filter_small_contours": {
+        "calls": 4,
+        "seconds": 0.36235069995746017
+      },
+      "skeletonize_mask": {
+        "calls": 4,
+        "seconds": 0.8988420000532642
+      },
+      "link_corners": {
+        "calls": 4,
+        "seconds": 4.693434900022112
+      },
+      "select_main_geometry": {
+        "calls": 24,
+        "seconds": 6.4133330000331625
+      },
+      "track_and_analyze_series": {
+        "calls": 1,
+        "seconds": 20.015611700015143
+      }
+    }
+  },
+  {
+    "group": "RT_25_10-10",
+    "repeat": 0,
+    "timers": {
+      "_median_background": {
+        "calls": 3,
+        "seconds": 1.1568346000276506
+      },
+      "remove_gradient": {
+        "calls": 3,
+        "seconds": 1.433705799980089
+      },
+      "compute_canny_edges": {
+        "calls": 3,
+        "seconds": 0.05663249990902841
+      },
+      "preprocess_series": {
+        "calls": 1,
+        "seconds": 3.165993799921125
+      },
+      "_coarse_match_location": {
+        "calls": 2,
+        "seconds": 0.9054416000144556
+      },
+      "_match_location": {
+        "calls": 2,
+        "seconds": 0.9054693999933079
+      },
+      "register_series": {
+        "calls": 1,
+        "seconds": 0.9720969999907538
+      },
+      "threshold": {
+        "calls": 3,
+        "seconds": 0.16305580001790076
+      },
+      "filter_static_islands": {
+        "calls": 1,
+        "seconds": 0.6233133000787348
+      },
+      "filter_small_contours": {
+        "calls": 3,
+        "seconds": 0.2813735001254827
+      },
+      "skeletonize_mask": {
+        "calls": 3,
+        "seconds": 0.6314563999185339
+      },
+      "link_corners": {
+        "calls": 3,
+        "seconds": 1.9752166999969631
+      },
+      "select_main_geometry": {
+        "calls": 18,
+        "seconds": 2.6456435997970402
+      },
+      "track_and_analyze_series": {
+        "calls": 1,
+        "seconds": 11.664193599950522
+      }
+    }
+  },
+  {
+    "group": "RT_25_10-1",
+    "repeat": 1,
+    "timers": {
+      "_median_background": {
+        "calls": 4,
+        "seconds": 2.2805001001106575
+      },
+      "remove_gradient": {
+        "calls": 4,
+        "seconds": 2.819991299882531
+      },
+      "compute_canny_edges": {
+        "calls": 4,
+        "seconds": 0.1198034998960793
+      },
+      "preprocess_series": {
+        "calls": 1,
+        "seconds": 5.554882600088604
+      },
+      "_coarse_match_location": {
+        "calls": 3,
+        "seconds": 1.6362060999963433
+      },
+      "_match_location": {
+        "calls": 3,
+        "seconds": 1.6362497998634353
+      },
+      "register_series": {
+        "calls": 1,
+        "seconds": 1.7399947000667453
+      },
+      "threshold": {
+        "calls": 4,
+        "seconds": 0.396064699976705
+      },
+      "filter_static_islands": {
+        "calls": 1,
+        "seconds": 0.5901952999411151
+      },
+      "filter_small_contours": {
+        "calls": 4,
+        "seconds": 0.47096339997369796
+      },
+      "skeletonize_mask": {
+        "calls": 4,
+        "seconds": 0.9684943000320345
+      },
+      "link_corners": {
+        "calls": 4,
+        "seconds": 7.517845000140369
+      },
+      "select_main_geometry": {
+        "calls": 24,
+        "seconds": 4.042311200173572
+      },
+      "track_and_analyze_series": {
+        "calls": 1,
+        "seconds": 20.43837570003234
+      }
+    }
+  },
+  {
+    "group": "RT_25_10-10",
+    "repeat": 1,
+    "timers": {
+      "_median_background": {
+        "calls": 3,
+        "seconds": 0.6488349998835474
+      },
+      "remove_gradient": {
+        "calls": 3,
+        "seconds": 0.8101399999577552
+      },
+      "compute_canny_edges": {
+        "calls": 3,
+        "seconds": 0.05284389993175864
+      },
+      "preprocess_series": {
+        "calls": 1,
+        "seconds": 2.1315362999448553
+      },
+      "_coarse_match_location": {
+        "calls": 2,
+        "seconds": 0.31217280006967485
+      },
+      "_match_location": {
+        "calls": 2,
+        "seconds": 0.31218949996400625
+      },
+      "register_series": {
+        "calls": 1,
+        "seconds": 0.339848899981007
+      },
+      "threshold": {
+        "calls": 3,
+        "seconds": 0.061959699960425496
+      },
+      "filter_static_islands": {
+        "calls": 1,
+        "seconds": 0.19102300005033612
+      },
+      "filter_small_contours": {
+        "calls": 3,
+        "seconds": 0.07555410009808838
+      },
+      "skeletonize_mask": {
+        "calls": 3,
+        "seconds": 0.15518000011797994
+      },
+      "link_corners": {
+        "calls": 3,
+        "seconds": 0.4290890000993386
+      },
+      "select_main_geometry": {
+        "calls": 18,
+        "seconds": 0.6674001000355929
+      },
+      "track_and_analyze_series": {
+        "calls": 1,
+        "seconds": 3.027881299960427
+      }
+    }
+  }
+]
