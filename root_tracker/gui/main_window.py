@@ -963,6 +963,7 @@ class MainWindow(QMainWindow):
         if step != WorkflowStep.TRACK:
             self._root_editor.present(None, step)
         editor_presented = self._roi_editor.present(image_data, step, preserve_view=preserve_view)
+        depth_pixels = None
         
         if step == WorkflowStep.LOAD:
             # Show original image with barcode overlay
@@ -1014,12 +1015,16 @@ class MainWindow(QMainWindow):
         else:
             # TRACK: prefer annotated image, fall back to preprocessed
             if image_data.rsml_document is not None:
-                from ..io.rsml_replacement import render_replacement
+                from ..io.rsml_replacement import render_replacement, replacement_depth_pixels
                 from ..io.root_mask import apply_root_mask
                 apply_root_mask(image_data, self._current_series.user_mask if self._current_series else None)
-                image = render_replacement(image_data, show_max_root_depth=self._config.gui.show_max_root_depth)
+                image = render_replacement(image_data, show_max_root_depth=False)
+                if self._config.gui.show_max_root_depth:
+                    depth_pixels = replacement_depth_pixels(image_data)
             elif image_data.image_annotated is not None:
-                image = image_data.tracking_preview(self._config.gui.show_max_root_depth)
+                image = image_data.tracking_preview(False)
+                if self._config.gui.show_max_root_depth:
+                    depth_pixels = image_data.root_depth_background
             elif image_data.image is not None:
                 image = image_data.image
             elif image_data.process is not None:
@@ -1035,8 +1040,15 @@ class MainWindow(QMainWindow):
             return
 
         if image is not None:
+            link_pixels = None
+            if step == WorkflowStep.TRACK:
+                origins = (self._current_series.plant_origins(self._config.n_clusters)
+                           if self._current_series is not None else None)
+                image, link_pixels = image_data.root_link_preview(image, origins)
             old_viewport = self._image_viewer._view.viewportTransform()
             self._image_viewer.set_image(image, preserve_view=preserve_view)
+            self._image_viewer.set_root_depth_pixels(depth_pixels)
+            self._image_viewer.set_root_link_pixels(link_pixels)
             frame = (self._roi_editor.result_frame(image_data)
                      if step == WorkflowStep.TRACK and any(result is not None for result in
                          (image_data.image, image_data.process, image_data.image_annotated))
@@ -2443,6 +2455,8 @@ class MainWindow(QMainWindow):
             img.diff = None
             img.image_annotated = None
             img.root_depth_background = None
+            if img.rsml_document is None:
+                img.root_link_background = None
             img.colored_samples = {}
             img.rsml_samples = None
             img.rsml_unmasked_samples = None

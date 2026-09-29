@@ -380,6 +380,8 @@ class RootTrackingPipeline:
         for image_data in series.images:
             image_data.rsml_samples = None
             image_data.root_depth_background = None
+            if image_data.rsml_document is None:
+                image_data.root_link_background = None
             if not has_mask and image_data.rsml_document is None:
                 image_data.main_root_samples = np.empty((0, 3), dtype=np.int32)
                 image_data.tracking_overlay = np.empty((0, 5), dtype=np.int32)
@@ -574,6 +576,13 @@ class RootTrackingPipeline:
                 image_data.rsml_unmasked_samples = image_data.rsml_samples
 
             # Draw links on image
+            link_mask = np.zeros(annotated.shape[:2], dtype=np.uint8)
+            for upper, lower in pairs:
+                cv2.line(link_mask, upper, lower, 255, 1)
+            ly, lx = np.nonzero(link_mask)
+            image_data.root_link_background = np.column_stack(
+                (ly, lx, annotated[ly, lx])
+            ).astype(np.int32)
             for upper, lower in pairs:
                 cv2.line(annotated, upper, lower, (255, 255, 255), 1)
             

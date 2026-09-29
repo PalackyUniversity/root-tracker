@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 CACHE_DIR_NAME = ".root_tracker_cache"
 
 # Image array fields to persist (per ImageData)
-_ARRAY_FIELDS = ("image", "process", "canny", "diff", "image_annotated", "root_depth_background", "main_root_samples", "tracking_overlay")
+_ARRAY_FIELDS = ("image", "process", "canny", "diff", "image_annotated", "root_depth_background", "root_link_background", "main_root_samples", "tracking_overlay")
 
 # Scalar fields to persist in metadata (per ImageData)
 _SCALAR_FIELDS = (
@@ -271,10 +271,14 @@ def load_series(series: ImageSeries, config: Config, *, require_identity: bool =
         for idx, img in enumerate(series.images):
             # Old caches do not contain separable depth markers.
             img.root_depth_background = None
+            if img.rsml_document is None:
+                img.root_link_background = None
             img.main_root_samples = None
             img.tracking_overlay = None
             # Arrays
             for field_name in _ARRAY_FIELDS:
+                if field_name == 'root_link_background' and img.rsml_document is not None:
+                    continue  # Frozen replacement underlays are authoritative.
                 key = f"{field_name}_{idx}"
                 if key in data:
                     setattr(img, field_name, data[key])

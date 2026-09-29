@@ -41,6 +41,7 @@ def replace_roots(image, document: RSMLDocument, *, manual=False, persist=True):
     if background is None:
         raise ValueError('Cannot load the image for this RSML replacement.')
     if manual and image.rsml_document is None and image.tracking_overlay is not None:
+        image.root_link_pixels()
         background = background.copy()
         pixels = image.tracking_overlay
         background[pixels[:, 0], pixels[:, 1]] = pixels[:, 2:]
@@ -54,6 +55,8 @@ def replace_roots(image, document: RSMLDocument, *, manual=False, persist=True):
     image.rsml_unmasked_document = document if manual else None
     image.rsml_root_sources = tuple(range(len(document.roots))) if manual else ()
     image.rsml_original_document = original if manual else None
+    if not manual:
+        image.root_link_background = None
     # Once frozen, the background can be shared by successive save snapshots.
     image.rsml_background = background if image.rsml_background is background else background.copy()
     image.image_annotated = None
@@ -77,7 +80,9 @@ def _save_replacement(image, document, background, manual, original):
         with tempfile.NamedTemporaryFile(dir=destination.parent, prefix='.replacement-', delete=False) as stream:
             temporary = Path(stream.name)
             np.savez(stream, rsml=np.frombuffer(document.source_bytes, dtype=np.uint8), background=png,
-                     manual=manual, original=np.frombuffer(original.source_bytes if original and manual else b'', dtype=np.uint8))
+                     manual=manual, original=np.frombuffer(original.source_bytes if original and manual else b'', dtype=np.uint8),
+                     root_link_background=(image.root_link_background if manual and image.root_link_background is not None
+                                           else np.empty((0, 5), dtype=np.int32)))
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, destination)
@@ -114,6 +119,7 @@ def load_replacement(image):
         ns = tree.tag.split('}')[0] + '}' if tree.tag.startswith('{') else ''
         manual = (bool(data['manual']) if 'manual' in data else
                   tree.findtext(f'{ns}metadata/{ns}software') == 'Root Tracker')
+        image.root_link_background = data['root_link_background'] if 'root_link_background' in data else None
     image.rsml_document = document
     image.rsml_unmasked_document = document if manual else None
     image.rsml_root_sources = tuple(range(len(document.roots))) if manual else ()
@@ -141,6 +147,29 @@ def root_colors(document):
         from ..tracking.root_linker import PLANT_COLORS
         return PLANT_COLORS
     return [(255, 80, 40), (40, 180, 40), (60, 60, 255), (200, 70, 200)]
+
+
+def replacement_depth_pixels(image):
+    """Return the native edited depth-marker mask in sparse y, x form."""
+    import xml.etree.ElementTree as ET
+    tree = ET.fromstring(image.rsml_document.source_bytes)
+    ns = tree.tag.split('}')[0] + '}' if tree.tag.startswith('{') else ''
+    elements = tree.find(ns + 'scene').iter(ns + 'root')
+    if not any('root-tracker-main-points' in element.attrib for element in elements):
+        return np.empty((0, 2), dtype=np.int32)
+    if image.rsml_background is None:
+        image.rsml_background = _load_background(image)
+    mask = np.zeros(image.rsml_background.shape[:2], dtype=np.uint8)
+    for index in range(len(image.rsml_document.plant_ids)):
+        points = [p for r in image.rsml_document.roots if r.plant_index == index for p in r.points]
+        if not points:
+            continue
+        top = tuple(map(int, min(points, key=lambda p: p[1])))
+        bottom = tuple(map(int, max(points, key=lambda p: p[1])))
+        cv2.line(mask, top, (top[0] + 100, top[1]), 255, 1)
+        cv2.line(mask, (top[0] + 100, top[1]), (top[0] + 100, bottom[1]), 255, 3)
+        cv2.line(mask, (top[0] + 100, bottom[1]), bottom, 255, 1)
+    return np.column_stack(np.nonzero(mask)).astype(np.int32)
 
 
 def render_replacement(image, *, show_max_root_depth=True):
@@ -174,15 +203,8 @@ def render_replacement(image, *, show_max_root_depth=True):
         else:
             cv2.polylines(annotated, [points], False, color, 12, cv2.LINE_AA)
     if native and show_max_root_depth:
-        for index in range(len(image.rsml_document.plant_ids)):
-            points = [p for r in image.rsml_document.roots if r.plant_index == index for p in r.points]
-            if not points:
-                continue
-            top = tuple(map(int, min(points, key=lambda p: p[1])))
-            bottom = tuple(map(int, max(points, key=lambda p: p[1])))
-            cv2.line(annotated, top, (top[0] + 100, top[1]), (255, 255, 255), 1)
-            cv2.line(annotated, (top[0] + 100, top[1]), (top[0] + 100, bottom[1]), (255, 255, 255), 3)
-            cv2.line(annotated, (top[0] + 100, bottom[1]), bottom, (255, 255, 255), 1)
+        pixels = replacement_depth_pixels(image)
+        annotated[pixels[:, 0], pixels[:, 1]] = 255
     cv2.putText(annotated, 'Edited' if image.rsml_unmasked_document is not None else 'RSML', (8, 18), cv2.FONT_HERSHEY_SIMPLEX, .5, (200, 80, 200), 1, cv2.LINE_AA)
     return annotated
 

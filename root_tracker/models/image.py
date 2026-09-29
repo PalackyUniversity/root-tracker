@@ -69,6 +69,8 @@ class ImageData:
     
     # Sparse pixels beneath depth markers: columns y, x, B, G, R.
     root_depth_background: Optional[np.ndarray] = field(default=None, repr=False)
+    # Sparse pixels beneath white root connectors: y, x, B, G, R.
+    root_link_background: Optional[np.ndarray] = field(default=None, repr=False)
 
     # Unmasked main-root pixels: plant index, x, y.
     main_root_samples: Optional[np.ndarray] = field(default=None, repr=False)
@@ -120,6 +122,7 @@ class ImageData:
             self.rsml_samples = None
             self.image_annotated = None
             return
+        self.root_link_background = None
         self.total_length = None
         self.total_area = None
         self.new_area = None
@@ -138,6 +141,35 @@ class ImageData:
         pixels = self.root_depth_background
         preview[pixels[:, 0], pixels[:, 1]] = pixels[:, 2:]
         return preview
+
+    def root_link_pixels(self, plant_origins=None):
+        """Get connector underlays, recovering them from older tracking caches."""
+        if self.root_link_background is None and self.tracking_overlay is not None and self.image is not None:
+            from ..config import Config
+            from ..tracking.root_linker import RootLinker
+            pixels = self.tracking_overlay
+            pixels = pixels[np.all(pixels[:, 2:] == 255, axis=1)]
+            origins = (plant_origins if plant_origins is not None
+                       else list(zip(self.positions_x, self.positions_y)))
+            background = RootLinker(Config()).draw_annotations(
+                self.image, [x for x, _ in origins],
+                [y for _, y in origins], [], {})
+            ys, xs = pixels[:, 0], pixels[:, 1]
+            self.root_link_background = np.column_stack((ys, xs, background[ys, xs])).astype(np.int32)
+        return self.root_link_background
+
+    def root_link_preview(self, preview, plant_origins=None):
+        """Separate visible connectors from the bitmap without erasing roots."""
+        pixels = self.root_link_pixels(plant_origins)
+        if pixels is None or not len(pixels):
+            return preview, None
+        # Root strokes are painted after connectors and must retain priority.
+        pixels = pixels[np.all(preview[pixels[:, 0], pixels[:, 1]] == 255, axis=1)]
+        if not len(pixels):
+            return preview, None
+        preview = preview.copy()
+        preview[pixels[:, 0], pixels[:, 1]] = pixels[:, 2:]
+        return preview, pixels
 
     def clear_preprocessing_results(self) -> None:
         """Clear all preprocessing results (and tracking, since it depends on them)."""
@@ -184,6 +216,7 @@ class ImageData:
             diff=self.diff.copy() if self.diff is not None else None,
             image_annotated=self.image_annotated.copy() if self.image_annotated is not None else None,
             root_depth_background=self.root_depth_background.copy() if self.root_depth_background is not None else None,
+            root_link_background=self.root_link_background.copy() if self.root_link_background is not None else None,
             main_root_samples=self.main_root_samples.copy() if self.main_root_samples is not None else None,
             tracking_overlay=self.tracking_overlay.copy() if self.tracking_overlay is not None else None,
             green_areas=self.green_areas.copy(),

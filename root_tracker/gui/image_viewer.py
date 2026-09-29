@@ -10,10 +10,11 @@ from PySide6.QtWidgets import (
     QGraphicsSimpleTextItem, QGraphicsPolygonItem, QGraphicsPathItem, QApplication
 )
 from PySide6.QtCore import Qt, Signal, QPointF, QRectF, QEvent
-from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent, QTransform, QPolygonF, QPalette, QPainterPath, QPainterPathStroker
+from PySide6.QtGui import QPixmap, QImage, QWheelEvent, QPen, QBrush, QColor, QMouseEvent, QTransform, QPolygonF, QPalette, QPainter, QPainterPath, QPainterPathStroker
 import math
 import numpy as np
 import cv2
+from skimage.morphology import skeletonize
 from shiboken6 import isValid
 
 from .crop_overlay import CropOverlay
@@ -23,6 +24,60 @@ from .masking_tools import (
     MaskTool, MaskOverlay, MaskOverlayItem, BrushCursor, RectanglePreview, BrushStrokePreview,
     draw_brush_stroke, draw_rectangle
 )
+
+
+class DepthOverlayItem(QGraphicsPathItem):
+    """Draw every depth-marker section with the same fixed screen width."""
+
+    def __init__(self, pixels):
+        path = QPainterPath()
+        # Cached markers contain a thicker vertical stroke. Recover their
+        # centerlines so source-pixel thickness cannot grow with zoom.
+        coordinates = np.asarray(pixels[:, :2], dtype=np.int32)
+        origin = coordinates.min(axis=0) - 1
+        local = coordinates - origin
+        mask = np.zeros(tuple(local.max(axis=0) + 2), dtype=bool)
+        mask[local[:, 0], local[:, 1]] = True
+        centerlines = skeletonize(mask)
+        ys, xs = np.nonzero(centerlines)
+        connected = np.zeros(len(ys), dtype=bool)
+        for dy, dx in ((0, 1), (1, 0), (1, 1), (1, -1)):
+            neighbors = centerlines[ys + dy, xs + dx]
+            if dy and dx:
+                # Diagonal links are only needed around corners, where there
+                # is no orthogonal connection to the same neighbor.
+                neighbors &= ~centerlines[ys + dy, xs] & ~centerlines[ys, xs + dx]
+            connected |= neighbors | centerlines[ys - dy, xs - dx]
+            edges = np.zeros_like(centerlines)
+            edges[ys[neighbors], xs[neighbors]] = True
+            starts = neighbors & ~edges[ys - dy, xs - dx]
+            # Stroke each straight run once. Separate strokes for every pixel
+            # would accumulate antialiasing at their overlapping round caps.
+            for y, x in zip(ys[starts], xs[starts]):
+                end_y, end_x = y, x
+                while edges[end_y, end_x]:
+                    end_y += dy
+                    end_x += dx
+                path.moveTo(float(x + origin[1]) + .5, float(y + origin[0]) + .5)
+                path.lineTo(float(end_x + origin[1]) + .5, float(end_y + origin[0]) + .5)
+        for y, x in zip(ys[~connected] + origin[0], xs[~connected] + origin[1]):
+            path.moveTo(float(x) + .5, float(y) + .5)
+            path.lineTo(float(x) + .501, float(y) + .5)
+        super().__init__(path)
+        pen = QPen(QColor('white'), 2)
+        pen.setCosmetic(True)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        self.setPen(pen)
+        self.setBrush(Qt.BrushStyle.NoBrush)
+        self.setAcceptedMouseButtons(Qt.MouseButton.NoButton)
+        self.setZValue(2)
+
+    def paint(self, painter, option, widget=None):
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        super().paint(painter, option, widget)
+        painter.restore()
 
 
 class DraggableCentroid(QGraphicsEllipseItem):
@@ -134,6 +189,8 @@ class ImageViewer(QWidget):
         self._root_drop_target = None
         self._crop_overlay = None
         self._plate_outline = None
+        self._depth_overlay = None
+        self._link_overlay = None
         self._color_picking = False
         self._zoom_factor = 1.0
         self._centroid_items: list[DraggableCentroid] = []
@@ -317,6 +374,24 @@ class ImageViewer(QWidget):
             self._scene.removeItem(self._plate_outline)
             self._plate_outline = None
 
+    def set_root_depth_pixels(self, pixels=None):
+        """Display sparse depth-marker coordinates independently of the bitmap."""
+        if self._depth_overlay is not None:
+            self._scene.removeItem(self._depth_overlay)
+            self._depth_overlay = None
+        if pixels is not None and len(pixels):
+            self._depth_overlay = DepthOverlayItem(pixels)
+            self._scene.addItem(self._depth_overlay)
+
+    def set_root_link_pixels(self, pixels=None):
+        """Use the depth marker's screen width for plant and root connectors."""
+        if self._link_overlay is not None:
+            self._scene.removeItem(self._link_overlay)
+            self._link_overlay = None
+        if pixels is not None and len(pixels):
+            self._link_overlay = DepthOverlayItem(pixels)
+            self._scene.addItem(self._link_overlay)
+
     def set_color_picking(self, enabled):
         self._color_picking = enabled
         # Item hover cursors and ScrollHandDrag otherwise hide the eyedropper
@@ -336,6 +411,8 @@ class ImageViewer(QWidget):
         """
         self.clear_crop()
         self.clear_plate_outline()
+        self.set_root_depth_pixels()
+        self.set_root_link_pixels()
         previous_transform = self._view.transform()
         previous_scene_rect = self._view.sceneRect()
         previous_scroll = (self._view.horizontalScrollBar().value(), self._view.verticalScrollBar().value())
@@ -429,6 +506,8 @@ class ImageViewer(QWidget):
         Args:
             pixmap: QPixmap to display or None to clear.
         """
+        self.set_root_depth_pixels()
+        self.set_root_link_pixels()
         if self._pixmap_item is not None:
             self._scene.removeItem(self._pixmap_item)
             self._pixmap_item = None
